@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:the_legit_smoothie/features/auth/views/login_screen.dart';
 
 void main() async {
   // Ensure Flutter bindings are initialized
@@ -12,7 +13,7 @@ void main() async {
   // Initialize Supabase
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
   runApp(const TheLegitSmoothieApp());
@@ -28,15 +29,13 @@ class TheLegitSmoothieApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'The Legit Smoothie',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text('Welcome to The Legit Smoothie! 🥤'),
-        ),
-      ),
+      // Set LoginScreen as the entry point when the app first loads
+      home: const LoginScreen(),
     );
   }
 }
