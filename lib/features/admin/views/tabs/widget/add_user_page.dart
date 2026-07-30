@@ -123,8 +123,9 @@ class _AddUserPageState extends State<AddUserPage> {
                   ),
                   validator: (val) {
                     if (val == null || val.isEmpty) return 'Please enter email';
-                    if (!val.contains('@'))
+                    if (!val.contains('@')) {
                       return 'Enter a valid email address';
+                    }
                     return null;
                   },
                 ),
@@ -389,22 +390,22 @@ class _AddUserPageState extends State<AddUserPage> {
         return;
       }
 
-      // Collect complete payload
-      final userData = {
-        'name': _nameController.text,
-        'email': _emailController.text,
-        'phone': _phoneController.text,
-        'password': _passwordController.text,
-        'role': _selectedRole,
-        'is_active': _isActive,
-        'address': {
-          'region': _selectedRegion?.regionName,
-          'province': _selectedProvince?.name,
-          'municipality': _selectedMunicipality?.name,
-          'barangay': _selectedBarangay,
-          'street': _streetController.text,
-        },
-      };
+      // // Collect complete payload
+      // final userData = {
+      //   'name': _nameController.text,
+      //   'email': _emailController.text,
+      //   'phone': _phoneController.text,
+      //   'password': _passwordController.text,
+      //   'role': _selectedRole,
+      //   'is_active': _isActive,
+      //   'address': {
+      //     'region': _selectedRegion?.regionName,
+      //     'province': _selectedProvince?.name,
+      //     'municipality': _selectedMunicipality?.name,
+      //     'barangay': _selectedBarangay,
+      //     'street': _streetController.text,
+      //   },
+      // };
 
       // Returns true so parent screen reloads user list
       Navigator.pop(context, true);
