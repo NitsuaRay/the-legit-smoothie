@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:the_legit_smoothie/core/constants/app_colors.dart';
 import 'package:the_legit_smoothie/features/admin/views/tabs/admin_analytics_home_tab.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/views/login_screen.dart';

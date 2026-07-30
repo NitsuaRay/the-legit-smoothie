@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
 import 'package:the_legit_smoothie/features/admin/views/admin_dashboard_screen.dart';
@@ -15,25 +16,45 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  runApp(const TheLegitSmoothieApp());
+  // Load saved theme preference prior to app build
+  final prefs = await SharedPreferences.getInstance();
+  final savedThemeIndex = prefs.getInt('theme_mode') ?? ThemeMode.light.index;
+  final initialThemeMode = ThemeMode.values[savedThemeIndex];
+
+  runApp(TheLegitSmoothieApp(initialThemeMode: initialThemeMode));
 }
 
 final supabase = Supabase.instance.client;
 
 class TheLegitSmoothieApp extends StatefulWidget {
-  const TheLegitSmoothieApp({super.key});
+  final ThemeMode initialThemeMode;
+
+  const TheLegitSmoothieApp({
+    super.key,
+    required this.initialThemeMode,
+  });
 
   @override
   State<TheLegitSmoothieApp> createState() => _TheLegitSmoothieAppState();
 }
 
 class _TheLegitSmoothieAppState extends State<TheLegitSmoothieApp> {
-  ThemeMode _themeMode = ThemeMode.light;
+  late ThemeMode _themeMode;
 
-  void _updateThemeMode(ThemeMode newMode) {
+  @override
+  void initState() {
+    super.initState();
+    _themeMode = widget.initialThemeMode;
+  }
+
+  // Update in-memory state AND persist to local storage
+  Future<void> _updateThemeMode(ThemeMode newMode) async {
     setState(() {
       _themeMode = newMode;
     });
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('theme_mode', newMode.index);
   }
 
   @override
@@ -76,7 +97,6 @@ class _TheLegitSmoothieAppState extends State<TheLegitSmoothieApp> {
 }
 
 /// Automatically handles session persistence and role routing on app startup
-/// Automatically handles session persistence and role routing on app startup
 class AuthGate extends StatelessWidget {
   final ThemeMode currentThemeMode;
   final ValueChanged<ThemeMode> onThemeModeChanged;
@@ -109,12 +129,11 @@ class AuthGate extends StatelessWidget {
 
         if (session == null) {
           return LoginScreen(
-            currentThemeMode: currentThemeMode, // Removed 'widget.'
-            onThemeModeChanged: onThemeModeChanged, // Removed 'widget.'
+            currentThemeMode: currentThemeMode,
+            onThemeModeChanged: onThemeModeChanged,
           );
         }
 
-        // 2. If session exists, fetch user role from profile
         return FutureBuilder<String?>(
           future: _getUserRole(session.user.id),
           builder: (context, roleSnapshot) {

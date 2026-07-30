@@ -72,6 +72,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Custom Header replacing AppBar
+                const SizedBox(height: 10,),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

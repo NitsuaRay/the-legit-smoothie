@@ -20,7 +20,6 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
     'Add-ons',
   ];
 
-  // Updated menu items: stock count removed in favor of simple availability state
   final List<Map<String, dynamic>> _menuItems = [
     {
       'name': 'Mango Smoothie',
@@ -73,6 +72,23 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
     });
   }
 
+  Future<void> _openAddItemModal() async {
+    final newItem = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => const AddItemScreen(),
+    );
+
+    if (newItem != null) {
+      setState(() {
+        _menuItems.insert(0, newItem);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -90,87 +106,13 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      floatingActionButton: Container(
-        height: 52,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26),
-          gradient: LinearGradient(
-            colors: [AppColors.bobaBrown, AppColors.bobaBrown.withOpacity(0.9)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.bobaBrown.withOpacity(0.4),
-              blurRadius: 16,
-              spreadRadius: 0,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(26),
-            splashColor: Colors.white.withOpacity(0.15),
-            highlightColor: Colors.transparent,
-            onTap: () async {
-              final newItem = await showModalBottomSheet<Map<String, dynamic>>(
-                context: context,
-                isScrollControlled: true,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                builder: (context) =>
-                    const AddItemScreen(), // Or your existing form widget
-              );
-
-              if (newItem != null) {
-                setState(() {
-                  _menuItems.insert(0, newItem);
-                });
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.add_rounded,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'Add Product',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Header with Active Items Badge
+              // 1. Header with Add Item Action & Counter
               _buildModernHeader(textColor, subTextColor, isDarkMode),
 
               const SizedBox(height: 20),
@@ -211,23 +153,54 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
         .where((i) => i['isAvailable'] == true)
         .length;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              'Menu Catalog',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-                color: textColor,
+            Expanded(
+              child: Text(
+                'Menu Catalog',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                  color: textColor,
+                ),
               ),
             ),
-            const SizedBox(height: 4),
+            // Top Add Product Button
+            Material(
+              color: AppColors.bobaBrown,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: _openAddItemModal,
+                borderRadius: BorderRadius.circular(12),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                      SizedBox(width: 2),
+                      Icon(
+                        Icons.inventory_2_rounded, // or Icons.fastfood_rounded
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
             Text(
               'Manage pricing & item availability',
               style: TextStyle(
@@ -236,40 +209,40 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
                 color: subTextColor,
               ),
             ),
-          ],
-        ),
-        // Active Items Counter Badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.bobaBrown.withOpacity(isDarkMode ? 0.2 : 0.08),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.bobaBrown.withOpacity(0.2),
-              width: 1,
+            // Active Counter Badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.bobaBrown.withOpacity(isDarkMode ? 0.2 : 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.bobaBrown.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: AppColors.success,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$availableCount Active',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.bobaBrown,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.success,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '$availableCount Active',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.bobaBrown,
-                ),
-              ),
-            ],
-          ),
+          ],
         ),
       ],
     );
@@ -448,7 +421,6 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top Row: Emoji Icon + Availability Badge
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -495,8 +467,6 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
                     ],
                   ),
                   const Spacer(),
-
-                  // Category Tag
                   Text(
                     item['category'].toUpperCase(),
                     style: TextStyle(
@@ -507,8 +477,6 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
                     ),
                   ),
                   const SizedBox(height: 3),
-
-                  // Name
                   Text(
                     item['name'],
                     maxLines: 1,
@@ -520,8 +488,6 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
                     ),
                   ),
                   const SizedBox(height: 10),
-
-                  // Price & Live Switch Toggle
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
