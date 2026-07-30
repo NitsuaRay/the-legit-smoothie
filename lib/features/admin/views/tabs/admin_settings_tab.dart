@@ -17,7 +17,6 @@ class AdminSettingsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final backgroundColor = isDark ? AppColors.bobaBrown : AppColors.background;
     final cardColor = isDark ? AppColors.darkText : AppColors.cardWhite;
     final primaryTextColor = isDark ? AppColors.cream : AppColors.darkText;
     final secondaryTextColor = isDark
@@ -25,7 +24,7 @@ class AdminSettingsTab extends StatelessWidget {
         : AppColors.greyText;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
@@ -222,7 +221,6 @@ class AdminSettingsTab extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Icon container
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.all(12),
@@ -243,8 +241,6 @@ class AdminSettingsTab extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-
-            // Text Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,10 +265,7 @@ class AdminSettingsTab extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(width: 8),
-
-            // Selection Badge Indicator
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: 24,

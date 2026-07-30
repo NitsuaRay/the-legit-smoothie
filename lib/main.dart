@@ -30,10 +30,7 @@ final supabase = Supabase.instance.client;
 class TheLegitSmoothieApp extends StatefulWidget {
   final ThemeMode initialThemeMode;
 
-  const TheLegitSmoothieApp({
-    super.key,
-    required this.initialThemeMode,
-  });
+  const TheLegitSmoothieApp({super.key, required this.initialThemeMode});
 
   @override
   State<TheLegitSmoothieApp> createState() => _TheLegitSmoothieAppState();
@@ -98,7 +95,7 @@ class _TheLegitSmoothieAppState extends State<TheLegitSmoothieApp> {
 }
 
 /// Automatically handles session persistence and role routing on app startup
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   final ThemeMode currentThemeMode;
   final ValueChanged<ThemeMode> onThemeModeChanged;
 
@@ -107,6 +104,14 @@ class AuthGate extends StatelessWidget {
     required this.currentThemeMode,
     required this.onThemeModeChanged,
   });
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  Future<String?>? _roleFuture;
+  String? _lastUserId;
 
   Future<String?> _getUserRole(String userId) async {
     try {
@@ -129,21 +134,27 @@ class AuthGate extends StatelessWidget {
         final session = supabase.auth.currentSession;
 
         if (session == null) {
+          _roleFuture = null;
+          _lastUserId = null;
           return LoginScreen(
-            currentThemeMode: currentThemeMode,
-            onThemeModeChanged: onThemeModeChanged,
+            currentThemeMode: widget.currentThemeMode,
+            onThemeModeChanged: widget.onThemeModeChanged,
           );
         }
 
+        // Only fetch the role if the user ID changed or hasn't been fetched yet
+        if (_roleFuture == null || _lastUserId != session.user.id) {
+          _lastUserId = session.user.id;
+          _roleFuture = _getUserRole(session.user.id);
+        }
+
         return FutureBuilder<String?>(
-          future: _getUserRole(session.user.id),
+          future: _roleFuture,
           builder: (context, roleSnapshot) {
             if (roleSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.bobaBrown,
-                  ),
+                  child: CircularProgressIndicator(color: AppColors.bobaBrown),
                 ),
               );
             }
@@ -152,20 +163,18 @@ class AuthGate extends StatelessWidget {
 
             if (role == 'admin') {
               return AdminDashboardScreen(
-                currentThemeMode: currentThemeMode,
-                onThemeModeChanged: onThemeModeChanged,
+                currentThemeMode: widget.currentThemeMode,
+                onThemeModeChanged: widget.onThemeModeChanged,
               );
             } else if (role == 'seller') {
-              // TODO: Return SellerDashboardScreen()
               return SellerDashboardScreen(
-                currentThemeMode: currentThemeMode,
-                onThemeModeChanged: onThemeModeChanged,
+                currentThemeMode: widget.currentThemeMode,
+                onThemeModeChanged: widget.onThemeModeChanged,
               );
             } else {
-              // TODO: Return CustomerHomeScreen()
               return AdminDashboardScreen(
-                currentThemeMode: currentThemeMode,
-                onThemeModeChanged: onThemeModeChanged,
+                currentThemeMode: widget.currentThemeMode,
+                onThemeModeChanged: widget.onThemeModeChanged,
               );
             }
           },

@@ -9,54 +9,52 @@ class SellerSalesTab extends StatefulWidget {
 }
 
 class _SellerSalesTabState extends State<SellerSalesTab> {
-  // Sample order data
-  final List<Map<String, dynamic>> _orders = [
+  String _selectedTimeFilter = 'Today';
+
+  final List<String> _timeFilters = ['Today', 'This Week', 'This Month', 'All Time'];
+
+  // Sample sales data & statistics
+  final Map<String, dynamic> _salesSummary = {
+    'totalRevenue': 14850.00,
+    'totalTransactions': 124,
+    'averageOrderValue': 119.75,
+    'growthPercentage': '+12.4%',
+  };
+
+  final List<Map<String, dynamic>> _recentTransactions = [
     {
-      'id': 'ORD-1001',
+      'id': 'TRX-9001',
       'customer': 'Juan Dela Cruz',
       'items': '2x Classic Pearl Boba, 1x Taro Smoothie',
       'total': 380.0,
-      'status': 'Pending',
-      'time': '5 mins ago',
+      'time': '10:42 AM',
+      'paymentMethod': 'GCash',
     },
     {
-      'id': 'ORD-1002',
+      'id': 'TRX-9002',
       'customer': 'Maria Santos',
       'items': '1x Mango Graham Special',
       'total': 150.0,
-      'status': 'Preparing',
-      'time': '12 mins ago',
+      'time': '10:15 AM',
+      'paymentMethod': 'Cash',
     },
     {
-      'id': 'ORD-1003',
+      'id': 'TRX-9003',
       'customer': 'Austin Dev',
       'items': '3x Classic Pearl Boba',
       'total': 360.0,
-      'status': 'Ready',
-      'time': '25 mins ago',
+      'time': '09:50 AM',
+      'paymentMethod': 'Maya',
+    },
+    {
+      'id': 'TRX-9004',
+      'customer': 'Bea Alonzo',
+      'items': '2x Avocado Bliss, 1x Siomai Roll',
+      'total': 345.0,
+      'time': '09:20 AM',
+      'paymentMethod': 'GCash',
     },
   ];
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'Pending':
-        return Colors.orange;
-      case 'Preparing':
-        return Colors.blue;
-      case 'Ready':
-        return Colors.green;
-      case 'Completed':
-        return AppColors.greyText;
-      default:
-        return AppColors.bobaBrown;
-    }
-  }
-
-  void _updateOrderStatus(int index, String newStatus) {
-    setState(() {
-      _orders[index]['status'] = newStatus;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +85,7 @@ class _SellerSalesTabState extends State<SellerSalesTab> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
-                    Icons.receipt_long_rounded,
+                    Icons.analytics_rounded,
                     color: isDark ? AppColors.cream : AppColors.bobaBrown,
                     size: 24,
                   ),
@@ -97,7 +95,7 @@ class _SellerSalesTabState extends State<SellerSalesTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Live Sales & Orders',
+                      'Sales & Revenue',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -106,7 +104,7 @@ class _SellerSalesTabState extends State<SellerSalesTab> {
                       ),
                     ),
                     Text(
-                      'Manage active orders & order statuses',
+                      'Track daily earnings and performance metrics',
                       style: TextStyle(
                         fontSize: 13,
                         color: secondaryTextColor,
@@ -117,13 +115,157 @@ class _SellerSalesTabState extends State<SellerSalesTab> {
               ],
             ),
 
+            const SizedBox(height: 20),
+
+            // --- Time Filter Selector ---
+            SizedBox(
+              height: 38,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _timeFilters.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final filter = _timeFilters[index];
+                  final isSelected = filter == _selectedTimeFilter;
+
+                  return InkWell(
+                    onTap: () => setState(() => _selectedTimeFilter = filter),
+                    borderRadius: BorderRadius.circular(20),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.bobaBrown
+                            : (isDark ? cardColor : Colors.white),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.bobaBrown
+                              : (isDark
+                                  ? Colors.white.withOpacity(0.08)
+                                  : Colors.black.withOpacity(0.06)),
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          filter,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark ? Colors.white70 : AppColors.darkText),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // --- Revenue Highlight Card ---
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [AppColors.bobaBrown, AppColors.bobaBrown.withOpacity(0.7)]
+                      : [AppColors.bobaBrown, AppColors.secondary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.bobaBrown.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total Revenue',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.arrow_upward_rounded, size: 12, color: Colors.white),
+                            const SizedBox(width: 2),
+                            Text(
+                              _salesSummary['growthPercentage'],
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '₱${(_salesSummary['totalRevenue'] as double).toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildMetricItem(
+                          'Transactions',
+                          '${_salesSummary['totalTransactions']}',
+                          Icons.receipt_rounded,
+                        ),
+                      ),
+                      Container(width: 1, height: 30, color: Colors.white24),
+                      Expanded(
+                        child: _buildMetricItem(
+                          'Avg. Order Value',
+                          '₱${(_salesSummary['averageOrderValue'] as double).toStringAsFixed(2)}',
+                          Icons.trending_up_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 24),
 
-            // --- Section Header ---
+            // --- Section Header: Recent Transactions ---
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 12),
               child: Text(
-                'RECENT ORDERS',
+                'RECENT TRANSACTIONS',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -135,16 +277,14 @@ class _SellerSalesTabState extends State<SellerSalesTab> {
               ),
             ),
 
-            // --- Orders List ---
+            // --- Transactions List ---
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _orders.length,
+              itemCount: _recentTransactions.length,
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                final order = _orders[index];
-                final status = order['status'] as String;
-                final statusColor = _getStatusColor(status);
+                final transaction = _recentTransactions[index];
 
                 return Container(
                   padding: const EdgeInsets.all(16.0),
@@ -164,148 +304,86 @@ class _SellerSalesTabState extends State<SellerSalesTab> {
                       ),
                     ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      // Header: Order ID & Status Badge
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                order['id'],
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: primaryTextColor,
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_downward_rounded,
+                          color: AppColors.success,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  transaction['customer'],
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryTextColor,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '•  ${order['time']}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: secondaryTextColor,
+                                Text(
+                                  '₱${(transaction['total'] as double).toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: isDark ? AppColors.cream : AppColors.bobaBrown,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(20),
+                              ],
                             ),
-                            child: Text(
-                              status,
+                            const SizedBox(height: 3),
+                            Text(
+                              transaction['items'],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: statusColor,
+                                fontSize: 12,
+                                color: secondaryTextColor,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      // Customer & Items Info
-                      Text(
-                        'Customer: ${order['customer']}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: primaryTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        order['items'],
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: secondaryTextColor,
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-                      Divider(
-                        height: 1,
-                        color: isDark
-                            ? AppColors.bobaBrown.withOpacity(0.3)
-                            : AppColors.greyBorder,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Total Price & Quick Action Menu
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total: ₱${(order['total'] as double).toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? AppColors.cream : AppColors.bobaBrown,
-                            ),
-                          ),
-                          PopupMenuButton<String>(
-                            onSelected: (newStatus) =>
-                                _updateOrderStatus(index, newStatus),
-                            color: cardColor,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? AppColors.bobaBrown.withOpacity(0.4)
-                                    : AppColors.background,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    'Update Status',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: primaryTextColor,
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '${transaction['id']} • ${transaction['time']}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: secondaryTextColor,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.bobaBrown.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    transaction['paymentMethod'],
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.bobaBrown,
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.arrow_drop_down_rounded,
-                                    color: primaryTextColor,
-                                    size: 18,
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'Pending',
-                                child: Text('Pending'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'Preparing',
-                                child: Text('Preparing'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'Ready',
-                                child: Text('Ready for Pickup'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'Completed',
-                                child: Text('Completed'),
-                              ),
-                            ],
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -315,6 +393,29 @@ class _SellerSalesTabState extends State<SellerSalesTab> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMetricItem(String label, String value, IconData icon) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 16, color: Colors.white70),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 10, color: Colors.white70, fontWeight: FontWeight.w500),
+            ),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

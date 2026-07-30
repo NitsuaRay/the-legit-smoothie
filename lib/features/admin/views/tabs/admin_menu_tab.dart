@@ -93,10 +93,15 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    final textColor = theme.textTheme.bodyLarge?.color ?? AppColors.darkText;
+
+    // Consistent theme colors matching the add item screen approach
+    final primaryAccent = isDarkMode ? AppColors.cream : AppColors.bobaBrown;
+    final textColor =
+        theme.textTheme.bodyLarge?.color ??
+        (isDarkMode ? Colors.white : AppColors.darkText);
     final subTextColor =
         theme.textTheme.bodyMedium?.color?.withOpacity(0.6) ??
-        AppColors.greyText;
+        (isDarkMode ? Colors.white70 : AppColors.greyText);
 
     final filteredItems = _selectedCategory == 'All'
         ? _menuItems
@@ -105,7 +110,8 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
               .toList();
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor:
+          Colors.transparent, // Transparent background to show dashboard image
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
@@ -113,17 +119,33 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 1. Header with Add Item Action & Counter
-              _buildModernHeader(textColor, subTextColor, isDarkMode),
+              _buildModernHeader(
+                textColor,
+                subTextColor,
+                isDarkMode,
+                primaryAccent,
+              ),
 
               const SizedBox(height: 20),
 
               // 2. Search Bar & Filter
-              _buildSearchBar(theme, isDarkMode, textColor, subTextColor),
+              _buildSearchBar(
+                theme,
+                isDarkMode,
+                textColor,
+                subTextColor,
+                primaryAccent,
+              ),
 
               const SizedBox(height: 20),
 
               // 3. Category Filter Chips
-              _buildCategorySelector(theme, isDarkMode, textColor),
+              _buildCategorySelector(
+                theme,
+                isDarkMode,
+                textColor,
+                primaryAccent,
+              ),
 
               const SizedBox(height: 20),
 
@@ -135,6 +157,7 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
                 isDarkMode,
                 textColor,
                 subTextColor,
+                primaryAccent,
               ),
             ],
           ),
@@ -148,6 +171,7 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
     Color textColor,
     Color subTextColor,
     bool isDarkMode,
+    Color primaryAccent,
   ) {
     final availableCount = _menuItems
         .where((i) => i['isAvailable'] == true)
@@ -161,34 +185,62 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Text(
-                'Menu Catalog',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                  color: textColor,
-                ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color:
+                          (isDarkMode ? AppColors.cream : AppColors.bobaBrown)
+                              .withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.menu_book_rounded,
+                      color: isDarkMode ? AppColors.cream : AppColors.bobaBrown,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Menu Catalog',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                        color: primaryAccent,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            // Top Add Product Button
+            // Top Add Product Button matching the requested double-icon layout
             Material(
-              color: AppColors.bobaBrown,
+              color: primaryAccent,
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 onTap: _openAddItemModal,
                 borderRadius: BorderRadius.circular(12),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add_rounded, size: 18, color: Colors.white),
-                      SizedBox(width: 2),
                       Icon(
-                        Icons.inventory_2_rounded, // or Icons.fastfood_rounded
+                        Icons.add_rounded,
                         size: 18,
-                        color: Colors.white,
+                        color: isDarkMode ? AppColors.darkText : Colors.white,
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.inventory_2_rounded,
+                        size: 18,
+                        color: isDarkMode ? AppColors.darkText : Colors.white,
                       ),
                     ],
                   ),
@@ -213,10 +265,10 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.bobaBrown.withOpacity(isDarkMode ? 0.2 : 0.08),
+                color: primaryAccent.withOpacity(isDarkMode ? 0.2 : 0.08),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.bobaBrown.withOpacity(0.2),
+                  color: primaryAccent.withOpacity(0.2),
                   width: 1,
                 ),
               ),
@@ -233,10 +285,10 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
                   const SizedBox(width: 6),
                   Text(
                     '$availableCount Active',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.bobaBrown,
+                      color: primaryAccent,
                     ),
                   ),
                 ],
@@ -254,16 +306,16 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
     bool isDarkMode,
     Color textColor,
     Color subTextColor,
+    Color primaryAccent,
   ) {
+    final cardBg = theme.cardColor.withOpacity(isDarkMode ? 0.65 : 0.85);
+    final borderColor = theme.dividerColor.withOpacity(0.5);
+
     return Container(
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withOpacity(0.08)
-              : Colors.black.withOpacity(0.04),
-        ),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(isDarkMode ? 0.25 : 0.03),
@@ -296,11 +348,7 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
             color: theme.dividerColor.withOpacity(0.5),
           ),
           IconButton(
-            icon: const Icon(
-              Icons.tune_rounded,
-              color: AppColors.bobaBrown,
-              size: 20,
-            ),
+            icon: Icon(Icons.tune_rounded, color: primaryAccent, size: 20),
             onPressed: () {},
           ),
           const SizedBox(width: 4),
@@ -314,7 +362,11 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
     ThemeData theme,
     bool isDarkMode,
     Color textColor,
+    Color primaryAccent,
   ) {
+    final cardBg = theme.cardColor.withOpacity(isDarkMode ? 0.65 : 0.85);
+    final borderColor = theme.dividerColor.withOpacity(0.5);
+
     return SizedBox(
       height: 38,
       child: ListView.separated(
@@ -332,26 +384,28 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.bobaBrown
-                    : (isDarkMode ? theme.cardColor : Colors.white),
+                color: isSelected ? primaryAccent : cardBg,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected
-                      ? AppColors.bobaBrown
-                      : (isDarkMode
-                            ? Colors.white.withOpacity(0.08)
-                            : Colors.black.withOpacity(0.06)),
+                  color: isSelected ? primaryAccent : borderColor,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: AppColors.bobaBrown.withOpacity(0.3),
+                          color: primaryAccent.withOpacity(0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),
                       ]
-                    : [],
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(
+                            isDarkMode ? 0.2 : 0.02,
+                          ),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
               child: Center(
                 child: Text(
@@ -360,8 +414,8 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected
-                        ? Colors.white
-                        : (isDarkMode ? Colors.white70 : AppColors.darkText),
+                        ? (isDarkMode ? AppColors.darkText : Colors.white)
+                        : textColor,
                   ),
                 ),
               ),
@@ -380,7 +434,11 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
     bool isDarkMode,
     Color textColor,
     Color subTextColor,
+    Color primaryAccent,
   ) {
+    final cardBg = theme.cardColor.withOpacity(isDarkMode ? 0.65 : 0.85);
+    final borderColor = theme.dividerColor.withOpacity(0.5);
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -401,16 +459,12 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
           opacity: isAvailable ? 1.0 : 0.65,
           child: Container(
             decoration: BoxDecoration(
-              color: theme.cardColor,
+              color: cardBg,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDarkMode
-                    ? Colors.white.withOpacity(0.08)
-                    : Colors.black.withOpacity(0.04),
-              ),
+              border: Border.all(color: borderColor),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.03),
+                  color: Colors.black.withOpacity(isDarkMode ? 0.25 : 0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -424,14 +478,19 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Updated item icon container matching the theme and AddItemScreen preview style
                       Container(
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
                           color: isDarkMode
                               ? Colors.white.withOpacity(0.06)
-                              : AppColors.cream.withOpacity(0.5),
+                              : AppColors.cream.withOpacity(0.6),
                           borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: primaryAccent.withOpacity(0.2),
+                            width: 1.5,
+                          ),
                         ),
                         child: Center(
                           child: Text(
@@ -473,7 +532,7 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.8,
-                      color: AppColors.bobaBrown.withOpacity(0.8),
+                      color: primaryAccent.withOpacity(0.8),
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -503,7 +562,7 @@ class _AdminMenuTabState extends State<AdminMenuTab> {
                         scale: 0.75,
                         child: Switch.adaptive(
                           value: isAvailable,
-                          activeColor: AppColors.bobaBrown,
+                          activeColor: primaryAccent,
                           onChanged: (_) => _toggleAvailability(actualIndex),
                         ),
                       ),

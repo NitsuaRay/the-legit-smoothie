@@ -49,7 +49,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
         'description': _descriptionController.text.trim(),
       };
 
-      // Return the new item back to the calling screen
       Navigator.pop(context, newItem);
     }
   }
@@ -58,8 +57,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    final textColor = theme.textTheme.bodyLarge?.color ?? AppColors.darkText;
-    final subTextColor = theme.textTheme.bodyMedium?.color?.withOpacity(0.6) ?? AppColors.greyText;
+    
+    // Dynamic theme colors that automatically flip based on dark/light mode
+    final primaryAccent = isDarkMode ? AppColors.cream : AppColors.bobaBrown;
+    final textColor = theme.textTheme.bodyLarge?.color ?? (isDarkMode ? Colors.white : AppColors.darkText);
+    final subTextColor = theme.textTheme.bodyMedium?.color?.withOpacity(0.6) ?? (isDarkMode ? Colors.white70 : AppColors.greyText);
+    final cardBg = theme.cardColor.withOpacity(isDarkMode ? 0.65 : 0.85);
+    final borderColor = theme.dividerColor.withOpacity(isDarkMode ? 0.15 : 0.4);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -72,7 +76,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Custom Header replacing AppBar
-                const SizedBox(height: 10,),
+                const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -94,7 +98,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    // Invisible placeholder to keep title centered
                     const SizedBox(width: 20),
                   ],
                 ),
@@ -114,7 +117,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                               : AppColors.cream.withOpacity(0.6),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: AppColors.bobaBrown.withOpacity(0.2),
+                            color: primaryAccent.withOpacity(0.3),
                             width: 2,
                           ),
                         ),
@@ -150,11 +153,11 @@ class _AddItemScreenState extends State<AddItemScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? AppColors.bobaBrown.withOpacity(0.15)
+                                      ? primaryAccent.withOpacity(0.15)
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: isSelected ? AppColors.bobaBrown : Colors.transparent,
+                                    color: isSelected ? primaryAccent : Colors.transparent,
                                   ),
                                 ),
                                 child: Center(
@@ -190,20 +193,20 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         onSelected: (selected) {
                           if (selected) setState(() => _selectedCategory = category);
                         },
-                        selectedColor: AppColors.bobaBrown,
-                        backgroundColor: theme.cardColor,
+                        selectedColor: primaryAccent,
+                        backgroundColor: cardBg,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         labelStyle: TextStyle(
                           fontSize: 13,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                           color: isSelected
-                              ? Colors.white
-                              : (isDarkMode ? Colors.white70 : AppColors.darkText),
+                              ? (isDarkMode ? AppColors.darkText : Colors.white)
+                              : textColor,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                           side: BorderSide(
-                            color: isSelected ? AppColors.bobaBrown : theme.dividerColor,
+                            color: isSelected ? primaryAccent : borderColor,
                           ),
                         ),
                       );
@@ -223,6 +226,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   isDarkMode: isDarkMode,
                   textColor: textColor,
                   subTextColor: subTextColor,
+                  cardBg: cardBg,
+                  borderColor: borderColor,
+                  primaryAccent: primaryAccent,
                   validator: (val) => val == null || val.isEmpty ? 'Please enter item name' : null,
                 ),
 
@@ -235,14 +241,17 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   controller: _priceController,
                   hintText: 'e.g. 120',
                   keyboardType: TextInputType.number,
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.only(left: 14, right: 8, top: 14, bottom: 14),
-                    child: Text('₱', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.bobaBrown)),
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 14, right: 8, top: 14, bottom: 14),
+                    child: Text('₱', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryAccent)),
                   ),
                   theme: theme,
                   isDarkMode: isDarkMode,
                   textColor: textColor,
                   subTextColor: subTextColor,
+                  cardBg: cardBg,
+                  borderColor: borderColor,
+                  primaryAccent: primaryAccent,
                   validator: (val) => val == null || val.isEmpty ? 'Please enter price' : null,
                 ),
 
@@ -259,6 +268,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   isDarkMode: isDarkMode,
                   textColor: textColor,
                   subTextColor: subTextColor,
+                  cardBg: cardBg,
+                  borderColor: borderColor,
+                  primaryAccent: primaryAccent,
                 ),
 
                 const SizedBox(height: 24),
@@ -267,11 +279,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: theme.cardColor,
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDarkMode ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.04),
-                    ),
+                    border: Border.all(color: borderColor),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -292,7 +302,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       ),
                       Switch.adaptive(
                         value: _isAvailable,
-                        activeColor: AppColors.bobaBrown,
+                        activeColor: primaryAccent,
                         onChanged: (val) => setState(() => _isAvailable = val),
                       ),
                     ],
@@ -308,19 +318,19 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   child: ElevatedButton(
                     onPressed: _saveItem,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.bobaBrown,
+                      backgroundColor: primaryAccent,
                       elevation: 4,
-                      shadowColor: AppColors.bobaBrown.withOpacity(0.4),
+                      shadowColor: primaryAccent.withOpacity(0.4),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Save Product',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDarkMode ? AppColors.darkText : Colors.white,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -352,6 +362,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
     required bool isDarkMode,
     required Color textColor,
     required Color subTextColor,
+    required Color cardBg,
+    required Color borderColor,
+    required Color primaryAccent,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
     Widget? prefixIcon,
@@ -368,17 +381,15 @@ class _AddItemScreenState extends State<AddItemScreen> {
         hintStyle: TextStyle(color: subTextColor, fontSize: 14),
         prefixIcon: prefixIcon,
         filled: true,
-        fillColor: theme.cardColor,
+        fillColor: cardBg,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: isDarkMode ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
-          ),
+          borderSide: BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.bobaBrown, width: 1.5),
+          borderSide: BorderSide(color: primaryAccent, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),

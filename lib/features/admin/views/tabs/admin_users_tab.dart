@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
+import 'package:the_legit_smoothie/features/admin/views/tabs/widget/add_user_page.dart';
 
 class AdminUsersTab extends StatefulWidget {
   const AdminUsersTab({super.key});
@@ -48,6 +49,38 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
       'avatar': 'https://i.pravatar.cc/150?img=60',
       'lastActive': '3 days ago',
     },
+    {
+      'name': 'Bea Alonzo',
+      'email': 'bea.alonzo@legitsmoothie.ph',
+      'role': 'Seller',
+      'status': 'Active',
+      'avatar': 'https://i.pravatar.cc/150?img=45',
+      'lastActive': '5m ago',
+    },
+    {
+      'name': 'Carlos Yulo',
+      'email': 'carlos.y@gmail.com',
+      'role': 'Customer',
+      'status': 'Active',
+      'avatar': 'https://i.pravatar.cc/150?img=15',
+      'lastActive': '1h ago',
+    },
+    {
+      'name': 'Hidilyn Diaz',
+      'email': 'hidilyn.d@legitsmoothie.ph',
+      'role': 'Admin',
+      'status': 'Active',
+      'avatar': 'https://i.pravatar.cc/150?img=35',
+      'lastActive': 'Just now',
+    },
+    {
+      'name': 'Kobe Paras',
+      'email': 'kobe.p@gmail.com',
+      'role': 'Customer',
+      'status': 'Inactive',
+      'avatar': 'https://i.pravatar.cc/150?img=52',
+      'lastActive': '1 week ago',
+    },
   ];
 
   @override
@@ -68,14 +101,12 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
     // Filter users based on Search & Role selection
     final filteredUsers = _users.where((user) {
       final matchesSearch =
-          user['name']
-              .toString()
-              .toLowerCase()
-              .contains(_searchController.text.toLowerCase()) ||
-          user['email']
-              .toString()
-              .toLowerCase()
-              .contains(_searchController.text.toLowerCase());
+          user['name'].toString().toLowerCase().contains(
+            _searchController.text.toLowerCase(),
+          ) ||
+          user['email'].toString().toLowerCase().contains(
+            _searchController.text.toLowerCase(),
+          );
       final matchesRole =
           _selectedRole == 'All' || user['role'] == _selectedRole;
       return matchesSearch && matchesRole;
@@ -98,16 +129,39 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'User Management',
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color:
+                                      (isDarkMode
+                                              ? AppColors.cream
+                                              : AppColors.bobaBrown)
+                                          .withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.admin_panel_settings_rounded,
+                                  color: isDarkMode
+                                      ? AppColors.cream
+                                      : AppColors.bobaBrown,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'User Management',
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 6),
                           Text(
                             'Manage accounts, roles & permissions',
                             style: TextStyle(
@@ -123,13 +177,14 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
                         color: AppColors.bobaBrown,
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
-                          onTap:
-                              () => _showAddUserDialog(
-                                context,
-                                theme,
-                                textColor,
-                                isDarkMode,
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AddUserPage(),
                               ),
+                            );
+                          },
                           borderRadius: BorderRadius.circular(12),
                           child: const Padding(
                             padding: EdgeInsets.symmetric(
@@ -200,10 +255,9 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
                       color: theme.cardColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color:
-                            isDarkMode
-                                ? Colors.white.withOpacity(0.08)
-                                : Colors.black.withOpacity(0.04),
+                        color: isDarkMode
+                            ? Colors.white.withOpacity(0.08)
+                            : Colors.black.withOpacity(0.04),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -221,29 +275,25 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
                       style: TextStyle(color: textColor, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: 'Search by name or email...',
-                        hintStyle: TextStyle(
-                          color: subTextColor,
-                          fontSize: 14,
-                        ),
+                        hintStyle: TextStyle(color: subTextColor, fontSize: 14),
                         prefixIcon: Icon(
                           Icons.search_rounded,
                           color: subTextColor,
                           size: 20,
                         ),
-                        suffixIcon:
-                            _searchController.text.isNotEmpty
-                                ? IconButton(
-                                  icon: Icon(
-                                    Icons.clear_rounded,
-                                    color: subTextColor,
-                                    size: 18,
-                                  ),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {});
-                                  },
-                                )
-                                : null,
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(
+                                  Icons.clear_rounded,
+                                  color: subTextColor,
+                                  size: 18,
+                                ),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {});
+                                },
+                              )
+                            : null,
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -276,48 +326,44 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color:
-                                  isSelected
-                                      ? AppColors.bobaBrown
-                                      : (isDarkMode
-                                          ? theme.cardColor
-                                          : Colors.white),
+                              color: isSelected
+                                  ? AppColors.bobaBrown
+                                  : (isDarkMode
+                                        ? theme.cardColor
+                                        : Colors.white),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color:
-                                    isSelected
-                                        ? AppColors.bobaBrown
-                                        : (isDarkMode
-                                            ? Colors.white.withOpacity(0.08)
-                                            : Colors.black.withOpacity(0.06)),
+                                color: isSelected
+                                    ? AppColors.bobaBrown
+                                    : (isDarkMode
+                                          ? Colors.white.withOpacity(0.08)
+                                          : Colors.black.withOpacity(0.06)),
                               ),
-                              boxShadow:
-                                  isSelected
-                                      ? [
-                                        BoxShadow(
-                                          color: AppColors.bobaBrown
-                                              .withOpacity(0.3),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 3),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.bobaBrown.withOpacity(
+                                          0.3,
                                         ),
-                                      ]
-                                      : [],
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ]
+                                  : [],
                             ),
                             child: Center(
                               child: Text(
                                 role,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  fontWeight:
-                                      isSelected
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                  color:
-                                      isSelected
-                                          ? Colors.white
-                                          : (isDarkMode
-                                              ? Colors.white70
-                                              : AppColors.darkText),
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (isDarkMode
+                                            ? Colors.white70
+                                            : AppColors.darkText),
                                 ),
                               ),
                             ),
@@ -334,29 +380,29 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
           // 2. User Cards List
           filteredUsers.isEmpty
               ? SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Text(
-                    'No matching users found.',
-                    style: TextStyle(color: subTextColor, fontSize: 14),
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      'No matching users found.',
+                      style: TextStyle(color: subTextColor, fontSize: 14),
+                    ),
+                  ),
+                )
+              : SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final user = filteredUsers[index];
+                      return _buildUserCard(
+                        user: user,
+                        theme: theme,
+                        isDarkMode: isDarkMode,
+                        textColor: textColor,
+                        subTextColor: subTextColor,
+                      );
+                    }, childCount: filteredUsers.length),
                   ),
                 ),
-              )
-              : SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final user = filteredUsers[index];
-                    return _buildUserCard(
-                      user: user,
-                      theme: theme,
-                      isDarkMode: isDarkMode,
-                      textColor: textColor,
-                      subTextColor: subTextColor,
-                    );
-                  }, childCount: filteredUsers.length),
-                ),
-              ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 30)),
         ],
@@ -381,10 +427,9 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color:
-              isDarkMode
-                  ? Colors.white.withOpacity(0.08)
-                  : Colors.black.withOpacity(0.04),
+          color: isDarkMode
+              ? Colors.white.withOpacity(0.08)
+              : Colors.black.withOpacity(0.04),
         ),
         boxShadow: [
           BoxShadow(
@@ -448,10 +493,9 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color:
-              isDarkMode
-                  ? Colors.white.withOpacity(0.08)
-                  : Colors.black.withOpacity(0.04),
+          color: isDarkMode
+              ? Colors.white.withOpacity(0.08)
+              : Colors.black.withOpacity(0.04),
         ),
         boxShadow: [
           BoxShadow(
@@ -545,96 +589,93 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
                 });
               }
             },
-            itemBuilder:
-                (BuildContext context) => [
-                  PopupMenuItem<String>(
-                    enabled: false,
-                    child: Text(
-                      'Assign Role',
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<String>(
+                enabled: false,
+                child: Text(
+                  'Assign Role',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: subTextColor,
+                  ),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'role_Admin',
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.admin_panel_settings_outlined,
+                      size: 18,
+                      color: AppColors.bobaBrown,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Set as Admin',
+                      style: TextStyle(color: textColor, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'role_Seller',
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.storefront_outlined,
+                      size: 18,
+                      color: AppColors.secondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Set as Seller',
+                      style: TextStyle(color: textColor, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'role_Customer',
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.person_outline_rounded,
+                      size: 18,
+                      color: AppColors.bobaBrown,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Set as Customer',
+                      style: TextStyle(color: textColor, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'status',
+                child: Row(
+                  children: [
+                    Icon(
+                      isActive
+                          ? Icons.block_rounded
+                          : Icons.check_circle_outline,
+                      size: 18,
+                      color: isActive ? AppColors.error : AppColors.success,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isActive ? 'Deactivate' : 'Activate',
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: subTextColor,
+                        color: isActive ? AppColors.error : AppColors.success,
+                        fontSize: 13,
                       ),
                     ),
-                  ),
-                  PopupMenuItem(
-                    value: 'role_Admin',
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.admin_panel_settings_outlined,
-                          size: 18,
-                          color: AppColors.bobaBrown,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Set as Admin',
-                          style: TextStyle(color: textColor, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'role_Seller',
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.storefront_outlined,
-                          size: 18,
-                          color: AppColors.secondary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Set as Seller',
-                          style: TextStyle(color: textColor, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'role_Customer',
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.person_outline_rounded,
-                          size: 18,
-                          color: AppColors.bobaBrown,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Set as Customer',
-                          style: TextStyle(color: textColor, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem(
-                    value: 'status',
-                    child: Row(
-                      children: [
-                        Icon(
-                          isActive
-                              ? Icons.block_rounded
-                              : Icons.check_circle_outline,
-                          size: 18,
-                          color:
-                              isActive ? AppColors.error : AppColors.success,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          isActive ? 'Deactivate' : 'Activate',
-                          style: TextStyle(
-                            color:
-                                isActive ? AppColors.error : AppColors.success,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -652,13 +693,14 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
         badgeText = isDarkMode ? AppColors.cream : AppColors.bobaBrown;
         break;
       case 'Seller':
-        badgeBg = AppColors.secondary.withOpacity(isDarkMode ? 0.25 : 0.12);
-        badgeText = AppColors.secondary;
+        badgeBg = AppColors.bobaBrown.withOpacity(isDarkMode ? 0.25 : 0.12);
+        badgeText = isDarkMode ? AppColors.cream : AppColors.bobaBrown;
+
         break;
       case 'Customer':
       default:
         badgeBg = AppColors.cream.withOpacity(isDarkMode ? 0.25 : 0.2);
-        badgeText = isDarkMode ? AppColors.bobaBrown : AppColors.bobaBrown;
+        badgeText = isDarkMode ? AppColors.cream : AppColors.bobaBrown;
         break;
     }
 
@@ -676,136 +718,6 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
           color: badgeText,
         ),
       ),
-    );
-  }
-
-  // Quick Modal Dialog for Adding New User
-  void _showAddUserDialog(
-    BuildContext context,
-    ThemeData theme,
-    Color textColor,
-    bool isDarkMode,
-  ) {
-    String selectedDialogRole = 'Seller';
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: theme.cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder:
-          (context) => StatefulBuilder(
-            builder: (context, setModalState) {
-              return Padding(
-                padding: EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  top: 20,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Add New User',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      style: TextStyle(color: textColor, fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: 'Full Name',
-                        hintStyle: TextStyle(
-                          color: theme.textTheme.bodyMedium?.color?.withOpacity(
-                            0.5,
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: theme.scaffoldBackgroundColor,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      style: TextStyle(color: textColor, fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: 'Email Address',
-                        hintStyle: TextStyle(
-                          color: theme.textTheme.bodyMedium?.color?.withOpacity(
-                            0.5,
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: theme.scaffoldBackgroundColor,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: selectedDialogRole,
-                      dropdownColor: theme.cardColor,
-                      style: TextStyle(color: textColor, fontSize: 14),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: theme.scaffoldBackgroundColor,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      items:
-                          ['Admin', 'Seller', 'Customer'].map((role) {
-                            return DropdownMenuItem(
-                              value: role,
-                              child: Text(role),
-                            );
-                          }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setModalState(() => selectedDialogRole = val);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.bobaBrown,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          'Add User',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
     );
   }
 }

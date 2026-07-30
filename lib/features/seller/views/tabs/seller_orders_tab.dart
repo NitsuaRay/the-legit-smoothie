@@ -12,43 +12,64 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Sample order data tailored for the orders management queue
+  // Rich sample order data tailored for a complete seller management queue
   final List<Map<String, dynamic>> _allOrders = [
     {
       'id': 'ORD-2001',
       'customer': 'Angelica Cruz',
-      'items': '1x Avocado Smoothie, 2x Cheese Foam',
+      'phone': '+63 917 123 4567',
+      'items': [
+        {'name': 'Avocado Smoothie', 'qty': 1, 'price': 120.0, 'customization': 'Less Ice, 50% Sugar'},
+        {'name': 'Cheese Foam', 'qty': 2, 'price': 80.0, 'customization': 'Extra Salted Cheese'},
+      ],
       'total': 280.0,
       'status': 'Pending',
       'time': '3 mins ago',
       'type': 'Pickup',
+      'paymentMethod': 'GCash (Paid)',
+      'notes': 'Please pack the cheese foam in a separate container if possible.',
     },
     {
       'id': 'ORD-2002',
       'customer': 'Mark Reyes',
-      'items': '2x Classic Pearl Boba',
+      'phone': '+63 928 987 6543',
+      'items': [
+        {'name': 'Classic Pearl Boba', 'qty': 2, 'price': 120.0, 'customization': 'Regular Ice, Normal Sugar'},
+      ],
       'total': 240.0,
       'status': 'Preparing',
       'time': '10 mins ago',
       'type': 'Delivery',
+      'paymentMethod': 'Cash on Delivery',
+      'notes': 'Deliver to Lobby security desk.',
     },
     {
       'id': 'ORD-2003',
       'customer': 'Sarah Jenkins',
-      'items': '1x Taro Smoothie Supreme',
+      'phone': '+63 999 555 1122',
+      'items': [
+        {'name': 'Taro Smoothie Supreme', 'qty': 1, 'price': 140.0, 'customization': 'No Pearls, Extra Pudding'},
+      ],
       'total': 140.0,
       'status': 'Ready',
       'time': '20 mins ago',
       'type': 'Pickup',
+      'paymentMethod': 'Credit Card (Paid)',
+      'notes': '',
     },
     {
       'id': 'ORD-2004',
       'customer': 'Kevin Tan',
-      'items': '1x Mango Graham Special',
+      'phone': '+63 918 333 4455',
+      'items': [
+        {'name': 'Mango Graham Special', 'qty': 1, 'price': 150.0, 'customization': 'Extra Mangos'},
+      ],
       'total': 150.0,
       'status': 'Completed',
       'time': '1 hour ago',
       'type': 'Pickup',
+      'paymentMethod': 'GCash (Paid)',
+      'notes': 'Thank you!',
     },
   ];
 
@@ -88,6 +109,130 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
     });
   }
 
+  // Helper string generator for item summary preview
+  String _getItemsSummary(List<dynamic> items) {
+    return items.map((i) => '${i['qty']}x ${i['name']}').join(', ');
+  }
+
+  void _showOrderDetailsModal(BuildContext context, Map<String, dynamic> order, Color cardColor, Color primaryTextColor, Color secondaryTextColor, bool isDark) {
+    final status = order['status'] as String;
+    final statusColor = _getStatusColor(status);
+    final items = order['items'] as List<dynamic>;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    order['id'],
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryTextColor),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusColor),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text('Customer Information', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: primaryTextColor)),
+              const SizedBox(height: 4),
+              Text('${order['customer']} (${order['phone']})', style: TextStyle(fontSize: 13, color: secondaryTextColor)),
+              const SizedBox(height: 8),
+              Text('Fulfillment Type: ${order['type']} | Payment: ${order['paymentMethod']}', style: TextStyle(fontSize: 13, color: secondaryTextColor)),
+              
+              if (order['notes'].isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(isDark ? 0.2 : 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.note_alt_rounded, size: 18, color: Colors.amber),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Note: ${order['notes']}',
+                          style: TextStyle(fontSize: 12, color: primaryTextColor, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 16),
+              Text('Order Items', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: primaryTextColor)),
+              const SizedBox(height: 8),
+              ...items.map((item) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${item['qty']}x ${item['name']}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primaryTextColor)),
+                          if (item['customization'].isNotEmpty)
+                            Text(item['customization'], style: TextStyle(fontSize: 11, color: secondaryTextColor)),
+                        ],
+                      ),
+                    ),
+                    Text('₱${(item['price'] * item['qty']).toStringAsFixed(2)}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primaryTextColor)),
+                  ],
+                ),
+              )),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Total Amount', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: primaryTextColor)),
+                  Text('₱${(order['total'] as double).toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? AppColors.cream : AppColors.bobaBrown)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.bobaBrown,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close', style: TextStyle(color: AppColors.cream, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -98,7 +243,6 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
         ? AppColors.cream.withOpacity(0.7)
         : AppColors.greyText;
 
-    // Filter active vs history orders
     final activeOrders = _allOrders
         .where((o) => o['status'] != 'Completed' && o['status'] != 'Cancelled')
         .toList();
@@ -114,7 +258,6 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Header Section ---
               Row(
                 children: [
                   Container(
@@ -155,10 +298,7 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
-
-              // --- Tab Bar Toggle (Active vs History) ---
               Container(
                 decoration: BoxDecoration(
                   color: isDark
@@ -183,16 +323,13 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
-                  tabs: const [
-                    Tab(text: 'Active Queue'),
-                    Tab(text: 'History'),
+                  tabs: [
+                    Tab(text: 'Active Queue (${activeOrders.length})'),
+                    Tab(text: 'History (${pastOrders.length})'),
                   ],
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // --- Tab Views ---
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
@@ -249,187 +386,187 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
         final order = orders[index];
         final status = order['status'] as String;
         final statusColor = _getStatusColor(status);
+        final itemsSummary = _getItemsSummary(order['items']);
 
-        return Container(
-          padding: const EdgeInsets.all(16.0),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? AppColors.bobaBrown.withOpacity(0.4)
-                  : AppColors.greyBorder,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Row ID & Status
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        order['id'],
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: primaryTextColor,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.bobaBrown.withOpacity(0.4)
-                              : AppColors.background,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          order['type'],
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: secondaryTextColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      status,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 10),
-
-              // Customer Details & Items
-              Text(
-                'Customer: ${order['customer']}',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: primaryTextColor,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                order['items'],
-                style: TextStyle(
-                  fontSize: 13,
-                  color: secondaryTextColor,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-              Divider(
-                height: 1,
+        return InkWell(
+          onTap: () => _showOrderDetailsModal(context, order, cardColor, primaryTextColor, secondaryTextColor, isDark),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
                 color: isDark
-                    ? AppColors.bobaBrown.withOpacity(0.3)
+                    ? AppColors.bobaBrown.withOpacity(0.4)
                     : AppColors.greyBorder,
               ),
-              const SizedBox(height: 12),
-
-              // Price & Action Button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '₱${(order['total'] as double).toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? AppColors.cream : AppColors.bobaBrown,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          order['id'],
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: primaryTextColor,
+                          ),
                         ),
-                      ),
-                      Text(
-                        order['time'],
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: secondaryTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (status != 'Completed')
-                    PopupMenuButton<String>(
-                      onSelected: (newStatus) =>
-                          _updateOrderStatus(order['id'], newStatus),
-                      color: cardColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.bobaBrown,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Row(
-                          children: [
-                            Text(
-                              'Advance Status',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.cream,
-                              ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.bobaBrown.withOpacity(0.4)
+                                : AppColors.background,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            order['type'],
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: secondaryTextColor,
                             ),
-                            SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_drop_down_rounded,
-                              color: AppColors.cream,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'Preparing',
-                          child: Text('Mark as Preparing'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'Ready',
-                          child: Text('Mark as Ready'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'Completed',
-                          child: Text('Mark as Completed'),
+                          ),
                         ),
                       ],
                     ),
-                ],
-              ),
-            ],
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Customer: ${order['customer']}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: primaryTextColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  itemsSummary,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: secondaryTextColor,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Divider(
+                  height: 1,
+                  color: isDark
+                      ? AppColors.bobaBrown.withOpacity(0.3)
+                      : AppColors.greyBorder,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '₱${(order['total'] as double).toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? AppColors.cream : AppColors.bobaBrown,
+                          ),
+                        ),
+                        Text(
+                          order['time'],
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: secondaryTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (status != 'Completed')
+                      PopupMenuButton<String>(
+                        onSelected: (newStatus) =>
+                            _updateOrderStatus(order['id'], newStatus),
+                        color: cardColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.bobaBrown,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Text(
+                                'Advance Status',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.cream,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_drop_down_rounded,
+                                color: AppColors.cream,
+                                size: 18,
+                              ),
+                            ],
+                          ),
+                        ),
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'Preparing',
+                            child: Text('Mark as Preparing'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'Ready',
+                            child: Text('Mark as Ready'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'Completed',
+                            child: Text('Mark as Completed'),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },

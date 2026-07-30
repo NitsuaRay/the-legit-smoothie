@@ -40,10 +40,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Background image selected based on the active theme with proper extensions
+    final String backgroundImage =
+        isDark ? 'assets/bgBrown.png' : 'assets/bgWhite.png';
 
     final List<Widget> pages = [
       const AdminAnalyticsHomeTab(),
@@ -57,9 +60,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: IndexedStack(index: _selectedIndex, children: pages),
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(backgroundImage),
+            fit: BoxFit.cover,
+            opacity: 0.3,
+          ),
+        ),
+        child: SafeArea(
+          child: IndexedStack(index: _selectedIndex, children: pages),
+        ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _selectedIndex,
