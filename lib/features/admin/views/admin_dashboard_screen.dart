@@ -40,28 +40,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  static const List<CustomNavBarItem> _navItems = [
-    CustomNavBarItem(
-      icon: Icons.analytics_outlined,
-      selectedIcon: Icons.analytics_rounded,
-      label: 'Home',
-    ),
-    CustomNavBarItem(
-      icon: Icons.local_drink_outlined,
-      selectedIcon: Icons.local_drink_rounded,
-      label: 'Menu',
-    ),
-    CustomNavBarItem(
-      icon: Icons.people_alt_outlined,
-      selectedIcon: Icons.people_alt_rounded,
-      label: 'Users',
-    ),
-    CustomNavBarItem(
-      icon: Icons.settings_outlined,
-      selectedIcon: Icons.settings_rounded,
-      label: 'Settings',
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
