@@ -24,7 +24,8 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  int _selectedIndex = 0;
+  // Set index to 1 so AdminMenuTab is displayed by default
+  int _selectedIndex = 1;
   final AuthService _authService = AuthService();
 
   void _handleLogout() async {
@@ -65,7 +66,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
 
     final List<Widget> pages = [
       const AdminAnalyticsHomeTab(),
@@ -79,7 +80,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.bobaBrown : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: IndexedStack(index: _selectedIndex, children: pages),
       ),

@@ -7,8 +7,11 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -16,27 +19,27 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 1. Header Section
-              _buildHeader(),
+              _buildHeader(context, isDarkMode),
 
               const SizedBox(height: 20),
 
               // 2. Metrics Cards Row (Revenue, Orders, Active Users)
-              _buildMetricsRow(),
+              _buildMetricsRow(context),
 
               const SizedBox(height: 16),
 
               // 3. Active Sessions Line Chart
-              _buildActiveSessionsChart(),
+              _buildActiveSessionsChart(context, isDarkMode),
 
               const SizedBox(height: 16),
 
               // 4. Realtime Users Online Banner
-              _buildRealtimeUsersCard(),
+              _buildRealtimeUsersCard(context),
 
               const SizedBox(height: 16),
 
               // 5. Top Products List
-              _buildTopProductsCard(),
+              _buildTopProductsCard(context, isDarkMode),
             ],
           ),
         ),
@@ -45,31 +48,22 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
   }
 
   // --- Header ---
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context, bool isDarkMode) {
+    final theme = Theme.of(context);
+    final textColor = theme.textTheme.bodyLarge?.color ?? AppColors.darkText;
+    final cardBg = theme.cardColor;
+    final borderColor = theme.dividerColor;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              'Metrics Pro',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.darkText,
-              ),
-            ),
-            SizedBox(height: 2),
-            Text(
-              'Admin App',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primaryDark,
-              ),
-            ),
-          ],
+        Text(
+          'Admin App',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? AppColors.cream : AppColors.bobaBrown,
+          ),
         ),
         Row(
           children: [
@@ -77,33 +71,29 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.cardWhite,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.greyBorder),
+                border: Border.all(color: borderColor),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
+                    color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.02),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: Row(
-                children: const [
+                children: [
                   Text(
                     'Last 7 Days',
                     style: TextStyle(
-                      color: AppColors.darkText,
+                      color: textColor,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  SizedBox(width: 4),
-                  Icon(
-                    Icons.keyboard_arrow_down,
-                    color: AppColors.darkText,
-                    size: 16,
-                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.keyboard_arrow_down, color: textColor, size: 16),
                 ],
               ),
             ),
@@ -112,29 +102,36 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.cardWhite,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.greyBorder),
+                border: Border.all(color: borderColor),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
+                    color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.02),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.tune_rounded,
-                color: AppColors.bobaBrown,
+                color: isDarkMode ? AppColors.cream : AppColors.bobaBrown,
+
                 size: 18,
               ),
             ),
             const SizedBox(width: 8),
             // Profile Avatar
-            const CircleAvatar(
+            CircleAvatar(
               radius: 16,
-              backgroundColor: AppColors.primaryLight,
-              child: Icon(Icons.person, color: AppColors.primaryDark, size: 18),
+              backgroundColor: isDarkMode
+                  ? AppColors.cream
+                  : AppColors.bobaBrown,
+              child: Icon(
+                Icons.person,
+                color: isDarkMode ? AppColors.bobaBrown : AppColors.cream,
+                size: 18,
+              ),
             ),
           ],
         ),
@@ -143,11 +140,12 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
   }
 
   // --- Metrics KPI Row ---
-  Widget _buildMetricsRow() {
+  Widget _buildMetricsRow(BuildContext context) {
     return Row(
       children: [
         Expanded(
           child: _buildMetricCard(
+            context,
             title: 'Revenue',
             value: '₱25,890',
             percentage: '16.7%',
@@ -157,6 +155,7 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _buildMetricCard(
+            context,
             title: 'Orders',
             value: '3,150',
             percentage: '9.3%',
@@ -166,6 +165,7 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _buildMetricCard(
+            context,
             title: 'Active Users',
             value: '9,400',
             percentage: '5.4%',
@@ -176,21 +176,29 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildMetricCard({
+  Widget _buildMetricCard(
+    BuildContext context, {
     required String title,
     required String value,
     required String percentage,
     required bool isPositive,
   }) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final textColor = theme.textTheme.bodyLarge?.color ?? AppColors.darkText;
+    final subTextColor =
+        theme.textTheme.bodyMedium?.color?.withOpacity(0.7) ??
+        AppColors.greyText;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.cardWhite,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.greyBorder),
+        border: Border.all(color: theme.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -201,19 +209,19 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: AppColors.greyText,
+              color: subTextColor,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColors.darkText,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 6),
@@ -240,16 +248,22 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
   }
 
   // --- Active Sessions Line Chart ---
-  Widget _buildActiveSessionsChart() {
+  Widget _buildActiveSessionsChart(BuildContext context, bool isDarkMode) {
+    final theme = Theme.of(context);
+    final textColor = theme.textTheme.bodyLarge?.color ?? AppColors.darkText;
+    final subTextColor =
+        theme.textTheme.bodyMedium?.color?.withOpacity(0.6) ??
+        AppColors.greyText;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardWhite,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.greyBorder),
+        border: Border.all(color: theme.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -260,16 +274,16 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text(
                 'Active Sessions',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.darkText,
+                  color: textColor,
                 ),
               ),
-              Icon(Icons.more_vert, color: AppColors.greyText, size: 18),
+              Icon(Icons.more_vert, color: subTextColor, size: 18),
             ],
           ),
           const SizedBox(height: 20),
@@ -281,7 +295,7 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
                   show: true,
                   drawVerticalLine: false,
                   getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppColors.greyBorder.withOpacity(0.5),
+                    color: theme.dividerColor.withOpacity(0.4),
                     strokeWidth: 1,
                   ),
                 ),
@@ -291,19 +305,29 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
                       showTitles: true,
                       reservedSize: 28,
                       getTitlesWidget: (value, meta) {
+                        String text = '';
                         switch (value.toInt()) {
                           case 1:
-                            return const Text('1k', style: TextStyle(color: AppColors.greyText, fontSize: 10));
+                            text = '1k';
+                            break;
                           case 3:
-                            return const Text('3k', style: TextStyle(color: AppColors.greyText, fontSize: 10));
+                            text = '3k';
+                            break;
                           case 5:
-                            return const Text('5k', style: TextStyle(color: AppColors.greyText, fontSize: 10));
+                            text = '5k';
+                            break;
                           case 7:
-                            return const Text('7k', style: TextStyle(color: AppColors.greyText, fontSize: 10));
+                            text = '7k';
+                            break;
                           case 9:
-                            return const Text('9k', style: TextStyle(color: AppColors.greyText, fontSize: 10));
+                            text = '9k';
+                            break;
                         }
-                        return const SizedBox.shrink();
+                        if (text.isEmpty) return const SizedBox.shrink();
+                        return Text(
+                          text,
+                          style: TextStyle(color: subTextColor, fontSize: 10),
+                        );
                       },
                     ),
                   ),
@@ -315,14 +339,18 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
                             'Day ${value.toInt()}',
-                            style: const TextStyle(color: AppColors.greyText, fontSize: 10),
+                            style: TextStyle(color: subTextColor, fontSize: 10),
                           ),
                         );
                       },
                     ),
                   ),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                 ),
                 borderData: FlBorderData(show: false),
                 minX: 1,
@@ -341,7 +369,6 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
                       FlSpot(7, 8.8),
                     ],
                     isCurved: true,
-                    // Line primary theme: Boba Brown
                     color: AppColors.bobaBrown,
                     barWidth: 3,
                     isStrokeCapRound: true,
@@ -349,18 +376,18 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
                       show: true,
                       getDotPainter: (spot, percent, barData, index) =>
                           FlDotCirclePainter(
-                        radius: 4,
-                        color: AppColors.secondary,
-                        strokeWidth: 2,
-                        strokeColor: AppColors.cardWhite,
-                      ),
+                            radius: 4,
+                            color: AppColors.secondary,
+                            strokeWidth: 2,
+                            strokeColor: theme.cardColor,
+                          ),
                     ),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
                         colors: [
                           AppColors.secondary.withOpacity(0.3),
-                          AppColors.cream.withOpacity(0.0),
+                          AppColors.secondary.withOpacity(0.0),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -377,16 +404,23 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
   }
 
   // --- Realtime Users Card ---
-  Widget _buildRealtimeUsersCard() {
+  Widget _buildRealtimeUsersCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final textColor = theme.textTheme.bodyLarge?.color ?? AppColors.darkText;
+    final subTextColor =
+        theme.textTheme.bodyMedium?.color?.withOpacity(0.6) ??
+        AppColors.greyText;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.cardWhite,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.greyBorder),
+        border: Border.all(color: theme.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -397,28 +431,25 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text(
                 'Realtime Users Online',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.greyText,
+                  color: subTextColor,
                 ),
               ),
-              CircleAvatar(
-                radius: 4,
-                backgroundColor: AppColors.success,
-              ),
+              const CircleAvatar(radius: 4, backgroundColor: AppColors.success),
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             '498',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: AppColors.darkText,
+              color: textColor,
             ),
           ),
         ],
@@ -427,22 +458,35 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
   }
 
   // --- Top Products List ---
-  Widget _buildTopProductsCard() {
+  Widget _buildTopProductsCard(BuildContext context, bool isDarkMode) {
+    final theme = Theme.of(context);
+    final textColor = theme.textTheme.bodyLarge?.color ?? AppColors.darkText;
+
     final topProducts = [
       {'rank': '1.', 'name': 'Mango Smoothie', 'sales': '1.5k', 'icon': '🥭'},
-      {'rank': '2.', 'name': 'Brown Sugar Milk Tea', 'sales': '1.2k', 'icon': '🧋'},
-      {'rank': '3.', 'name': 'Special Siomai Roll', 'sales': '980', 'icon': '🥟'},
+      {
+        'rank': '2.',
+        'name': 'Brown Sugar Milk Tea',
+        'sales': '1.2k',
+        'icon': '🧋',
+      },
+      {
+        'rank': '3.',
+        'name': 'Special Siomai Roll',
+        'sales': '980',
+        'icon': '🥟',
+      },
     ];
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardWhite,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.greyBorder),
+        border: Border.all(color: theme.dividerColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -451,12 +495,12 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Top Products',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: AppColors.darkText,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 12),
@@ -478,17 +522,22 @@ class AdminAnalyticsHomeTab extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppColors.cream.withOpacity(0.4),
+                        color: isDarkMode
+                            ? Colors.white.withOpacity(0.08)
+                            : AppColors.cream.withOpacity(0.4),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(product['icon']!, style: const TextStyle(fontSize: 18)),
+                      child: Text(
+                        product['icon']!,
+                        style: const TextStyle(fontSize: 18),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         product['name']!,
-                        style: const TextStyle(
-                          color: AppColors.darkText,
+                        style: TextStyle(
+                          color: textColor,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
