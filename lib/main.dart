@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
 import 'package:the_legit_smoothie/features/admin/views/admin_dashboard_screen.dart';
 import 'package:the_legit_smoothie/features/auth/views/login_screen.dart';
+import 'package:the_legit_smoothie/features/seller/views/seller_dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -156,7 +157,7 @@ class AuthGate extends StatelessWidget {
               );
             } else if (role == 'seller') {
               // TODO: Return SellerDashboardScreen()
-              return AdminDashboardScreen(
+              return SellerDashboardScreen(
                 currentThemeMode: currentThemeMode,
                 onThemeModeChanged: onThemeModeChanged,
               );

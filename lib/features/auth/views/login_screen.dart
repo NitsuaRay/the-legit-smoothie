@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
+import 'package:the_legit_smoothie/features/auth/views/register_screen.dart';
 import 'package:the_legit_smoothie/main.dart'; // Import AuthGate from main.dart
 import '../services/auth_service.dart';
 
@@ -32,10 +33,10 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
-    // Continuous subtle floating animation for background elements
+    // Continuous floating movement for background product images
     _floatController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 12),
+      duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
   }
 
@@ -78,6 +79,21 @@ class _LoginScreenState extends State<LoginScreen>
         );
       } else if (role == 'seller') {
         // TODO: Navigate to Seller Dashboard
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => AuthGate(
+              currentThemeMode: widget.currentThemeMode,
+              onThemeModeChanged: widget.onThemeModeChanged,
+            ),
+          ),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Welcome back, Seller Austin! 🥤'),
+            backgroundColor: AppColors.bobaBrown,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       } else {
         // TODO: Navigate to Customer Home
       }
@@ -97,22 +113,94 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // --- Floating Ambient Food Background ---
+          // --- Full Screen Background Image ---
+          Positioned.fill(
+            child: Image.asset(
+              'assets/bgBrown.png',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) =>
+                  Container(color: AppColors.background),
+            ),
+          ),
+
+          // --- Floating Full-Color Image Background ---
           AnimatedBuilder(
             animation: _floatController,
             builder: (context, child) {
-              return CustomPaint(
-                size: size,
-                painter: FloatingFoodPainter(
-                  progress: _floatController.value,
-                  accentColor: AppColors.bobaBrown,
-                ),
+              final offset = math.sin(_floatController.value * math.pi) * 10;
+
+              return Stack(
+                children: [
+                  // Top Left: Mango Oreo
+                  Positioned(
+                    top: 65 + offset,
+                    left: 10,
+                    child: _buildFloatingItem(
+                      'assets/mangooreo.png',
+                      size: 75,
+                      angle: -0.2,
+                    ),
+                  ),
+
+                  // Top Right: Avocado Graham
+                  Positioned(
+                    top: 85 - offset,
+                    right: 10,
+                    child: _buildFloatingItem(
+                      'assets/avocadograham.png',
+                      size: 85,
+                      angle: 0.15,
+                    ),
+                  ),
+
+                  // Mid Right: Dragonfruit
+                  Positioned(
+                    top: MediaQuery.of(context).size.height * 0.45 + offset,
+                    right: 15,
+                    child: _buildFloatingItem(
+                      'assets/dragonfruit.png',
+                      size: 70,
+                      angle: 0.3,
+                    ),
+                  ),
+
+                  // Mid Left: Caramel / Camel
+                  Positioned(
+                    top: MediaQuery.of(context).size.height * 0.48 - offset,
+                    left: 15,
+                    child: _buildFloatingItem(
+                      'assets/camel.png',
+                      size: 65,
+                      angle: -0.25,
+                    ),
+                  ),
+
+                  // Bottom Left: Cookies & Cream
+                  Positioned(
+                    bottom: 45 + offset,
+                    left: 15,
+                    child: _buildFloatingItem(
+                      'assets/cookiesandcream.png',
+                      size: 80,
+                      angle: -0.1,
+                    ),
+                  ),
+
+                  // Bottom Right: Lemon
+                  Positioned(
+                    bottom: 55 - offset,
+                    right: 15,
+                    child: _buildFloatingItem(
+                      'assets/lemon.png',
+                      size: 75,
+                      angle: 0.2,
+                    ),
+                  ),
+                ],
               );
             },
           ),
@@ -132,8 +220,8 @@ class _LoginScreenState extends State<LoginScreen>
                     children: [
                       // --- Elevated Logo Container ---
                       Container(
-                        width: 140,
-                        height: 140,
+                        width: 170,
+                        height: 170,
                         decoration: BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -159,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen>
                             errorBuilder: (context, error, stackTrace) {
                               return const Icon(
                                 Icons.local_drink_rounded,
-                                size: 64,
+                                size: 80,
                                 color: AppColors.bobaBrown,
                               );
                             },
@@ -184,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen>
                         'Crafted fresh. Log in to your account.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: AppColors.greyText.withValues(alpha: 0.9),
+                          color: AppColors.cardWhite.withValues(alpha: 0.9),
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                         ),
@@ -195,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen>
                       Container(
                         padding: const EdgeInsets.all(32.0),
                         decoration: BoxDecoration(
-                          color: AppColors.cardWhite.withValues(alpha: 0.95),
+                          color: AppColors.cardWhite.withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(28),
                           border: Border.all(color: Colors.white, width: 1.5),
                           boxShadow: [
@@ -262,7 +350,34 @@ class _LoginScreenState extends State<LoginScreen>
                                     ? 'Please enter your password'
                                     : null,
                               ),
-                              const SizedBox(height: 32),
+
+                              // --- Forgot Password Link ---
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () {
+                                    // TODO: Navigate to Forgot Password Screen or show dialog
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.only(
+                                      top: 8,
+                                      bottom: 12,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Forgot password?',
+                                    style: TextStyle(
+                                      color: AppColors.bobaBrown,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
 
                               // Sign In Button
                               SizedBox(
@@ -299,6 +414,44 @@ class _LoginScreenState extends State<LoginScreen>
                                         ),
                                 ),
                               ),
+                              const SizedBox(height: 20),
+
+                              // --- Register Link ---
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    "Don't have an account? ",
+                                    style: TextStyle(
+                                      color: AppColors.greyText,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => RegisterScreen(
+                                            currentThemeMode:
+                                                widget.currentThemeMode,
+                                            onThemeModeChanged:
+                                                widget.onThemeModeChanged,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      'Register',
+                                      style: TextStyle(
+                                        color: AppColors.bobaBrown,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -310,6 +463,23 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingItem(
+    String assetPath, {
+    required double size,
+    required double angle,
+  }) {
+    return Transform.rotate(
+      angle: angle,
+      child: Image.asset(
+        assetPath,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
       ),
     );
   }
@@ -350,186 +520,5 @@ class _LoginScreenState extends State<LoginScreen>
         borderSide: const BorderSide(color: AppColors.error, width: 2),
       ),
     );
-  }
-}
-
-/// --- Custom Painter for Floating Boba, Milk Tea, Smoothie, and Siomai Elements ---
-class FloatingFoodPainter extends CustomPainter {
-  final double progress;
-  final Color accentColor;
-
-  FloatingFoodPainter({required this.progress, required this.accentColor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-
-    final baseAlpha = 0.12;
-    final floatOffset = math.sin(progress * math.pi * 2);
-
-    // 1. Floating Boba Pearls (Circles)
-    paint.color = accentColor.withValues(alpha: baseAlpha);
-    _drawBoba(
-      canvas,
-      paint,
-      Offset(size.width * 0.15, size.height * 0.2 + (floatOffset * 15)),
-      12,
-    );
-    _drawBoba(
-      canvas,
-      paint,
-      Offset(size.width * 0.22, size.height * 0.24 - (floatOffset * 10)),
-      16,
-    );
-    _drawBoba(
-      canvas,
-      paint,
-      Offset(size.width * 0.12, size.height * 0.28 + (floatOffset * 8)),
-      10,
-    );
-
-    _drawBoba(
-      canvas,
-      paint,
-      Offset(size.width * 0.82, size.height * 0.72 - (floatOffset * 18)),
-      14,
-    );
-    _drawBoba(
-      canvas,
-      paint,
-      Offset(size.width * 0.88, size.height * 0.76 + (floatOffset * 12)),
-      18,
-    );
-
-    // 2. Milk Tea Cup Accent
-    _drawMilkTeaCup(
-      canvas,
-      paint,
-      Offset(size.width * 0.82, size.height * 0.18 + (floatOffset * 20)),
-      alpha: baseAlpha,
-    );
-
-    // 3. Smoothie Jar Accent
-    _drawSmoothie(
-      canvas,
-      paint,
-      Offset(size.width * 0.12, size.height * 0.78 - (floatOffset * 16)),
-      alpha: baseAlpha,
-    );
-
-    // 4. Floating Siomai Dim Sum Outline
-    _drawSiomai(
-      canvas,
-      paint,
-      Offset(size.width * 0.85, size.height * 0.45 + (floatOffset * 14)),
-      alpha: baseAlpha,
-    );
-  }
-
-  void _drawBoba(Canvas canvas, Paint paint, Offset center, double radius) {
-    canvas.drawCircle(center, radius, paint);
-  }
-
-  void _drawMilkTeaCup(
-    Canvas canvas,
-    Paint paint,
-    Offset center, {
-    required double alpha,
-  }) {
-    paint.color = accentColor.withValues(alpha: alpha);
-
-    // Cup body
-    final path = Path()
-      ..moveTo(center.dx - 20, center.dy - 30)
-      ..lineTo(center.dx + 20, center.dy - 30)
-      ..lineTo(center.dx + 15, center.dy + 30)
-      ..lineTo(center.dx - 15, center.dy + 30)
-      ..close();
-    canvas.drawPath(path, paint);
-
-    // Straw
-    final strawPaint = Paint()
-      ..color = accentColor.withValues(alpha: alpha * 1.2)
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke;
-
-    canvas.drawLine(
-      Offset(center.dx, center.dy - 30),
-      Offset(center.dx + 10, center.dy - 45),
-      strawPaint,
-    );
-  }
-
-  void _drawSmoothie(
-    Canvas canvas,
-    Paint paint,
-    Offset center, {
-    required double alpha,
-  }) {
-    paint.color = accentColor.withValues(alpha: alpha);
-
-    // Smoothie Glass Body
-    final RRect glassRRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: center, width: 36, height: 50),
-      const Radius.circular(12),
-    );
-    canvas.drawRRect(glassRRect, paint);
-
-    // Dome Lid
-    paint.color = accentColor.withValues(alpha: alpha * 0.8);
-    canvas.drawArc(
-      Rect.fromLTWH(center.dx - 18, center.dy - 35, 36, 20),
-      math.pi,
-      math.pi,
-      true,
-      paint,
-    );
-  }
-
-  void _drawSiomai(
-    Canvas canvas,
-    Paint paint,
-    Offset center, {
-    required double alpha,
-  }) {
-    paint.color = accentColor.withValues(alpha: alpha);
-
-    // Pleated Siomai Shape
-    final path = Path()
-      ..moveTo(center.dx - 18, center.dy + 12)
-      ..cubicTo(
-        center.dx - 22,
-        center.dy - 4,
-        center.dx - 12,
-        center.dy - 16,
-        center.dx,
-        center.dy - 12,
-      )
-      ..cubicTo(
-        center.dx + 12,
-        center.dy - 16,
-        center.dx + 22,
-        center.dy - 4,
-        center.dx + 18,
-        center.dy + 12,
-      )
-      ..cubicTo(
-        center.dx + 10,
-        center.dy + 18,
-        center.dx - 10,
-        center.dy + 18,
-        center.dx - 18,
-        center.dy + 12,
-      )
-      ..close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant FloatingFoodPainter oldDelegate) {
-    return oldDelegate.progress != progress;
   }
 }

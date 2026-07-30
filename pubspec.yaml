@@ -38,6 +38,7 @@ dependencies:
   supabase_flutter: ^2.16.0
   fl_chart: ^1.2.0
   shared_preferences: ^2.5.5
+  philippines_rpcmb: ^0.0.3
 
 dev_dependencies:
   flutter_test:
