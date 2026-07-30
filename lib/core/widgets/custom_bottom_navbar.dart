@@ -32,7 +32,7 @@ class CustomBottomNavBar extends StatelessWidget {
     // --- Dynamic Color Mapping ---
     final navBarBackground = isDark ? AppColors.bobaBrown : AppColors.cardWhite;
     final indicatorColor = isDark 
-        ? AppColors.primaryDark.withOpacity(0.4) 
+        ? AppColors.bobaBrown.withOpacity(0.4) 
         : AppColors.cream;
     final selectedColor = isDark ? AppColors.cream : AppColors.bobaBrown;
     final unselectedColor = isDark 

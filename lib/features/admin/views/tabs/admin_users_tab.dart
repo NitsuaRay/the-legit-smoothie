@@ -599,7 +599,7 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
                         const Icon(
                           Icons.person_outline_rounded,
                           size: 18,
-                          color: AppColors.primaryDark,
+                          color: AppColors.bobaBrown,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -657,8 +657,8 @@ class _AdminUsersTabState extends State<AdminUsersTab> {
         break;
       case 'Customer':
       default:
-        badgeBg = AppColors.primary.withOpacity(isDarkMode ? 0.25 : 0.2);
-        badgeText = isDarkMode ? AppColors.primary : AppColors.primaryDark;
+        badgeBg = AppColors.cream.withOpacity(isDarkMode ? 0.25 : 0.2);
+        badgeText = isDarkMode ? AppColors.bobaBrown : AppColors.bobaBrown;
         break;
     }
 

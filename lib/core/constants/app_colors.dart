@@ -5,11 +5,8 @@ abstract class AppColors {
   // --- Brand Primary Colors ---
   
   /// Soft Taro Pink/Lavender from the Panda's head
-  static const Color primary = Color(0xFFD3B0CF);
   
   
-  /// Deeper variant of primary for active states or focused borders
-  static const Color primaryDark = Color(0xFFA2789E);
 
   // --- Brand Secondary Colors ---
   

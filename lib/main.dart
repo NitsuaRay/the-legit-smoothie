@@ -70,7 +70,7 @@ class _TheLegitSmoothieAppState extends State<TheLegitSmoothieApp> {
         brightness: Brightness.light,
         scaffoldBackgroundColor: AppColors.background,
         colorScheme: const ColorScheme.light(
-          primary: AppColors.primary,
+          primary: AppColors.bobaBrown,
           secondary: AppColors.secondary,
           surface: AppColors.cardWhite,
         ),
@@ -82,7 +82,7 @@ class _TheLegitSmoothieAppState extends State<TheLegitSmoothieApp> {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: AppColors.bobaBrown,
         colorScheme: const ColorScheme.dark(
-          primary: AppColors.primaryDark,
+          primary: AppColors.bobaBrown,
           secondary: AppColors.cream,
           surface: AppColors.darkText,
         ),
@@ -141,7 +141,7 @@ class AuthGate extends StatelessWidget {
               return const Scaffold(
                 body: Center(
                   child: CircularProgressIndicator(
-                    color: AppColors.primaryDark,
+                    color: AppColors.bobaBrown,
                   ),
                 ),
               );
