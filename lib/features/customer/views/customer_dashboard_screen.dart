@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:the_legit_smoothie/features/admin/views/tabs/admin_analytics_home_tab.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/views/login_screen.dart';
 import '../../../core/widgets/custom_bottom_navbar.dart';
 
-import 'tabs/admin_menu_tab.dart';
-import 'tabs/admin_users_tab.dart';
-import 'tabs/admin_settings_tab.dart';
+// Import your customer tabs here
+import 'tabs/customer_home_tab.dart';
+// import 'tabs/customer_orders_tab.dart'; // Add other tabs as you create them
+import 'tabs/customer_settings_tab.dart';
 
-class AdminDashboardScreen extends StatefulWidget {
+class CustomerDashboardScreen extends StatefulWidget {
   final ThemeMode currentThemeMode;
   final ValueChanged<ThemeMode> onThemeModeChanged;
 
-  const AdminDashboardScreen({
+  const CustomerDashboardScreen({
     super.key,
     required this.currentThemeMode,
     required this.onThemeModeChanged,
   });
 
   @override
-  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+  State<CustomerDashboardScreen> createState() => _CustomerDashboardScreenState();
 }
 
-class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  // Set index to 1 so AdminMenuTab is displayed by default
+class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
+  // Starts at index 0 (Customer Home / Menu)
   int _selectedIndex = 0;
   final AuthService _authService = AuthService();
 
@@ -44,15 +44,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Background image selected based on the active theme with proper extensions
+    // Theme-based background image matching Admin and Seller
     final String backgroundImage =
         isDark ? 'assets/bgBrown.png' : 'assets/bgWhite.png';
 
     final List<Widget> pages = [
-      const AdminAnalyticsHomeTab(),
-      const AdminMenuTab(),
-      const AdminUsersTab(),
-      AdminSettingsTab(
+      const CustomerHomeTab(),
+      // Add additional customer tabs here (e.g., Cart, Favorites, Orders)
+      CustomerSettingsTab(
         onLogout: _handleLogout,
         currentThemeMode: widget.currentThemeMode,
         onThemeModeChanged: widget.onThemeModeChanged,
@@ -69,13 +68,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ),
         child: SafeArea(
-          child: IndexedStack(index: _selectedIndex, children: pages),
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: pages,
+          ),
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        role: UserRole.admin,
+        role: UserRole.customer, // Make sure UserRole.customer exists in your enum
       ),
     );
   }

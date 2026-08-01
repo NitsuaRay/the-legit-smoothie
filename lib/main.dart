@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
 import 'package:the_legit_smoothie/features/admin/views/admin_dashboard_screen.dart';
 import 'package:the_legit_smoothie/features/auth/views/login_screen.dart';
+import 'package:the_legit_smoothie/features/customer/views/customer_dashboard_screen.dart';
 import 'package:the_legit_smoothie/features/seller/views/seller_dashboard_screen.dart';
 
 void main() async {
@@ -163,16 +164,27 @@ class _AuthGateState extends State<AuthGate> {
 
             if (role == 'admin') {
               return AdminDashboardScreen(
+                key: const PageStorageKey('AdminDashboard'),
                 currentThemeMode: widget.currentThemeMode,
                 onThemeModeChanged: widget.onThemeModeChanged,
               );
             } else if (role == 'seller') {
               return SellerDashboardScreen(
+                key: const PageStorageKey('SellerDashboard'),
+                currentThemeMode: widget.currentThemeMode,
+                onThemeModeChanged: widget.onThemeModeChanged,
+              );
+            } else if (role == 'customer') {
+              return CustomerDashboardScreen(
+                key: const PageStorageKey(
+                  'CustomerDashboard',
+                ), // Preserves active tab on theme change
                 currentThemeMode: widget.currentThemeMode,
                 onThemeModeChanged: widget.onThemeModeChanged,
               );
             } else {
-              return AdminDashboardScreen(
+              return CustomerDashboardScreen(
+                key: const PageStorageKey('CustomerDashboard'),
                 currentThemeMode: widget.currentThemeMode,
                 onThemeModeChanged: widget.onThemeModeChanged,
               );
