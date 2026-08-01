@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
+import 'package:the_legit_smoothie/features/admin/views/tabs/settings_tab/account_tab.dart';
+import 'package:the_legit_smoothie/features/admin/views/tabs/settings_tab/order_management_tab.dart';
+import 'package:the_legit_smoothie/features/admin/views/tabs/settings_tab/promo_tab.dart';
+import 'package:the_legit_smoothie/features/admin/views/tabs/settings_tab/sales_tab.dart';
 
 class AdminSettingsTab extends StatelessWidget {
   final VoidCallback onLogout;
@@ -92,65 +96,167 @@ class AdminSettingsTab extends StatelessWidget {
               ),
 
               // --- Admin Profile Summary Card ---
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                        : AppColors.greyBorder,
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminAccountView(),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.bobaBrown.withValues(alpha: 0.4)
+                          : AppColors.greyBorder,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.2 : 0.04,
+                        ),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: isDark
-                          ? AppColors.cream
-                          : AppColors.bobaBrown,
-                      child: Icon(
-                        Icons.shield_outlined,
-                        color: isDark
-                            ? AppColors.bobaBrown
-                            : AppColors.cardWhite,
-                        size: 24,
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: isDark
+                            ? AppColors.cream
+                            : AppColors.bobaBrown,
+                        child: Icon(
+                          Icons.shield_outlined,
+                          color: isDark
+                              ? AppColors.bobaBrown
+                              : AppColors.cardWhite,
+                          size: 24,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Administrator',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: primaryTextColor,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Administrator',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: primaryTextColor,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'admin@thelegitsmoothie.com',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: secondaryTextColor,
+                            const SizedBox(height: 2),
+                            Text(
+                              'admin@thelegitsmoothie.com',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: secondaryTextColor,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: secondaryTextColor,
+                      ),
+                    ],
+                  ),
                 ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // --- Section Title: Management ---
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 12),
+                child: Text(
+                  'MANAGEMENT',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.cream.withValues(alpha: 0.6)
+                        : AppColors.bobaBrown,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+
+              // --- Management Navigation Cards ---
+              Column(
+                children: [
+                  _buildActionNavigationCard(
+                    context,
+                    title: 'Orders Management',
+                    subtitle:
+                        'Review, process, and track active customer orders',
+                    icon: Icons.receipt_long_rounded,
+                    cardColor: cardColor,
+                    primaryTextColor: primaryTextColor,
+                    secondaryTextColor: secondaryTextColor,
+                    isDark: isDark,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminOrdersView(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionNavigationCard(
+                    context,
+                    title: 'Sales & Analytics',
+                    subtitle:
+                        'Monitor revenue reports, trends, and sales summaries',
+                    icon: Icons.bar_chart_rounded,
+                    cardColor: cardColor,
+                    primaryTextColor: primaryTextColor,
+                    secondaryTextColor: secondaryTextColor,
+                    isDark: isDark,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminSalesView(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionNavigationCard(
+                    context,
+                    title: 'Promos & Discounts',
+                    subtitle:
+                        'Create and configure promotional codes and voucher campaigns',
+                    icon: Icons.local_offer_rounded,
+                    cardColor: cardColor,
+                    primaryTextColor: primaryTextColor,
+                    secondaryTextColor: secondaryTextColor,
+                    isDark: isDark,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminPromosView(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
 
               const SizedBox(height: 28),
@@ -243,8 +349,9 @@ class AdminSettingsTab extends StatelessWidget {
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    backgroundColor:
-                        isDark ? AppColors.darkText : AppColors.cardWhite,
+                    backgroundColor: isDark
+                        ? AppColors.darkText
+                        : AppColors.cardWhite,
                     side: BorderSide(
                       color: AppColors.error.withValues(alpha: 0.3),
                       width: 1.5,
@@ -292,8 +399,8 @@ class AdminSettingsTab extends StatelessWidget {
             color: isSelected
                 ? activeBorderColor
                 : (isDark
-                    ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                    : AppColors.greyBorder),
+                      ? AppColors.bobaBrown.withValues(alpha: 0.4)
+                      : AppColors.greyBorder),
             width: isSelected ? 2.0 : 1.0,
           ),
           boxShadow: [
@@ -313,8 +420,8 @@ class AdminSettingsTab extends StatelessWidget {
                 color: isSelected
                     ? activeIconBg
                     : (isDark
-                        ? AppColors.bobaBrown.withValues(alpha: 0.5)
-                        : AppColors.background),
+                          ? AppColors.bobaBrown.withValues(alpha: 0.5)
+                          : AppColors.background),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -332,8 +439,9 @@ class AdminSettingsTab extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w600,
                       color: primaryTextColor,
                     ),
                   ),
@@ -370,10 +478,92 @@ class AdminSettingsTab extends StatelessWidget {
                   ? Icon(
                       Icons.check_rounded,
                       size: 16,
-                      color:
-                          isDark ? AppColors.bobaBrown : AppColors.cardWhite,
+                      color: isDark ? AppColors.bobaBrown : AppColors.cardWhite,
                     )
                   : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionNavigationCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color cardColor,
+    required Color primaryTextColor,
+    required Color secondaryTextColor,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark
+                ? AppColors.bobaBrown.withValues(alpha: 0.4)
+                : AppColors.greyBorder,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.cream : AppColors.bobaBrown,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isDark ? AppColors.bobaBrown : AppColors.cardWhite,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: primaryTextColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: secondaryTextColor,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: secondaryTextColor,
             ),
           ],
         ),

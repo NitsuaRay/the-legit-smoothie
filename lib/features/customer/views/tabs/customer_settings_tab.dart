@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
+import 'package:the_legit_smoothie/features/customer/views/tabs/settings_tab/account_tab.dart';
+import 'package:the_legit_smoothie/features/customer/views/tabs/settings_tab/delivery_addresses_tab.dart';
+import 'package:the_legit_smoothie/features/customer/views/tabs/settings_tab/help_center_tab.dart';
+import 'package:the_legit_smoothie/features/customer/views/tabs/settings_tab/order_history_tab.dart';
+import 'package:the_legit_smoothie/features/customer/views/tabs/settings_tab/payment_method_tab.dart';
+import 'package:the_legit_smoothie/features/customer/views/tabs/settings_tab/privacy_policy_tab.dart';
 
 class CustomerSettingsTab extends StatelessWidget {
   final VoidCallback onLogout;
@@ -17,7 +23,9 @@ class CustomerSettingsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final cardColor = isDark ? AppColors.bobaBrown : AppColors.cardWhite;
+    final cardColor = isDark
+        ? AppColors.bobaBrown.withValues(alpha: 0.7)
+        : AppColors.cardWhite;
     final primaryTextColor = isDark ? AppColors.cream : AppColors.darkText;
     final secondaryTextColor = isDark
         ? AppColors.cream.withValues(alpha: 0.7)
@@ -60,10 +68,7 @@ class CustomerSettingsTab extends StatelessWidget {
                   ),
                   Text(
                     'Manage your account & app preferences',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: secondaryTextColor,
-                    ),
+                    style: TextStyle(fontSize: 13, color: secondaryTextColor),
                   ),
                 ],
               ),
@@ -135,7 +140,13 @@ class CustomerSettingsTab extends StatelessWidget {
                     size: 20,
                   ),
                   onPressed: () {
-                    // Edit Profile Action
+                    // Navigate to Account Sub-tab / Screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AccountTab(),
+                      ),
+                    );
                   },
                 ),
               ],
@@ -160,7 +171,14 @@ class CustomerSettingsTab extends StatelessWidget {
                 primaryTextColor: primaryTextColor,
                 secondaryTextColor: secondaryTextColor,
                 isDark: isDark,
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const OrderHistoryTab(),
+                    ),
+                  );
+                },
               ),
               Divider(
                 height: 1,
@@ -176,7 +194,14 @@ class CustomerSettingsTab extends StatelessWidget {
                 primaryTextColor: primaryTextColor,
                 secondaryTextColor: secondaryTextColor,
                 isDark: isDark,
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DeliveryAddressesTab(),
+                    ),
+                  );
+                },
               ),
               Divider(
                 height: 1,
@@ -192,7 +217,14 @@ class CustomerSettingsTab extends StatelessWidget {
                 primaryTextColor: primaryTextColor,
                 secondaryTextColor: secondaryTextColor,
                 isDark: isDark,
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PaymentMethodsTab(),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -261,7 +293,14 @@ class CustomerSettingsTab extends StatelessWidget {
                 primaryTextColor: primaryTextColor,
                 secondaryTextColor: secondaryTextColor,
                 isDark: isDark,
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HelpCenterTab(),
+                    ),
+                  );
+                },
               ),
               Divider(
                 height: 1,
@@ -277,7 +316,14 @@ class CustomerSettingsTab extends StatelessWidget {
                 primaryTextColor: primaryTextColor,
                 secondaryTextColor: secondaryTextColor,
                 isDark: isDark,
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PrivacyPolicyTab(),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -299,8 +345,11 @@ class CustomerSettingsTab extends StatelessWidget {
             ),
             child: OutlinedButton.icon(
               onPressed: () => _showLogoutConfirmation(context, isDark: isDark),
-              icon: const Icon(Icons.logout_rounded,
-                  color: AppColors.error, size: 20),
+              icon: const Icon(
+                Icons.logout_rounded,
+                color: AppColors.error,
+                size: 20,
+              ),
               label: const Text(
                 'Logout Account',
                 style: TextStyle(
@@ -328,8 +377,11 @@ class CustomerSettingsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title,
-      {required bool isDark}) {
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title, {
+    required bool isDark,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
@@ -384,13 +436,15 @@ class CustomerSettingsTab extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return ListTile(
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16.0,
+        vertical: 4.0,
+      ),
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isDark
-              ? AppColors.bobaBrown.withValues(alpha: 0.5)
+              ? AppColors.cream.withValues(alpha: 0.5)
               : AppColors.cardWhite,
           borderRadius: BorderRadius.circular(10),
         ),
@@ -411,10 +465,7 @@ class CustomerSettingsTab extends StatelessWidget {
       subtitle: subtitle != null
           ? Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: secondaryTextColor,
-              ),
+              style: TextStyle(fontSize: 12, color: secondaryTextColor),
             )
           : null,
       trailing: Icon(
@@ -440,10 +491,10 @@ class CustomerSettingsTab extends StatelessWidget {
     final isSelected = currentThemeMode == mode;
     final activeBorderColor = isDark ? AppColors.cream : AppColors.bobaBrown;
     final activeIconBg = isDark
-        ? AppColors.bobaBrown.withValues(alpha: 0.6)
+        ? AppColors.cardWhite.withValues(alpha: 0.6)
         : AppColors.bobaBrown;
 
-    final activeIconColor = isDark ? AppColors.cream : AppColors.cardWhite;
+    final activeIconColor = isDark ? AppColors.bobaBrown : AppColors.cardWhite;
 
     return InkWell(
       onTap: () => onThemeModeChanged(mode),
@@ -458,8 +509,8 @@ class CustomerSettingsTab extends StatelessWidget {
             color: isSelected
                 ? activeBorderColor
                 : (isDark
-                    ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                    : AppColors.greyBorder),
+                      ? AppColors.bobaBrown.withValues(alpha: 0.4)
+                      : AppColors.greyBorder),
             width: isSelected ? 2.0 : 1.0,
           ),
           boxShadow: [
@@ -479,8 +530,8 @@ class CustomerSettingsTab extends StatelessWidget {
                 color: isSelected
                     ? activeIconBg
                     : (isDark
-                        ? AppColors.bobaBrown.withValues(alpha: 0.5)
-                        : AppColors.background),
+                          ? AppColors.bobaBrown.withValues(alpha: 0.5)
+                          : AppColors.background),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -498,8 +549,9 @@ class CustomerSettingsTab extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w600,
                       color: primaryTextColor,
                     ),
                   ),
@@ -536,8 +588,7 @@ class CustomerSettingsTab extends StatelessWidget {
                   ? Icon(
                       Icons.check_rounded,
                       size: 16,
-                      color:
-                          isDark ? AppColors.bobaBrown : AppColors.cardWhite,
+                      color: isDark ? AppColors.bobaBrown : AppColors.cardWhite,
                     )
                   : null,
             ),
@@ -567,9 +618,7 @@ class CustomerSettingsTab extends StatelessWidget {
                 : AppColors.greyText,
           ),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
