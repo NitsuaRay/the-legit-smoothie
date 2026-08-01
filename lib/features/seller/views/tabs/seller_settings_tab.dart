@@ -20,7 +20,7 @@ class SellerSettingsTab extends StatelessWidget {
     final cardColor = isDark ? AppColors.darkText : AppColors.cardWhite;
     final primaryTextColor = isDark ? AppColors.cream : AppColors.darkText;
     final secondaryTextColor = isDark
-        ? AppColors.cream.withOpacity(0.7)
+        ? AppColors.cream.withValues(alpha: 0.7)
         : AppColors.greyText;
 
     return SingleChildScrollView(
@@ -35,8 +35,8 @@ class SellerSettingsTab extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? AppColors.cream.withOpacity(0.15)
-                      : AppColors.bobaBrown.withOpacity(0.1),
+                      ? AppColors.cream.withValues(alpha: 0.15)
+                      : AppColors.bobaBrown.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
@@ -81,7 +81,7 @@ class SellerSettingsTab extends StatelessWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: isDark
-                    ? AppColors.cream.withOpacity(0.6)
+                    ? AppColors.cream.withValues(alpha: 0.6)
                     : AppColors.bobaBrown,
                 letterSpacing: 1.2,
               ),
@@ -138,7 +138,7 @@ class SellerSettingsTab extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.error.withOpacity(0.08),
+                  color: AppColors.error.withValues(alpha: 0.08),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -146,7 +146,8 @@ class SellerSettingsTab extends StatelessWidget {
             ),
             child: OutlinedButton.icon(
               onPressed: onLogout,
-              icon: const Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
+              icon: const Icon(Icons.logout_rounded,
+                  color: AppColors.error, size: 20),
               label: const Text(
                 'Logout Account',
                 style: TextStyle(
@@ -156,11 +157,10 @@ class SellerSettingsTab extends StatelessWidget {
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                backgroundColor: isDark 
-                    ? AppColors.darkText 
-                    : AppColors.cardWhite,
+                backgroundColor:
+                    isDark ? AppColors.darkText : AppColors.cardWhite,
                 side: BorderSide(
-                  color: AppColors.error.withOpacity(0.3),
+                  color: AppColors.error.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -188,8 +188,12 @@ class SellerSettingsTab extends StatelessWidget {
   }) {
     final isSelected = currentThemeMode == mode;
     final activeBorderColor = isDark ? AppColors.cream : AppColors.bobaBrown;
-    final activeIconBg = isDark ? AppColors.cream : AppColors.bobaBrown;
-    final activeIconColor = isDark ? AppColors.bobaBrown : AppColors.cardWhite;
+    final activeIconBg = isDark
+        ? AppColors.bobaBrown.withValues(alpha: 0.6)
+        : AppColors.bobaBrown;
+    
+    // Updated: Uses AppColors.cream in dark mode when active
+    final activeIconColor = isDark ? AppColors.cream : AppColors.cardWhite;
 
     return InkWell(
       onTap: () => onThemeModeChanged(mode),
@@ -204,13 +208,13 @@ class SellerSettingsTab extends StatelessWidget {
             color: isSelected
                 ? activeBorderColor
                 : (isDark
-                    ? AppColors.bobaBrown.withOpacity(0.4)
+                    ? AppColors.bobaBrown.withValues(alpha: 0.4)
                     : AppColors.greyBorder),
             width: isSelected ? 2.0 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -226,16 +230,14 @@ class SellerSettingsTab extends StatelessWidget {
                 color: isSelected
                     ? activeIconBg
                     : (isDark
-                        ? AppColors.bobaBrown.withOpacity(0.5)
+                        ? AppColors.bobaBrown.withValues(alpha: 0.5)
                         : AppColors.background),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: 20,
-                color: isSelected
-                    ? activeIconColor
-                    : secondaryTextColor,
+                color: isSelected ? activeIconColor : secondaryTextColor,
               ),
             ),
             const SizedBox(width: 16),
@@ -249,7 +251,8 @@ class SellerSettingsTab extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w600,
                       color: primaryTextColor,
                     ),
                   ),
@@ -279,7 +282,9 @@ class SellerSettingsTab extends StatelessWidget {
                 border: isSelected
                     ? null
                     : Border.all(
-                        color: isDark ? AppColors.cream.withOpacity(0.4) : AppColors.greyBorder,
+                        color: isDark
+                            ? AppColors.cream.withValues(alpha: 0.4)
+                            : AppColors.greyBorder,
                         width: 1.5,
                       ),
               ),
@@ -287,7 +292,8 @@ class SellerSettingsTab extends StatelessWidget {
                   ? Icon(
                       Icons.check_rounded,
                       size: 16,
-                      color: isDark ? AppColors.bobaBrown : AppColors.cardWhite,
+                      color:
+                          isDark ? AppColors.bobaBrown : AppColors.cardWhite,
                     )
                   : null,
             ),

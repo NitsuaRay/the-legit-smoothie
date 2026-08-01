@@ -96,14 +96,19 @@ class CustomBottomNavBar extends StatelessWidget {
             label: 'Menu',
           ),
           CustomNavBarItem(
-            icon: Icons.shopping_bag_outlined,
-            selectedIcon: Icons.shopping_bag_rounded,
+            icon: Icons.shopping_cart_outlined,
+            selectedIcon: Icons.shopping_cart_rounded,
+            label: 'Cart',
+          ),
+          CustomNavBarItem(
+            icon: Icons.receipt_long_outlined,
+            selectedIcon: Icons.receipt_long_rounded,
             label: 'Orders',
           ),
           CustomNavBarItem(
-            icon: Icons.person_outline,
-            selectedIcon: Icons.person_rounded,
-            label: 'Profile',
+            icon: Icons.settings_outlined,
+            selectedIcon: Icons.settings_rounded,
+            label: 'Settings',
           ),
         ];
     }

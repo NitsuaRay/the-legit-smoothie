@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:the_legit_smoothie/features/customer/views/tabs/customer_cart_tab.dart';
+import 'package:the_legit_smoothie/features/customer/views/tabs/customer_menu_tab.dart';
+import 'package:the_legit_smoothie/features/customer/views/tabs/customer_orders_tab.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/views/login_screen.dart';
 import '../../../core/widgets/custom_bottom_navbar.dart';
@@ -19,7 +22,8 @@ class CustomerDashboardScreen extends StatefulWidget {
   });
 
   @override
-  State<CustomerDashboardScreen> createState() => _CustomerDashboardScreenState();
+  State<CustomerDashboardScreen> createState() =>
+      _CustomerDashboardScreenState();
 }
 
 class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
@@ -45,13 +49,17 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Theme-based background image matching Admin and Seller
-    final String backgroundImage =
-        isDark ? 'assets/bgBrown.png' : 'assets/bgWhite.png';
+    final String backgroundImage = isDark
+        ? 'assets/bgBrown.png'
+        : 'assets/bgWhite.png';
 
     final List<Widget> pages = [
-      const CustomerHomeTab(),
-      // Add additional customer tabs here (e.g., Cart, Favorites, Orders)
+      const CustomerHomeTab(), // Index 0: Home
+      const CustomerMenuTab(), // Index 1: Menu
+      const CustomerCartTab(), // Index 2: Cart
+      const CustomerOrderTab(), // Index 3: Orders
       CustomerSettingsTab(
+        // Index 4: Settings
         onLogout: _handleLogout,
         currentThemeMode: widget.currentThemeMode,
         onThemeModeChanged: widget.onThemeModeChanged,
@@ -68,16 +76,14 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
           ),
         ),
         child: SafeArea(
-          child: IndexedStack(
-            index: _selectedIndex,
-            children: pages,
-          ),
+          child: IndexedStack(index: _selectedIndex, children: pages),
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        role: UserRole.customer, // Make sure UserRole.customer exists in your enum
+        role: UserRole
+            .customer, // Make sure UserRole.customer exists in your enum
       ),
     );
   }

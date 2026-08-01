@@ -20,7 +20,7 @@ class AdminSettingsTab extends StatelessWidget {
     final cardColor = isDark ? AppColors.darkText : AppColors.cardWhite;
     final primaryTextColor = isDark ? AppColors.cream : AppColors.darkText;
     final secondaryTextColor = isDark
-        ? AppColors.cream.withOpacity(0.7)
+        ? AppColors.cream.withValues(alpha: 0.7)
         : AppColors.greyText;
 
     return Scaffold(
@@ -38,12 +38,12 @@ class AdminSettingsTab extends StatelessWidget {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: isDark
-                          ? AppColors.cream.withOpacity(0.15)
-                          : AppColors.bobaBrown.withOpacity(0.1),
+                          ? AppColors.cream.withValues(alpha: 0.15)
+                          : AppColors.bobaBrown.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
-                      Icons.settings_rounded,
+                      Icons.admin_panel_settings_rounded,
                       color: isDark ? AppColors.cream : AppColors.bobaBrown,
                       size: 24,
                     ),
@@ -53,7 +53,7 @@ class AdminSettingsTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Settings',
+                        'Admin Settings',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -62,7 +62,7 @@ class AdminSettingsTab extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Customize your app experience',
+                        'Manage system preferences & theme',
                         style: TextStyle(
                           fontSize: 13,
                           color: secondaryTextColor,
@@ -75,6 +75,86 @@ class AdminSettingsTab extends StatelessWidget {
 
               const SizedBox(height: 28),
 
+              // --- Section Title: Profile Overview ---
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 12),
+                child: Text(
+                  'ACCOUNT INFORMATION',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.cream.withValues(alpha: 0.6)
+                        : AppColors.bobaBrown,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+
+              // --- Admin Profile Summary Card ---
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.bobaBrown.withValues(alpha: 0.4)
+                        : AppColors.greyBorder,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: isDark
+                          ? AppColors.cream
+                          : AppColors.bobaBrown,
+                      child: Icon(
+                        Icons.shield_outlined,
+                        color: isDark
+                            ? AppColors.bobaBrown
+                            : AppColors.cardWhite,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Administrator',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: primaryTextColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'admin@thelegitsmoothie.com',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: secondaryTextColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
               // --- Section Title: Appearance ---
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 12),
@@ -83,7 +163,9 @@ class AdminSettingsTab extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.cream.withOpacity(0.6) : AppColors.bobaBrown,
+                    color: isDark
+                        ? AppColors.cream.withValues(alpha: 0.6)
+                        : AppColors.bobaBrown,
                     letterSpacing: 1.2,
                   ),
                 ),
@@ -139,7 +221,7 @@ class AdminSettingsTab extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.error.withOpacity(0.08),
+                      color: AppColors.error.withValues(alpha: 0.08),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -147,7 +229,11 @@ class AdminSettingsTab extends StatelessWidget {
                 ),
                 child: OutlinedButton.icon(
                   onPressed: onLogout,
-                  icon: const Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
+                  icon: const Icon(
+                    Icons.logout_rounded,
+                    color: AppColors.error,
+                    size: 20,
+                  ),
                   label: const Text(
                     'Logout Account',
                     style: TextStyle(
@@ -157,11 +243,10 @@ class AdminSettingsTab extends StatelessWidget {
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: isDark 
-                        ? AppColors.darkText 
-                        : AppColors.cardWhite,
+                    backgroundColor:
+                        isDark ? AppColors.darkText : AppColors.cardWhite,
                     side: BorderSide(
-                      color: AppColors.error.withOpacity(0.3),
+                      color: AppColors.error.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -207,13 +292,13 @@ class AdminSettingsTab extends StatelessWidget {
             color: isSelected
                 ? activeBorderColor
                 : (isDark
-                    ? AppColors.bobaBrown.withOpacity(0.4)
+                    ? AppColors.bobaBrown.withValues(alpha: 0.4)
                     : AppColors.greyBorder),
             width: isSelected ? 2.0 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -228,16 +313,14 @@ class AdminSettingsTab extends StatelessWidget {
                 color: isSelected
                     ? activeIconBg
                     : (isDark
-                        ? AppColors.bobaBrown.withOpacity(0.5)
+                        ? AppColors.bobaBrown.withValues(alpha: 0.5)
                         : AppColors.background),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: 20,
-                color: isSelected
-                    ? activeIconColor
-                    : secondaryTextColor,
+                color: isSelected ? activeIconColor : secondaryTextColor,
               ),
             ),
             const SizedBox(width: 16),
@@ -249,7 +332,8 @@ class AdminSettingsTab extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w600,
                       color: primaryTextColor,
                     ),
                   ),
@@ -276,7 +360,9 @@ class AdminSettingsTab extends StatelessWidget {
                 border: isSelected
                     ? null
                     : Border.all(
-                        color: isDark ? AppColors.cream.withOpacity(0.4) : AppColors.greyBorder,
+                        color: isDark
+                            ? AppColors.cream.withValues(alpha: 0.4)
+                            : AppColors.greyBorder,
                         width: 1.5,
                       ),
               ),
@@ -284,7 +370,8 @@ class AdminSettingsTab extends StatelessWidget {
                   ? Icon(
                       Icons.check_rounded,
                       size: 16,
-                      color: isDark ? AppColors.bobaBrown : AppColors.cardWhite,
+                      color:
+                          isDark ? AppColors.bobaBrown : AppColors.cardWhite,
                     )
                   : null,
             ),
