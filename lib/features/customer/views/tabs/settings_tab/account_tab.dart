@@ -48,8 +48,8 @@ class _AccountTabState extends State<AccountTab> {
     _emailController = TextEditingController(text: 'customer@legitsmoothie.com');
     _phoneController = TextEditingController(text: '+63 912 345 6789');
     _birthdayController = TextEditingController(text: 'January 15, 1998');
-    _bioController = TextEditingController(
-        text: 'Boba enthusiast & regular smoothie lover!');
+    _bioController =
+        TextEditingController(text: 'Boba enthusiast & regular smoothie lover!');
     _usernameController = TextEditingController(text: 'smoothie_lover98');
     _cityController = TextEditingController(text: 'Quezon City, Metro Manila');
   }
@@ -72,246 +72,107 @@ class _AccountTabState extends State<AccountTab> {
 
     final cardColor = isDark ? AppColors.darkText : AppColors.cardWhite;
     final primaryTextColor = isDark ? AppColors.cream : AppColors.darkText;
-    final secondaryTextColor = isDark
-        ? AppColors.cream.withValues(alpha: 0.7)
-        : AppColors.greyText;
+    final secondaryTextColor =
+        isDark ? AppColors.cream.withValues(alpha: 0.7) : AppColors.greyText;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.bobaBrown : AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- Custom Header Section (Replacing AppBar) ---
-                Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: cardColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDark
-                              ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                              : AppColors.greyBorder,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.arrow_back_rounded,
-                          color: isDark ? AppColors.cream : AppColors.bobaBrown,
-                          size: 20,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Account Settings',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: primaryTextColor,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          Text(
-                            'Manage your personal profile & preferences',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: secondaryTextColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: _isEditing
-                            ? (isDark ? AppColors.cream : AppColors.bobaBrown)
-                            : cardColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _isEditing
-                              ? Colors.transparent
-                              : (isDark
-                                  ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                                  : AppColors.greyBorder),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          _isEditing ? Icons.close_rounded : Icons.edit_rounded,
-                          color: _isEditing
-                              ? (isDark ? AppColors.darkText : AppColors.cardWhite)
-                              : (isDark ? AppColors.cream : AppColors.bobaBrown),
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isEditing = !_isEditing;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                // --- Top App Bar ---
+                _buildHeader(context, isDark, primaryTextColor),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
 
-                // --- Avatar Banner Section ---
-                Center(
-                  child: Column(
-                    children: [
-                      Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: isDark
-                                ? AppColors.cream.withValues(alpha: 0.15)
-                                : AppColors.bobaBrown.withValues(alpha: 0.1),
-                            child: Icon(
-                              Icons.person_rounded,
-                              size: 50,
-                              color: isDark ? AppColors.cream : AppColors.bobaBrown,
-                            ),
-                          ),
-                          if (_isEditing)
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: isDark ? AppColors.cream : AppColors.bobaBrown,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.camera_alt_rounded,
-                                  size: 16,
-                                  color: isDark ? AppColors.bobaBrown : AppColors.cardWhite,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.cream.withValues(alpha: 0.15)
-                              : AppColors.bobaBrown.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'VIP Smoothie Member',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.cream : AppColors.bobaBrown,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // --- Centered Profile Header ---
+                _buildProfileHeader(isDark, primaryTextColor, secondaryTextColor),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
 
-                // --- Personal Details Container ---
-                _buildSectionContainer(
-                  context,
-                  title: 'Personal Details',
+                // --- Customer Quick Stats Card ---
+                _buildStatsCard(cardColor, isDark, primaryTextColor, secondaryTextColor),
+
+                const SizedBox(height: 24),
+
+                // --- PERSONAL DETAILS SECTION ---
+                _buildSectionHeader('PERSONAL DETAILS', isDark),
+                const SizedBox(height: 12),
+                _buildCardContainer(
                   cardColor: cardColor,
                   isDark: isDark,
                   children: [
-                    _buildTextField(
+                    _buildGroupedField(
                       controller: _nameController,
                       label: 'Full Name',
+                      value: _nameController.text,
                       icon: Icons.person_outline_rounded,
-                      enabled: _isEditing,
                       isDark: isDark,
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
                     ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
+                    _buildDivider(isDark),
+                    _buildGroupedField(
                       controller: _usernameController,
                       label: 'Username',
+                      value: '@${_usernameController.text}',
                       icon: Icons.alternate_email_rounded,
-                      enabled: _isEditing,
                       isDark: isDark,
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
                     ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
+                    _buildDivider(isDark),
+                    _buildGroupedField(
                       controller: _emailController,
                       label: 'Email Address',
+                      value: _emailController.text,
                       icon: Icons.email_outlined,
-                      enabled: _isEditing,
                       isDark: isDark,
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
                     ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
+                    _buildDivider(isDark),
+                    _buildGroupedField(
                       controller: _phoneController,
                       label: 'Phone Number',
+                      value: _phoneController.text,
                       icon: Icons.phone_outlined,
-                      enabled: _isEditing,
                       isDark: isDark,
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
                     ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
+                    _buildDivider(isDark),
+                    _buildGroupedField(
                       controller: _cityController,
                       label: 'City / Location',
+                      value: _cityController.text,
                       icon: Icons.location_city_outlined,
-                      enabled: _isEditing,
                       isDark: isDark,
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
                     ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
+                    _buildDivider(isDark),
+                    _buildGroupedField(
                       controller: _birthdayController,
                       label: 'Birthday',
+                      value: _birthdayController.text,
                       icon: Icons.cake_outlined,
-                      enabled: _isEditing,
                       isDark: isDark,
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
                     ),
-                    const SizedBox(height: 16),
-                    _buildDropdownField(
+                    _buildDivider(isDark),
+                    _buildGroupedDropdown(
                       label: 'Gender',
-                      icon: Icons.wc_outlined,
                       value: _selectedGender,
                       items: _genderOptions,
+                      icon: Icons.wc_outlined,
                       isDark: isDark,
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
@@ -320,12 +181,12 @@ class _AccountTabState extends State<AccountTab> {
                           ? (val) => setState(() => _selectedGender = val!)
                           : null,
                     ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
+                    _buildDivider(isDark),
+                    _buildGroupedField(
                       controller: _bioController,
                       label: 'Bio / Note',
-                      icon: Icons.note_alt_outlined,
-                      enabled: _isEditing,
+                      value: _bioController.text,
+                      icon: Icons.notes_rounded,
                       isDark: isDark,
                       maxLines: 2,
                       primaryTextColor: primaryTextColor,
@@ -336,18 +197,18 @@ class _AccountTabState extends State<AccountTab> {
 
                 const SizedBox(height: 24),
 
-                // --- App Preferences Container ---
-                _buildSectionContainer(
-                  context,
-                  title: 'App Preferences',
+                // --- PREFERENCES SECTION ---
+                _buildSectionHeader('PREFERENCES', isDark),
+                const SizedBox(height: 12),
+                _buildCardContainer(
                   cardColor: cardColor,
                   isDark: isDark,
                   children: [
-                    _buildDropdownField(
+                    _buildGroupedDropdown(
                       label: 'App Language',
-                      icon: Icons.language_rounded,
                       value: _selectedLanguage,
                       items: _languageOptions,
+                      icon: Icons.language_rounded,
                       isDark: isDark,
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
@@ -361,226 +222,114 @@ class _AccountTabState extends State<AccountTab> {
 
                 const SizedBox(height: 24),
 
-                // --- Communication Preferences Container ---
-                _buildSectionContainer(
-                  context,
-                  title: 'Communication & Alerts',
+                // --- NOTIFICATIONS & ALERTS SECTION ---
+                _buildSectionHeader('NOTIFICATIONS & ALERTS', isDark),
+                const SizedBox(height: 12),
+                _buildCardContainer(
                   cardColor: cardColor,
                   isDark: isDark,
                   children: [
-                    SwitchListTile(
-                      title: Text(
-                        'Email Notifications',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: primaryTextColor,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Receive updates on promos and receipts via email',
-                        style: TextStyle(fontSize: 12, color: secondaryTextColor),
-                      ),
+                    _buildSwitchTile(
+                      title: 'Email Notifications',
+                      subtitle: 'Promos, receipts, and order updates',
                       value: _emailNotifications,
-                      activeColor: isDark ? AppColors.cream : AppColors.bobaBrown,
-                      onChanged: _isEditing
-                          ? (val) => setState(() => _emailNotifications = val)
-                          : null,
-                      contentPadding: EdgeInsets.zero,
+                      icon: Icons.mark_email_unread_outlined,
+                      isDark: isDark,
+                      primaryTextColor: primaryTextColor,
+                      secondaryTextColor: secondaryTextColor,
+                      onChanged: (val) => setState(() => _emailNotifications = val),
                     ),
-                    Divider(
-                      height: 24,
-                      color: isDark
-                          ? AppColors.bobaBrown.withValues(alpha: 0.3)
-                          : AppColors.greyBorder,
-                    ),
-                    SwitchListTile(
-                      title: Text(
-                        'SMS Alerts',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: primaryTextColor,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Get real-time delivery status updates via SMS',
-                        style: TextStyle(fontSize: 12, color: secondaryTextColor),
-                      ),
+                    _buildDivider(isDark),
+                    _buildSwitchTile(
+                      title: 'SMS Alerts',
+                      subtitle: 'Real-time order delivery updates',
                       value: _smsNotifications,
-                      activeColor: isDark ? AppColors.cream : AppColors.bobaBrown,
-                      onChanged: _isEditing
-                          ? (val) => setState(() => _smsNotifications = val)
-                          : null,
-                      contentPadding: EdgeInsets.zero,
+                      icon: Icons.sms_outlined,
+                      isDark: isDark,
+                      primaryTextColor: primaryTextColor,
+                      secondaryTextColor: secondaryTextColor,
+                      onChanged: (val) => setState(() => _smsNotifications = val),
                     ),
-                    Divider(
-                      height: 24,
-                      color: isDark
-                          ? AppColors.bobaBrown.withValues(alpha: 0.3)
-                          : AppColors.greyBorder,
-                    ),
-                    SwitchListTile(
-                      title: Text(
-                        'Push Notifications',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: primaryTextColor,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Instant updates on your smoothie orders and rewards',
-                        style: TextStyle(fontSize: 12, color: secondaryTextColor),
-                      ),
+                    _buildDivider(isDark),
+                    _buildSwitchTile(
+                      title: 'Push Notifications',
+                      subtitle: 'Order tracking and reward milestones',
                       value: _orderUpdatesPush,
-                      activeColor: isDark ? AppColors.cream : AppColors.bobaBrown,
-                      onChanged: _isEditing
-                          ? (val) => setState(() => _orderUpdatesPush = val)
-                          : null,
-                      contentPadding: EdgeInsets.zero,
+                      icon: Icons.notifications_none_rounded,
+                      isDark: isDark,
+                      primaryTextColor: primaryTextColor,
+                      secondaryTextColor: secondaryTextColor,
+                      onChanged: (val) => setState(() => _orderUpdatesPush = val),
                     ),
-                    Divider(
-                      height: 24,
-                      color: isDark
-                          ? AppColors.bobaBrown.withValues(alpha: 0.3)
-                          : AppColors.greyBorder,
-                    ),
-                    SwitchListTile(
-                      title: Text(
-                        'Exclusive Promos & Offers',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: primaryTextColor,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Be the first to know about new flavors and discounts',
-                        style: TextStyle(fontSize: 12, color: secondaryTextColor),
-                      ),
+                    _buildDivider(isDark),
+                    _buildSwitchTile(
+                      title: 'Exclusive Promos',
+                      subtitle: 'New flavors, discounts, and offers',
                       value: _promoAlerts,
-                      activeColor: isDark ? AppColors.cream : AppColors.bobaBrown,
-                      onChanged: _isEditing
-                          ? (val) => setState(() => _promoAlerts = val)
-                          : null,
-                      contentPadding: EdgeInsets.zero,
+                      icon: Icons.local_offer_outlined,
+                      isDark: isDark,
+                      primaryTextColor: primaryTextColor,
+                      secondaryTextColor: secondaryTextColor,
+                      onChanged: (val) => setState(() => _promoAlerts = val),
                     ),
                   ],
                 ),
 
                 const SizedBox(height: 24),
 
-                // --- Security Container ---
-                _buildSectionContainer(
-                  context,
-                  title: 'Security & Privacy',
+                // --- SECURITY & ACCOUNT SECTION ---
+                _buildSectionHeader('SECURITY & ACCOUNT', isDark),
+                const SizedBox(height: 12),
+                _buildCardContainer(
                   cardColor: cardColor,
                   isDark: isDark,
                   children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.bobaBrown.withValues(alpha: 0.5)
-                              : AppColors.background,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.lock_outline_rounded,
-                          size: 20,
-                          color: isDark ? AppColors.cream : AppColors.bobaBrown,
-                        ),
-                      ),
-                      title: Text(
-                        'Change Password',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: primaryTextColor,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Update your account password regularly',
-                        style: TextStyle(fontSize: 12, color: secondaryTextColor),
-                      ),
-                      trailing: Icon(
-                        Icons.chevron_right_rounded,
-                        size: 20,
-                        color: secondaryTextColor,
-                      ),
-                      onTap: () {
-                        // Handle password reset action
-                      },
+                    _buildActionTile(
+                      title: 'Change Password',
+                      subtitle: 'Update your login credentials',
+                      icon: Icons.lock_outline_rounded,
+                      isDark: isDark,
+                      primaryTextColor: primaryTextColor,
+                      secondaryTextColor: secondaryTextColor,
+                      onTap: () {},
                     ),
-                    Divider(
-                      height: 24,
-                      color: isDark
-                          ? AppColors.bobaBrown.withValues(alpha: 0.3)
-                          : AppColors.greyBorder,
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.bobaBrown.withValues(alpha: 0.5)
-                              : AppColors.background,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.delete_forever_rounded,
-                          size: 20,
-                          color: AppColors.error,
-                        ),
-                      ),
-                      title: Text(
-                        'Delete Account',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.error,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Permanently delete your account and saved data',
-                        style: TextStyle(fontSize: 12, color: secondaryTextColor),
-                      ),
-                      trailing: Icon(
-                        Icons.chevron_right_rounded,
-                        size: 20,
-                        color: secondaryTextColor,
-                      ),
-                      onTap: () {
-                        // Handle account deletion flow
-                      },
+                    _buildDivider(isDark),
+                    _buildActionTile(
+                      title: 'Delete Account',
+                      subtitle: 'Permanently remove your account & data',
+                      icon: Icons.delete_outline_rounded,
+                      isDark: isDark,
+                      isDanger: true,
+                      primaryTextColor: AppColors.error,
+                      secondaryTextColor: secondaryTextColor,
+                      onTap: () {},
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
 
-                // --- Save / Action Button ---
+                // --- Save Button (Only Visible When Editing) ---
                 if (_isEditing)
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
+                    child: ElevatedButton.icon(
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                          setState(() {
-                            _isEditing = false;
-                          });
+                          setState(() => _isEditing = false);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Profile updated successfully!'),
+                              content: Text('Account details updated successfully!'),
                               backgroundColor: AppColors.success,
                             ),
                           );
                         }
                       },
+                      icon: const Icon(Icons.check_rounded, size: 20),
+                      label: const Text(
+                        'Save Changes',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
                             isDark ? AppColors.cream : AppColors.bobaBrown,
@@ -588,19 +337,14 @@ class _AccountTabState extends State<AccountTab> {
                             isDark ? AppColors.darkText : AppColors.cardWhite,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        elevation: 2,
-                      ),
-                      child: const Text(
-                        'Save Changes',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        elevation: 0,
                       ),
                     ),
                   ),
+
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -609,180 +353,496 @@ class _AccountTabState extends State<AccountTab> {
     );
   }
 
-  Widget _buildSectionContainer(
-    BuildContext context, {
-    required String title,
-    required List<Widget> children,
-    required Color cardColor,
-    required bool isDark,
-  }) {
+  // --- Clean Top Header (Matching Seller Page) ---
+  Widget _buildHeader(
+      BuildContext context, bool isDark, Color primaryTextColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: primaryTextColor,
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        Text(
+          'Customer Account',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: primaryTextColor,
+          ),
+        ),
+        IconButton(
+          icon: Icon(
+            _isEditing ? Icons.close_rounded : Icons.edit_outlined,
+            color: primaryTextColor,
+            size: 22,
+          ),
+          onPressed: () {
+            setState(() {
+              _isEditing = !_isEditing;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  // --- Profile Header (Centered Circle + Title + Tag) ---
+  Widget _buildProfileHeader(
+      bool isDark, Color primaryText, Color secondaryText) {
+    return Column(
+      children: [
+        Center(
+          child: Stack(
+            children: [
+              Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark
+                      ? AppColors.cream.withValues(alpha: 0.15)
+                      : const Color(0xFFEFE8E1),
+                  border: Border.all(
+                    color: isDark ? AppColors.cream : AppColors.bobaBrown,
+                    width: 2,
+                  ),
+                ),
+                child: Icon(
+                  Icons.person_rounded,
+                  size: 50,
+                  color: isDark ? AppColors.cream : AppColors.bobaBrown,
+                ),
+              ),
+              if (_isEditing)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.cream : AppColors.bobaBrown,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      size: 14,
+                      color:
+                          isDark ? AppColors.bobaBrown : AppColors.cardWhite,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          _nameController.text,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: primaryText,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.stars_rounded,
+              size: 16,
+              color: isDark ? AppColors.cream : AppColors.bobaBrown,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'VIP Smoothie Member',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? AppColors.cream.withValues(alpha: 0.8)
+                    : AppColors.bobaBrown,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // --- Customer Quick Stats Bar (Matching Seller Stat Bar) ---
+  Widget _buildStatsCard(
+      Color cardColor, bool isDark, Color primaryText, Color secondaryText) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark
-              ? AppColors.bobaBrown.withValues(alpha: 0.4)
+              ? AppColors.bobaBrown.withValues(alpha: 0.3)
               : AppColors.greyBorder,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: isDark
-                  ? AppColors.cream.withValues(alpha: 0.6)
-                  : AppColors.bobaBrown,
-              letterSpacing: 1.0,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...children,
+          _buildStatColumn('4.9 ★', 'Rating', primaryText, secondaryText),
+          _buildVerticalDivider(isDark),
+          _buildStatColumn('32', 'Orders', primaryText, secondaryText),
+          _buildVerticalDivider(isDark),
+          _buildStatColumn('450', 'Points', primaryText, secondaryText),
         ],
       ),
     );
   }
 
-  Widget _buildTextField({
+  Widget _buildStatColumn(
+      String value, String label, Color primaryText, Color secondaryText) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: primaryText,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: secondaryText),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVerticalDivider(bool isDark) {
+    return Container(
+      height: 28,
+      width: 1,
+      color: isDark
+          ? AppColors.bobaBrown.withValues(alpha: 0.3)
+          : AppColors.greyBorder,
+    );
+  }
+
+  // --- Section Label ---
+  Widget _buildSectionHeader(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.8,
+          color: isDark
+              ? AppColors.cream.withValues(alpha: 0.6)
+              : AppColors.bobaBrown.withValues(alpha: 0.8),
+        ),
+      ),
+    );
+  }
+
+  // --- Main Card Wrapper ---
+  Widget _buildCardContainer({
+    required Color cardColor,
+    required bool isDark,
+    required List<Widget> children,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? AppColors.bobaBrown.withValues(alpha: 0.3)
+              : AppColors.greyBorder,
+        ),
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  // --- Horizontal Divider Between Items ---
+  Widget _buildDivider(bool isDark) {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      indent: 48,
+      endIndent: 16,
+      color: isDark
+          ? AppColors.bobaBrown.withValues(alpha: 0.3)
+          : AppColors.greyBorder.withValues(alpha: 0.6),
+    );
+  }
+
+  // --- Seller-Style Grouped Form Row ---
+  Widget _buildGroupedField({
     required TextEditingController controller,
     required String label,
+    required String value,
     required IconData icon,
-    required bool enabled,
     required bool isDark,
-    int maxLines = 1,
     required Color primaryTextColor,
     required Color secondaryTextColor,
+    int maxLines = 1,
   }) {
-    return TextFormField(
-      controller: controller,
-      enabled: enabled,
-      maxLines: maxLines,
-      style: TextStyle(
-        color: primaryTextColor,
-        fontSize: 15,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: secondaryTextColor, fontSize: 13),
-        prefixIcon: Icon(
-          icon,
-          color: isDark ? AppColors.cream : AppColors.bobaBrown,
-          size: 20,
-        ),
-        filled: true,
-        fillColor: isDark
-            ? AppColors.bobaBrown.withValues(alpha: enabled ? 0.4 : 0.2)
-            : (enabled ? AppColors.cardWhite : AppColors.background),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: isDark
-                ? AppColors.bobaBrown.withValues(alpha: 0.6)
-                : AppColors.greyBorder,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment:
+            maxLines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 20,
             color: isDark ? AppColors.cream : AppColors.bobaBrown,
-            width: 1.5,
           ),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: isDark
-                ? AppColors.bobaBrown.withValues(alpha: 0.3)
-                : AppColors.greyBorder,
+          const SizedBox(width: 14),
+          Expanded(
+            child: _isEditing
+                ? TextFormField(
+                    controller: controller,
+                    maxLines: maxLines,
+                    style: TextStyle(
+                      color: primaryTextColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: label,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                      labelStyle:
+                          TextStyle(color: secondaryTextColor, fontSize: 12),
+                      border: InputBorder.none,
+                    ),
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Please enter $label' : null,
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: secondaryTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        value.isNotEmpty ? value : 'Not set',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: primaryTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
-        ),
+        ],
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter $label';
-        }
-        return null;
-      },
     );
   }
 
-  Widget _buildDropdownField({
+  // --- Grouped Dropdown Field ---
+  Widget _buildGroupedDropdown({
     required String label,
-    required IconData icon,
     required String value,
     required List<String> items,
+    required IconData icon,
     required bool isDark,
     required Color primaryTextColor,
     required Color secondaryTextColor,
     required Color cardColor,
     required ValueChanged<String?>? onChanged,
   }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      icon: Icon(Icons.arrow_drop_down_rounded,
-          color: isDark ? AppColors.cream : AppColors.bobaBrown),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: secondaryTextColor, fontSize: 13),
-        prefixIcon: Icon(
-          icon,
-          color: isDark ? AppColors.cream : AppColors.bobaBrown,
-          size: 20,
-        ),
-        filled: true,
-        fillColor: isDark
-            ? AppColors.bobaBrown.withValues(alpha: _isEditing ? 0.4 : 0.2)
-            : (_isEditing ? AppColors.cardWhite : AppColors.background),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: isDark
-                ? AppColors.bobaBrown.withValues(alpha: 0.6)
-                : AppColors.greyBorder,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
             color: isDark ? AppColors.cream : AppColors.bobaBrown,
-            width: 1.5,
           ),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: isDark
-                ? AppColors.bobaBrown.withValues(alpha: 0.3)
-                : AppColors.greyBorder,
+          const SizedBox(width: 14),
+          Expanded(
+            child: _isEditing
+                ? DropdownButtonFormField<String>(
+                    value: value,
+                    isDense: true,
+                    decoration: InputDecoration(
+                      labelText: label,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                      labelStyle:
+                          TextStyle(color: secondaryTextColor, fontSize: 12),
+                      border: InputBorder.none,
+                    ),
+                    dropdownColor: cardColor,
+                    style: TextStyle(
+                      color: primaryTextColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    items: items
+                        .map((item) => DropdownMenuItem(
+                              value: item,
+                              child: Text(item),
+                            ))
+                        .toList(),
+                    onChanged: onChanged,
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: secondaryTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: primaryTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // --- Switch Option Tile ---
+  Widget _buildSwitchTile({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required IconData icon,
+    required bool isDark,
+    required Color primaryTextColor,
+    required Color secondaryTextColor,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: isDark ? AppColors.cream : AppColors.bobaBrown,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: primaryTextColor,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 12, color: secondaryTextColor),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            activeColor: isDark ? AppColors.cream : AppColors.bobaBrown,
+            onChanged: _isEditing ? onChanged : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Action Tile (e.g. Security Options) ---
+  Widget _buildActionTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isDark,
+    bool isDanger = false,
+    required Color primaryTextColor,
+    required Color secondaryTextColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDanger
+                    ? AppColors.error.withValues(alpha: 0.1)
+                    : (isDark
+                        ? AppColors.cream.withValues(alpha: 0.1)
+                        : AppColors.bobaBrown.withValues(alpha: 0.08)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isDanger
+                    ? AppColors.error
+                    : (isDark ? AppColors.cream : AppColors.bobaBrown),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: primaryTextColor,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 12, color: secondaryTextColor),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: secondaryTextColor,
+            ),
+          ],
         ),
       ),
-      dropdownColor: cardColor,
-      style: TextStyle(
-        color: primaryTextColor,
-        fontSize: 15,
-        fontWeight: FontWeight.w500,
-      ),
-      items: items.map((String item) {
-        return DropdownMenuItem<String>(
-          value: item,
-          child: Text(item),
-        );
-      }).toList(),
-      onChanged: onChanged,
     );
   }
 }

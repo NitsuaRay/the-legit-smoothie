@@ -14,8 +14,6 @@ class _AdminAccountViewState extends State<AdminAccountView> {
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _roleController;
-  late final TextEditingController _departmentController;
 
   bool _isEditing = false;
 
@@ -27,8 +25,6 @@ class _AdminAccountViewState extends State<AdminAccountView> {
       text: 'admin@thelegitsmoothie.com',
     );
     _phoneController = TextEditingController(text: '+63 912 345 6789');
-    _roleController = TextEditingController(text: 'Super Administrator');
-    _departmentController = TextEditingController(text: 'System Operations & Security');
   }
 
   @override
@@ -36,17 +32,14 @@ class _AdminAccountViewState extends State<AdminAccountView> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _roleController.dispose();
-    _departmentController.dispose();
     super.dispose();
   }
 
   void _saveChanges() {
-    // Implement validation and saving logic here
     setState(() {
       _isEditing = false;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Administrator profile updated successfully.'),
@@ -65,418 +58,336 @@ class _AdminAccountViewState extends State<AdminAccountView> {
     final secondaryTextColor = isDark
         ? AppColors.cream.withValues(alpha: 0.7)
         : AppColors.greyText;
+    final dividerColor = isDark
+        ? AppColors.bobaBrown.withValues(alpha: 0.3)
+        : AppColors.greyBorder;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.bobaBrown : AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Header with Back Button & Action Toggle ---
+              // --- Header ---
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  InkWell(
-                    onTap: widget.onBack ?? () => Navigator.pop(context),
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkText : AppColors.cardWhite,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_rounded,
-                        color: isDark ? AppColors.cream : AppColors.bobaBrown,
-                        size: 24,
-                      ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: primaryTextColor,
+                      size: 20,
+                    ),
+                    onPressed: widget.onBack ?? () => Navigator.pop(context),
+                  ),
+                  Text(
+                    'Administrator Profile',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: primaryTextColor,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Administrator Profile',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: primaryTextColor,
-                            letterSpacing: -0.5,
-                          ),
+                  IconButton(
+                    icon: Icon(
+                      _isEditing ? Icons.check_rounded : Icons.edit_outlined,
+                      color: primaryTextColor,
+                      size: 22,
+                    ),
+                    onPressed: () {
+                      if (_isEditing) {
+                        _saveChanges();
+                      } else {
+                        setState(() {
+                          _isEditing = true;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // --- Avatar & Role Section ---
+              Center(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark ? AppColors.cream : AppColors.background,
+                        border: Border.all(
+                          color: AppColors.bobaBrown,
+                          width: 2,
                         ),
+                      ),
+                      child: Icon(
+                        Icons.admin_panel_settings_rounded,
+                        color: AppColors.bobaBrown,
+                        size: 42,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Super Administrator',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: primaryTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.verified_rounded,
+                          size: 16,
+                          color: AppColors.bobaBrown,
+                        ),
+                        const SizedBox(width: 6),
                         Text(
-                          'Manage credentials and system permissions',
+                          'Verified System Account • Active',
                           style: TextStyle(
                             fontSize: 13,
+                            fontWeight: FontWeight.w500,
                             color: secondaryTextColor,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: _isEditing
-                          ? (isDark ? AppColors.cream : AppColors.bobaBrown)
-                          : cardColor,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _isEditing
-                            ? Colors.transparent
-                            : (isDark
-                                ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                                : AppColors.greyBorder),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(
-                            alpha: isDark ? 0.2 : 0.04,
-                          ),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        _isEditing ? Icons.close_rounded : Icons.edit_rounded,
-                        color: _isEditing
-                            ? (isDark
-                                ? AppColors.darkText
-                                : AppColors.cardWhite)
-                            : (isDark ? AppColors.cream : AppColors.bobaBrown),
-                        size: 20,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isEditing = !_isEditing;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              // --- Avatar Section ---
-              Center(
-                child: Column(
-                  children: [
-                    Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 48,
-                          backgroundColor: isDark
-                              ? AppColors.cream
-                              : AppColors.secondary,
-                          child: Icon(
-                            Icons.admin_panel_settings_outlined,
-                            color: isDark
-                                ? AppColors.bobaBrown
-                                : AppColors.cardWhite,
-                            size: 48,
-                          ),
-                        ),
-                        if (_isEditing)
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? AppColors.cream
-                                    : AppColors.secondary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.camera_alt_rounded,
-                                size: 16,
-                                color: isDark
-                                    ? AppColors.bobaBrown
-                                    : AppColors.cardWhite,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Super Administrator',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: primaryTextColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: (isDark ? AppColors.cream : AppColors.bobaBrown)
-                            .withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Verified System Account',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.cream : AppColors.bobaBrown,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 36),
+              const SizedBox(height: 24),
 
-              // --- Section Title: Personal Information ---
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 12),
-                child: Text(
-                  'PERSONAL INFORMATION',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.cream.withValues(alpha: 0.6)
-                        : AppColors.bobaBrown,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-
-              // --- Form Fields Card ---
+              // --- Quick Stats Overview (4 Metrics cleanly spaced) ---
               Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                        : AppColors.greyBorder,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha: isDark ? 0.2 : 0.04,
-                      ),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: _cardBoxDecoration(cardColor, dividerColor, isDark),
+                child: Row(
+                  children: [
+                    _buildStatColumn(
+                      '99.9%',
+                      'System Health',
+                      primaryTextColor,
+                      secondaryTextColor,
+                    ),
+                    _buildVerticalDivider(dividerColor),
+                    _buildStatColumn(
+                      '142',
+                      'Active Sellers',
+                      primaryTextColor,
+                      secondaryTextColor,
+                    ),
+                    _buildVerticalDivider(dividerColor),
+                    _buildStatColumn(
+                      '3 Devices',
+                      'Sessions',
+                      primaryTextColor,
+                      secondaryTextColor,
+                    ),
+                    _buildVerticalDivider(dividerColor),
+                    _buildStatColumn(
+                      'Optimal',
+                      'DB Status',
+                      primaryTextColor,
+                      secondaryTextColor,
                     ),
                   ],
                 ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // --- Personal Information Section ---
+              _buildSectionTitle('PERSONAL INFORMATION', isDark),
+
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: _cardBoxDecoration(cardColor, dividerColor, isDark),
                 child: Column(
                   children: [
-                    _buildTextField(
-                      label: 'Full Name',
-                      controller: _nameController,
+                    _buildInfoRow(
                       icon: Icons.person_outline_rounded,
-                      enabled: _isEditing,
-                      isDark: isDark,
+                      label: 'Full Name',
+                      value: _nameController.text,
+                      controller: _nameController,
+                      isEditing: _isEditing,
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
+                      showDivider: true,
+                      dividerColor: dividerColor,
                     ),
-                    const SizedBox(height: 20),
-                    _buildTextField(
-                      label: 'Email Address',
-                      controller: _emailController,
+                    _buildInfoRow(
                       icon: Icons.email_outlined,
-                      enabled: _isEditing,
-                      isDark: isDark,
+                      label: 'Email Address',
+                      value: _emailController.text,
+                      controller: _emailController,
+                      isEditing: _isEditing,
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
+                      showDivider: true,
+                      dividerColor: dividerColor,
                     ),
-                    const SizedBox(height: 20),
-                    _buildTextField(
-                      label: 'Phone Number',
-                      controller: _phoneController,
+                    _buildInfoRow(
                       icon: Icons.phone_outlined,
-                      enabled: _isEditing,
-                      isDark: isDark,
+                      label: 'Contact Number',
+                      value: _phoneController.text,
+                      controller: _phoneController,
+                      isEditing: _isEditing,
+                      primaryTextColor: primaryTextColor,
+                      secondaryTextColor: secondaryTextColor,
+                      showDivider: false,
+                      dividerColor: dividerColor,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // --- Organizational Role & Access Section ---
+              _buildSectionTitle('ORGANIZATIONAL ROLE & ACCESS', isDark),
+
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: _cardBoxDecoration(cardColor, dividerColor, isDark),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStaticInfoItem(
+                      icon: Icons.badge_outlined,
+                      label: 'Assigned Role',
+                      value: 'Super Administrator',
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 36),
-
-              // --- Section Title: Organizational Role ---
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 12),
-                child: Text(
-                  'ORGANIZATIONAL ROLE',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.cream.withValues(alpha: 0.6)
-                        : AppColors.bobaBrown,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-
-              // --- Role & Department Card ---
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                        : AppColors.greyBorder,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha: isDark ? 0.2 : 0.04,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Divider(color: dividerColor, height: 1),
+                    ),
+                    _buildStaticInfoItem(
+                      icon: Icons.apartment_rounded,
+                      label: 'Department',
+                      value: 'System Operations & Security',
+                      primaryTextColor: primaryTextColor,
+                      secondaryTextColor: secondaryTextColor,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Divider(color: dividerColor, height: 1),
+                    ),
+                    _buildStaticInfoItem(
+                      icon: Icons.fingerprint_rounded,
+                      label: 'Employee / Admin ID',
+                      value: 'ADM-2026-8801',
+                      primaryTextColor: primaryTextColor,
+                      secondaryTextColor: secondaryTextColor,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Divider(color: dividerColor, height: 1),
+                    ),
+                    Text(
+                      'Granted Access Scopes',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: secondaryTextColor,
                       ),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildPermissionChip('Full DB Access', isDark),
+                        _buildPermissionChip('User & Seller Management', isDark),
+                        _buildPermissionChip('Financial Audit', isDark),
+                        _buildPermissionChip('System Overrides', isDark),
+                      ],
                     ),
                   ],
                 ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // --- System Access & Security Section ---
+              _buildSectionTitle('SECURITY & CONTROLS', isDark),
+
+              Container(
+                decoration: _cardBoxDecoration(cardColor, dividerColor, isDark),
                 child: Column(
                   children: [
-                    _buildTextField(
-                      label: 'Assigned Role',
-                      controller: _roleController,
-                      icon: Icons.badge_outlined,
-                      enabled: false, // Administrative roles are typically fixed
-                      isDark: isDark,
+                    _buildActionItem(
+                      icon: Icons.lock_outline_rounded,
+                      title: 'Change Password',
+                      subtitle: 'Update account password and credentials',
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
+                      showDivider: true,
+                      dividerColor: dividerColor,
+                      onTap: () {},
                     ),
-                    const SizedBox(height: 20),
-                    _buildTextField(
-                      label: 'Department',
-                      controller: _departmentController,
-                      icon: Icons.apartment_rounded,
-                      enabled: false,
-                      isDark: isDark,
+                    _buildActionItem(
+                      icon: Icons.security_rounded,
+                      title: 'Two-Factor Authentication',
+                      subtitle: 'Authenticator application enabled',
                       primaryTextColor: primaryTextColor,
                       secondaryTextColor: secondaryTextColor,
+                      showDivider: true,
+                      dividerColor: dividerColor,
+                      trailing: Text(
+                        'Active',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade600,
+                        ),
+                      ),
+                      onTap: () {},
+                    ),
+                    _buildActionItem(
+                      icon: Icons.devices_other_rounded,
+                      title: 'Active Sessions & Devices',
+                      subtitle: 'Manage devices logged into this account',
+                      primaryTextColor: primaryTextColor,
+                      secondaryTextColor: secondaryTextColor,
+                      showDivider: true,
+                      dividerColor: dividerColor,
+                      onTap: () {},
+                    ),
+                    _buildActionItem(
+                      icon: Icons.key_rounded,
+                      title: 'API & Integration Keys',
+                      subtitle: 'View and regenerate administrative API keys',
+                      primaryTextColor: primaryTextColor,
+                      secondaryTextColor: secondaryTextColor,
+                      showDivider: true,
+                      dividerColor: dividerColor,
+                      onTap: () {},
+                    ),
+                    _buildActionItem(
+                      icon: Icons.history_rounded,
+                      title: 'Audit Logs & Activity',
+                      subtitle: 'View recent administrative actions',
+                      primaryTextColor: primaryTextColor,
+                      secondaryTextColor: secondaryTextColor,
+                      showDivider: false,
+                      dividerColor: dividerColor,
+                      onTap: () {},
                     ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 36),
-
-              // --- Section Title: Security & Compliance ---
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 12),
-                child: Text(
-                  'SECURITY & COMPLIANCE',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.cream.withValues(alpha: 0.6)
-                        : AppColors.bobaBrown,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-
-              // --- Security Action Cards ---
-              _buildActionCard(
-                icon: Icons.lock_outline_rounded,
-                title: 'Change Password',
-                subtitle: 'Update your account security credentials',
-                cardColor: cardColor,
-                isDark: isDark,
-                primaryTextColor: primaryTextColor,
-                secondaryTextColor: secondaryTextColor,
-                onTap: () {
-                  // Handle password update flow
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildActionCard(
-                icon: Icons.security_rounded,
-                title: 'Two-Factor Authentication (2FA)',
-                subtitle: 'Enabled via authenticator application',
-                cardColor: cardColor,
-                isDark: isDark,
-                primaryTextColor: primaryTextColor,
-                secondaryTextColor: secondaryTextColor,
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'Active',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                ),
-                onTap: () {
-                  // Handle 2FA configuration
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildActionCard(
-                icon: Icons.history_rounded,
-                title: 'Audit Logs & Activity',
-                subtitle: 'Review historical administrative actions',
-                cardColor: cardColor,
-                isDark: isDark,
-                primaryTextColor: primaryTextColor,
-                secondaryTextColor: secondaryTextColor,
-                onTap: () {
-                  // Handle navigation to logs
-                },
-              ),
-
-              // --- Save Changes Button (Visible only when editing) ---
-              if (_isEditing) ...[
-                const SizedBox(height: 36),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _saveChanges,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isDark ? AppColors.cream : AppColors.bobaBrown,
-                      foregroundColor: isDark ? AppColors.bobaBrown : AppColors.cardWhite,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Save Changes',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -484,160 +395,290 @@ class _AdminAccountViewState extends State<AdminAccountView> {
     );
   }
 
-  Widget _buildTextField({
-    required String label,
-    required TextEditingController controller,
+  // --- Helper Widgets ---
+
+  BoxDecoration _cardBoxDecoration(
+    Color cardColor,
+    Color borderColor,
+    bool isDark,
+  ) {
+    return BoxDecoration(
+      color: cardColor,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: borderColor, width: 1),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 10),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: isDark
+              ? AppColors.cream.withValues(alpha: 0.6)
+              : AppColors.bobaBrown,
+          letterSpacing: 1.0,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatColumn(
+    String value,
+    String label,
+    Color primaryColor,
+    Color secondaryColor,
+  ) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: primaryColor,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: secondaryColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerticalDivider(Color dividerColor) {
+    return SizedBox(
+      height: 26,
+      child: VerticalDivider(
+        color: dividerColor,
+        thickness: 1,
+        width: 1,
+      ),
+    );
+  }
+
+  Widget _buildInfoRow({
     required IconData icon,
-    required bool enabled,
-    required bool isDark,
+    required String label,
+    required String value,
+    required TextEditingController controller,
+    required bool isEditing,
+    required Color primaryTextColor,
+    required Color secondaryTextColor,
+    required bool showDivider,
+    required Color dividerColor,
+  }) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(icon, size: 20, color: AppColors.bobaBrown),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: secondaryTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    isEditing
+                        ? TextField(
+                            controller: controller,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: primaryTextColor,
+                            ),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 4),
+                              border: InputBorder.none,
+                            ),
+                          )
+                        : Text(
+                            value,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: primaryTextColor,
+                            ),
+                          ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showDivider) Divider(color: dividerColor, height: 1),
+      ],
+    );
+  }
+
+  Widget _buildStaticInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
     required Color primaryTextColor,
     required Color secondaryTextColor,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: secondaryTextColor,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          enabled: enabled,
-          style: TextStyle(
-            fontSize: 15,
-            color: primaryTextColor,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, size: 20, color: secondaryTextColor),
-            filled: true,
-            fillColor: isDark
-                ? AppColors.bobaBrown.withValues(alpha: 0.3)
-                : AppColors.background,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark
-                    ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                    : AppColors.greyBorder,
+        Icon(icon, size: 20, color: AppColors.bobaBrown),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: secondaryTextColor,
+                ),
               ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark
-                    ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                    : AppColors.greyBorder,
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: primaryTextColor,
+                ),
               ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark ? AppColors.cream : AppColors.bobaBrown,
-                width: 1.5,
-              ),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark
-                    ? AppColors.bobaBrown.withValues(alpha: 0.2)
-                    : AppColors.greyBorder.withValues(alpha: 0.5),
-              ),
-            ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildActionCard({
+  Widget _buildPermissionChip(String text, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.bobaBrown.withValues(alpha: 0.4)
+            : AppColors.background,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark
+              ? AppColors.bobaBrown.withValues(alpha: 0.6)
+              : AppColors.greyBorder,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.check_circle_rounded,
+            size: 13,
+            color: isDark ? AppColors.cream : AppColors.bobaBrown,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.cream : AppColors.darkText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionItem({
     required IconData icon,
     required String title,
     required String subtitle,
-    required Color cardColor,
-    required bool isDark,
     required Color primaryTextColor,
     required Color secondaryTextColor,
+    required bool showDivider,
+    required Color dividerColor,
     Widget? trailing,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cardColor,
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark
-                ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                : AppColors.greyBorder,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.bobaBrown.withValues(alpha: 0.5)
-                    : AppColors.background,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 20, color: secondaryTextColor),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: primaryTextColor,
-                    ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: AppColors.bobaBrown),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: primaryTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: secondaryTextColor,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: secondaryTextColor,
-                    ),
-                  ),
+                ),
+                if (trailing != null) ...[
+                  trailing,
+                  const SizedBox(width: 8),
                 ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            trailing ??
                 Icon(
                   Icons.arrow_forward_ios_rounded,
-                  size: 14,
+                  size: 12,
                   color: secondaryTextColor,
                 ),
-          ],
+              ],
+            ),
+          ),
         ),
-      ),
+        if (showDivider)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(color: dividerColor, height: 1),
+          ),
+      ],
     );
   }
 }

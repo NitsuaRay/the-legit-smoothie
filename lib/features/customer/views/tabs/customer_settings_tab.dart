@@ -77,79 +77,94 @@ class CustomerSettingsTab extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // --- User Profile Header Card ---
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
+          // --- Section Title: Profile Overview ---
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            child: Text(
+              'ACCOUNT INFORMATION',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
                 color: isDark
-                    ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                    : AppColors.greyBorder,
+                    ? AppColors.cream.withValues(alpha: 0.6)
+                    : AppColors.bobaBrown,
+                letterSpacing: 1.2,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: isDark
-                      ? AppColors.cream.withValues(alpha: 0.15)
-                      : AppColors.bobaBrown.withValues(alpha: 0.1),
-                  child: Icon(
-                    Icons.person_rounded,
-                    size: 30,
-                    color: isDark ? AppColors.cream : AppColors.bobaBrown,
-                  ),
+          ),
+
+          // --- Customer Profile Summary Card ---
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AccountTab()),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.bobaBrown.withValues(alpha: 0.4)
+                      : AppColors.greyBorder,
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Valued Customer',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: primaryTextColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: isDark
+                        ? AppColors.cream.withValues(alpha: 0.15)
+                        : AppColors.bobaBrown.withValues(alpha: 0.12),
+                    child: Icon(
+                      Icons.person_outline_rounded,
+                      color: isDark ? AppColors.cream : AppColors.bobaBrown,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Valued Customer',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: primaryTextColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'customer@legitsmoothie.com',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: secondaryTextColor,
+                        const SizedBox(height: 2),
+                        Text(
+                          'customer@legitsmoothie.com',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: secondaryTextColor,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.edit_outlined,
-                    color: isDark ? AppColors.cream : AppColors.bobaBrown,
-                    size: 20,
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: secondaryTextColor,
                   ),
-                  onPressed: () {
-                    // Navigate to Account Sub-tab / Screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AccountTab(),
-                      ),
-                    );
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 

@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
+import 'package:the_legit_smoothie/features/customer/views/tabs/settings_tab/privacy_policy_tab.dart';
+import 'package:the_legit_smoothie/features/seller/views/tabs/settings_tab/account_tab.dart';
+import 'package:the_legit_smoothie/features/seller/views/tabs/settings_tab/contact_seller_support_tab.dart';
+import 'package:the_legit_smoothie/features/seller/views/tabs/settings_tab/discounts_vouchers_tab.dart';
+import 'package:the_legit_smoothie/features/seller/views/tabs/settings_tab/featured_menu_tab.dart';
+import 'package:the_legit_smoothie/features/seller/views/tabs/settings_tab/loyalty_rewards_tab.dart';
+import 'package:the_legit_smoothie/features/seller/views/tabs/settings_tab/merchant_faqs_tab.dart';
+import 'package:the_legit_smoothie/features/seller/views/tabs/settings_tab/report_issue_tab.dart';
+import 'package:the_legit_smoothie/features/seller/views/tabs/settings_tab/terms_of_service_tab.dart';
 
 class SellerSettingsTab extends StatelessWidget {
   final VoidCallback onLogout;
@@ -24,6 +33,7 @@ class SellerSettingsTab extends StatelessWidget {
         : AppColors.greyText;
 
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,10 +70,7 @@ class SellerSettingsTab extends StatelessWidget {
                   ),
                   Text(
                     'Customize your shop app experience',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: secondaryTextColor,
-                    ),
+                    style: TextStyle(fontSize: 13, color: secondaryTextColor),
                   ),
                 ],
               ),
@@ -72,23 +79,155 @@ class SellerSettingsTab extends StatelessWidget {
 
           const SizedBox(height: 28),
 
-          // --- Section Title: Appearance ---
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 12),
-            child: Text(
-              'APPEARANCE',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: isDark
-                    ? AppColors.cream.withValues(alpha: 0.6)
-                    : AppColors.bobaBrown,
-                letterSpacing: 1.2,
+          // --- ACCOUNT INFORMATION SECTION ---
+          _buildSectionHeader('ACCOUNT INFORMATION', isDark),
+          const SizedBox(height: 12),
+
+          // Seller Profile Summary Card
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SellerAccountTab(),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.bobaBrown.withValues(alpha: 0.4)
+                      : AppColors.greyBorder,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: isDark
+                        ? AppColors.cream.withValues(alpha: 0.15)
+                        : AppColors.bobaBrown.withValues(alpha: 0.12),
+                    child: Icon(
+                      Icons.storefront_outlined,
+                      color: isDark ? AppColors.cream : AppColors.bobaBrown,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'The Legit Smoothie Co.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: primaryTextColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'seller@legitsmoothie.com',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: secondaryTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: secondaryTextColor,
+                  ),
+                ],
               ),
             ),
           ),
 
-          // --- Modern Theme Cards Grid ---
+          const SizedBox(height: 28),
+
+          // --- SHOP & MARKETING SECTION ---
+          _buildSectionHeader('PROMOTIONS & MARKETING', isDark),
+          const SizedBox(height: 12),
+          _buildGroupedCard(
+            cardColor: cardColor,
+            isDark: isDark,
+            children: [
+              _buildActionTile(
+                title: 'Discounts & Vouchers',
+                subtitle: 'Manage active store promo codes and campaigns',
+                icon: Icons.local_offer_outlined,
+                isDark: isDark,
+                primaryTextColor: primaryTextColor,
+                secondaryTextColor: secondaryTextColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DiscountsVouchersTab(),
+                    ),
+                  );
+                },
+              ),
+
+              _buildDivider(isDark),
+              _buildActionTile(
+                title: 'Featured Menu Items',
+                subtitle: 'Highlight best-sellers on the customer homepage',
+                icon: Icons.star_outline_rounded,
+                isDark: isDark,
+                primaryTextColor: primaryTextColor,
+                secondaryTextColor: secondaryTextColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const FeaturedMenuTab(),
+                    ),
+                  );
+                },
+              ),
+              _buildDivider(isDark),
+              _buildActionTile(
+                title: 'Loyalty Rewards Program',
+                subtitle: 'Configure smoothie points and customer perks',
+                icon: Icons.card_giftcard_rounded,
+                isDark: isDark,
+                primaryTextColor: primaryTextColor,
+                secondaryTextColor: secondaryTextColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoyaltyRewardsTab(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 28),
+
+          // --- APPEARANCE SECTION ---
+          _buildSectionHeader('APPEARANCE', isDark),
+          const SizedBox(height: 12),
           Column(
             children: [
               _buildModernThemeOption(
@@ -129,9 +268,117 @@ class SellerSettingsTab extends StatelessWidget {
             ],
           ),
 
+          const SizedBox(height: 28),
+
+          // --- HELP & SUPPORT SECTION ---
+          _buildSectionHeader('HELP & SUPPORT', isDark),
+          const SizedBox(height: 12),
+          _buildGroupedCard(
+            cardColor: cardColor,
+            isDark: isDark,
+            children: [
+              _buildActionTile(
+                title: 'Merchant FAQs',
+                subtitle:
+                    'Common questions about payouts, orders, and listings',
+                icon: Icons.quiz_outlined,
+                isDark: isDark,
+                primaryTextColor: primaryTextColor,
+                secondaryTextColor: secondaryTextColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MerchantFaqsTab(),
+                    ),
+                  );
+                },
+              ),
+              _buildDivider(isDark),
+              _buildActionTile(
+                title: 'Contact Seller Support',
+                subtitle: 'Chat live with our partner support team',
+                icon: Icons.headset_mic_outlined,
+                isDark: isDark,
+                primaryTextColor: primaryTextColor,
+                secondaryTextColor: secondaryTextColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ContactSellerSupportTab(),
+                    ),
+                  );
+                },
+              ),
+              _buildDivider(isDark),
+              _buildActionTile(
+                title: 'Report an Issue',
+                subtitle: 'Submit technical bugs or order disputes',
+                icon: Icons.bug_report_outlined,
+                isDark: isDark,
+                primaryTextColor: primaryTextColor,
+                secondaryTextColor: secondaryTextColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ReportIssueTab(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 28),
+
+          // --- LEGAL & PRIVACY SECTION ---
+          _buildSectionHeader('LEGAL & PRIVACY', isDark),
+          const SizedBox(height: 12),
+          _buildGroupedCard(
+            cardColor: cardColor,
+            isDark: isDark,
+            children: [
+              _buildActionTile(
+                title: 'Privacy Policy',
+                subtitle: 'How we collect and handle shop & customer data',
+                icon: Icons.privacy_tip_outlined,
+                isDark: isDark,
+                primaryTextColor: primaryTextColor,
+                secondaryTextColor: secondaryTextColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PrivacyPolicyTab(),
+                    ),
+                  );
+                },
+              ),
+              _buildDivider(isDark),
+              _buildActionTile(
+                title: 'Terms of Service',
+                subtitle: 'Merchant agreement and platform rules',
+                icon: Icons.gavel_outlined,
+                isDark: isDark,
+                primaryTextColor: primaryTextColor,
+                secondaryTextColor: secondaryTextColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TermsOfServiceTab(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+
           const SizedBox(height: 40),
 
-          // --- Logout Button ---
+          // --- LOGOUT BUTTON ---
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
@@ -146,8 +393,11 @@ class SellerSettingsTab extends StatelessWidget {
             ),
             child: OutlinedButton.icon(
               onPressed: onLogout,
-              icon: const Icon(Icons.logout_rounded,
-                  color: AppColors.error, size: 20),
+              icon: const Icon(
+                Icons.logout_rounded,
+                color: AppColors.error,
+                size: 20,
+              ),
               label: const Text(
                 'Logout Account',
                 style: TextStyle(
@@ -157,8 +407,9 @@ class SellerSettingsTab extends StatelessWidget {
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                backgroundColor:
-                    isDark ? AppColors.darkText : AppColors.cardWhite,
+                backgroundColor: isDark
+                    ? AppColors.darkText
+                    : AppColors.cardWhite,
                 side: BorderSide(
                   color: AppColors.error.withValues(alpha: 0.3),
                   width: 1.5,
@@ -170,7 +421,128 @@ class SellerSettingsTab extends StatelessWidget {
               ),
             ),
           ),
+
+          const SizedBox(height: 20),
         ],
+      ),
+    );
+  }
+
+  // --- Helper Widgets ---
+
+  Widget _buildSectionHeader(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: isDark
+              ? AppColors.cream.withValues(alpha: 0.6)
+              : AppColors.bobaBrown,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGroupedCard({
+    required Color cardColor,
+    required bool isDark,
+    required List<Widget> children,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? AppColors.bobaBrown.withValues(alpha: 0.4)
+              : AppColors.greyBorder,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildDivider(bool isDark) {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      indent: 56,
+      endIndent: 16,
+      color: isDark
+          ? AppColors.bobaBrown.withValues(alpha: 0.3)
+          : AppColors.greyBorder.withValues(alpha: 0.6),
+    );
+  }
+
+  Widget _buildActionTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isDark,
+    required Color primaryTextColor,
+    required Color secondaryTextColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.cream.withValues(alpha: 0.1)
+                    : AppColors.bobaBrown.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isDark ? AppColors.cream : AppColors.bobaBrown,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: primaryTextColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 12, color: secondaryTextColor),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: secondaryTextColor,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -191,8 +563,6 @@ class SellerSettingsTab extends StatelessWidget {
     final activeIconBg = isDark
         ? AppColors.bobaBrown.withValues(alpha: 0.6)
         : AppColors.bobaBrown;
-    
-    // Updated: Uses AppColors.cream in dark mode when active
     final activeIconColor = isDark ? AppColors.cream : AppColors.cardWhite;
 
     return InkWell(
@@ -208,8 +578,8 @@ class SellerSettingsTab extends StatelessWidget {
             color: isSelected
                 ? activeBorderColor
                 : (isDark
-                    ? AppColors.bobaBrown.withValues(alpha: 0.4)
-                    : AppColors.greyBorder),
+                      ? AppColors.bobaBrown.withValues(alpha: 0.4)
+                      : AppColors.greyBorder),
             width: isSelected ? 2.0 : 1.0,
           ),
           boxShadow: [
@@ -222,7 +592,6 @@ class SellerSettingsTab extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Icon container
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.all(12),
@@ -230,8 +599,8 @@ class SellerSettingsTab extends StatelessWidget {
                 color: isSelected
                     ? activeIconBg
                     : (isDark
-                        ? AppColors.bobaBrown.withValues(alpha: 0.5)
-                        : AppColors.background),
+                          ? AppColors.bobaBrown.withValues(alpha: 0.5)
+                          : AppColors.background),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -241,8 +610,6 @@ class SellerSettingsTab extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-
-            // Text Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,8 +618,9 @@ class SellerSettingsTab extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w600,
                       color: primaryTextColor,
                     ),
                   ),
@@ -268,10 +636,7 @@ class SellerSettingsTab extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(width: 8),
-
-            // Selection Badge Indicator
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: 24,
@@ -292,8 +657,7 @@ class SellerSettingsTab extends StatelessWidget {
                   ? Icon(
                       Icons.check_rounded,
                       size: 16,
-                      color:
-                          isDark ? AppColors.bobaBrown : AppColors.cardWhite,
+                      color: isDark ? AppColors.bobaBrown : AppColors.cardWhite,
                     )
                   : null,
             ),
