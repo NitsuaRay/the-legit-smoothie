@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
-import 'package:the_legit_smoothie/features/admin/views/tabs/widget/add_user_page.dart';
+import 'package:the_legit_smoothie/features/widgets/add_user_page.dart';
 
 class AdminUsersTab extends StatefulWidget {
   const AdminUsersTab({super.key});

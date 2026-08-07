@@ -6,7 +6,8 @@ import 'package:the_legit_smoothie/features/admin/views/tabs/store_tab/menu_mana
 import 'package:the_legit_smoothie/features/admin/views/tabs/store_tab/promos_discount_view.dart';
 import 'package:the_legit_smoothie/features/admin/views/tabs/store_tab/store_header.dart';
 import 'package:the_legit_smoothie/features/admin/views/tabs/store_tab/store_nav_bar.dart';
-import 'package:the_legit_smoothie/features/admin/views/tabs/widget/add_item_screen.dart';
+import 'package:the_legit_smoothie/features/widgets/add_item_screen.dart';
+
 class AdminStoreTab extends StatefulWidget {
   const AdminStoreTab({super.key});
 
@@ -90,11 +91,17 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
   bool _loyaltyEnabled = true;
 
   void _toggleAvailability(int index) {
-    setState(() => _menuItems[index]['isAvailable'] = !(_menuItems[index]['isAvailable'] as bool));
+    setState(
+      () => _menuItems[index]['isAvailable'] =
+          !(_menuItems[index]['isAvailable'] as bool),
+    );
   }
 
   void _toggleFeatured(int index) {
-    setState(() => _menuItems[index]['isFeatured'] = !(_menuItems[index]['isFeatured'] as bool));
+    setState(
+      () => _menuItems[index]['isFeatured'] =
+          !(_menuItems[index]['isFeatured'] as bool),
+    );
   }
 
   Future<void> _openAddItemModal() async {
@@ -120,7 +127,9 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
     final primaryAccent = isDarkMode ? AppColors.cream : AppColors.bobaBrown;
-    final availableCount = _menuItems.where((i) => i['isAvailable'] == true).length;
+    final availableCount = _menuItems
+        .where((i) => i['isAvailable'] == true)
+        .length;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -131,8 +140,25 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               StoreHeader(
+                selectedTab:
+                    _selectedTab, // Pass the active index (0, 1, 2, or 3)
                 activeCount: availableCount,
-                onAddItemPressed: _openAddItemModal,
+                onActionPressed: () {
+                  switch (_selectedTab) {
+                    case 0:
+                      _openAddItemModal(); // Open add product modal
+                      break;
+                    case 1:
+                      // Handle action for Featured tab
+                      break;
+                    case 2:
+                      // Handle action for Promos tab (e.g., _openAddPromoModal())
+                      break;
+                    case 3:
+                      // Handle action for Loyalty tab
+                      break;
+                  }
+                },
                 primaryAccent: primaryAccent,
                 isDarkMode: isDarkMode,
               ),
@@ -168,8 +194,10 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
                   LoyaltyProgramView(
                     loyaltyEnabled: _loyaltyEnabled,
                     pointsPerPeso: _pointsPerPeso,
-                    onLoyaltyToggle: (val) => setState(() => _loyaltyEnabled = val),
-                    onPointsChanged: (val) => setState(() => _pointsPerPeso = val),
+                    onLoyaltyToggle: (val) =>
+                        setState(() => _loyaltyEnabled = val),
+                    onPointsChanged: (val) =>
+                        setState(() => _pointsPerPeso = val),
                     primaryAccent: primaryAccent,
                     isDarkMode: isDarkMode,
                   ),

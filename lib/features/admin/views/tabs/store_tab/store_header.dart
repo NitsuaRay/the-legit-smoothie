@@ -2,23 +2,60 @@ import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
 
 class StoreHeader extends StatelessWidget {
+  final int selectedTab; // 0: Menu, 1: Featured, 2: Promos, 3: Loyalty
   final int activeCount;
-  final VoidCallback onAddItemPressed;
+  final VoidCallback onActionPressed;
   final Color primaryAccent;
   final bool isDarkMode;
 
   const StoreHeader({
     super.key,
+    required this.selectedTab,
     required this.activeCount,
-    required this.onAddItemPressed,
+    required this.onActionPressed,
     required this.primaryAccent,
     required this.isDarkMode,
   });
 
+  // Helper method to get the icon based on the active tab
+  IconData _getTabIcon() {
+    switch (selectedTab) {
+      case 0:
+        return Icons.restaurant_menu_rounded; // Menu -> Add item icon
+      case 1:
+        return Icons.star_rounded;        // Featured -> Star/Featured icon
+      case 2:
+        return Icons.local_offer_rounded;  // Promos -> Tag/Promo icon
+      case 3:
+        return Icons.tune_rounded;         // Loyalty -> Settings/Tune icon
+      default:
+        return Icons.add_rounded;
+    }
+  }
+
+  // Helper tooltip/accessibility hint based on active tab
+  String _getTooltipText() {
+    switch (selectedTab) {
+      case 0:
+        return 'Add Menu Item';
+      case 1:
+        return 'Manage Featured Items';
+      case 2:
+        return 'Add Promo Code';
+      case 3:
+        return 'Loyalty Settings';
+      default:
+        return 'Add Action';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final subTextColor = Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6) ??
+    final theme = Theme.of(context);
+    final subTextColor = theme.textTheme.bodyMedium?.color?.withOpacity(0.6) ??
         (isDarkMode ? Colors.white70 : AppColors.greyText);
+
+    final iconColor = isDarkMode ? AppColors.darkText : Colors.white;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,6 +63,7 @@ class StoreHeader extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // Store Title Section
             Expanded(
               child: Row(
                 children: [
@@ -52,21 +90,31 @@ class StoreHeader extends StatelessWidget {
                 ],
               ),
             ),
-            Material(
-              color: primaryAccent,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                onTap: onAddItemPressed,
+
+            // Dynamic Action Button
+            Tooltip(
+              message: _getTooltipText(),
+              child: Material(
+                color: primaryAccent,
                 borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_rounded, size: 18, color: isDarkMode ? AppColors.darkText : Colors.white),
-                      const SizedBox(width: 2),
-                      Icon(Icons.inventory_2_rounded, size: 18, color: isDarkMode ? AppColors.darkText : Colors.white),
-                    ],
+                child: InkWell(
+                  onTap: onActionPressed,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                      child: Row(
+                        key: ValueKey<int>(selectedTab), // Keys trigger animation on tab change
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_rounded, size: 18, color: iconColor),
+                          const SizedBox(width: 2),
+                          Icon(_getTabIcon(), size: 18, color: iconColor),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
