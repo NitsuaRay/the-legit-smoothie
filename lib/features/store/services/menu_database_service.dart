@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/category_model.dart';
 import '../models/add_on_model.dart';
 import '../models/size_model.dart';
+import '../models/flavor_model.dart';
 import '../models/menu_item_model.dart';
 
 class MenuDatabaseService {
@@ -26,7 +27,7 @@ class MenuDatabaseService {
         .toList();
   }
 
-  /// Fetch all menu items along with their joined categories, sizes, and add-ons
+  /// Fetch all menu items along with their joined categories, sizes, add-ons, and flavors
   Future<List<MenuItemModel>> getMenuItems() async {
     final response = await _supabase
         .from('menu_items')
@@ -38,6 +39,9 @@ class MenuDatabaseService {
           ),
           item_add_ons (
             add_ons (*)
+          ),
+          item_flavors (
+            flavors (*)
           )
         ''')
         .order('id', ascending: false);
@@ -64,11 +68,22 @@ class MenuDatabaseService {
     return (response as List).map((json) => AddOnModel.fromJson(json)).toList();
   }
 
+  /// Fetch master list of flavors
+  Future<List<FlavorModel>> getFlavors() async {
+    final response = await _supabase
+        .from('flavors')
+        .select()
+        .eq('is_available', true)
+        .order('name');
+
+    return (response as List).map((json) => FlavorModel.fromJson(json)).toList();
+  }
+
   // ==========================================
   // CREATE / UPDATE / DELETE METHODS
   // ==========================================
 
-  /// Insert a new menu item and link selected sizes & add-ons
+  /// Insert a new menu item and link selected sizes, add-ons, & flavors
   Future<void> createMenuItem({
     required int categoryId,
     required String name,
@@ -76,6 +91,8 @@ class MenuDatabaseService {
     String? imagePath,
     required List<int> sizeIds,
     required List<int> addOnIds,
+    required List<int> flavorIds,
+    required bool isAvailable,
   }) async {
     // 1. Insert Menu Item
     final insertedItem = await _supabase
@@ -85,6 +102,7 @@ class MenuDatabaseService {
           'name': name,
           'price': price,
           'image_path': imagePath,
+          'is_available': isAvailable,
         })
         .select()
         .single();
@@ -105,6 +123,14 @@ class MenuDatabaseService {
           .map((aId) => {'menu_item_id': newItemId, 'add_on_id': aId})
           .toList();
       await _supabase.from('item_add_ons').insert(addOnRows);
+    }
+
+    // 4. Attach Flavors in Pivot Table
+    if (flavorIds.isNotEmpty) {
+      final flavorRows = flavorIds
+          .map((fId) => {'menu_item_id': newItemId, 'flavor_id': fId})
+          .toList();
+      await _supabase.from('item_flavors').insert(flavorRows);
     }
   }
 

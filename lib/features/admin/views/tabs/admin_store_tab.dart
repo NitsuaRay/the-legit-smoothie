@@ -16,60 +16,14 @@ class AdminStoreTab extends StatefulWidget {
 }
 
 class _AdminStoreTabState extends State<AdminStoreTab> {
+  // GlobalKey to trigger loadMenuData() inside MenuManagementView when an item is added
+  final GlobalKey<MenuManagementViewState> _menuKey =
+      GlobalKey<MenuManagementViewState>();
+
   int _selectedTab = 0; // 0: Menu, 1: Featured, 2: Promos, 3: Loyalty
+  int _activeCount = 0; // <-- 1. Added active count state variable
 
-  // Centralized State
-  final List<Map<String, dynamic>> _menuItems = [
-    {
-      'name': 'Mango Smoothie',
-      'category': 'Smoothies',
-      'price': '₱120',
-      'icon': '🥭',
-      'isAvailable': true,
-      'isFeatured': true,
-    },
-    {
-      'name': 'Brown Sugar Milk Tea',
-      'category': 'Milk Tea',
-      'price': '₱110',
-      'icon': '🧋',
-      'isAvailable': true,
-      'isFeatured': false,
-    },
-    {
-      'name': 'Special Siomai Roll',
-      'category': 'Snacks',
-      'price': '₱75',
-      'icon': '🥟',
-      'isAvailable': true,
-      'isFeatured': true,
-    },
-    {
-      'name': 'Avocado Bliss',
-      'category': 'Smoothies',
-      'price': '₱135',
-      'icon': '🥑',
-      'isAvailable': false,
-      'isFeatured': false,
-    },
-    {
-      'name': 'Boba Pearls',
-      'category': 'Add-ons',
-      'price': '₱20',
-      'icon': '🧆',
-      'isAvailable': true,
-      'isFeatured': false,
-    },
-    {
-      'name': 'Strawberry Delight',
-      'category': 'Smoothies',
-      'price': '₱125',
-      'icon': '🍓',
-      'isAvailable': true,
-      'isFeatured': true,
-    },
-  ];
-
+  // Promos & Loyalty program state
   final List<Map<String, dynamic>> _promos = [
     {
       'code': 'SMOOTHIESUMMER',
@@ -90,22 +44,9 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
   double _pointsPerPeso = 1.0;
   bool _loyaltyEnabled = true;
 
-  void _toggleAvailability(int index) {
-    setState(
-      () => _menuItems[index]['isAvailable'] =
-          !(_menuItems[index]['isAvailable'] as bool),
-    );
-  }
-
-  void _toggleFeatured(int index) {
-    setState(
-      () => _menuItems[index]['isFeatured'] =
-          !(_menuItems[index]['isFeatured'] as bool),
-    );
-  }
-
+  /// Opens the Add Item bottom sheet modal & refreshes database menu if saved
   Future<void> _openAddItemModal() async {
-    final newItem = await showModalBottomSheet<Map<String, dynamic>>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -114,11 +55,9 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
       builder: (context) => const AddItemScreen(),
     );
 
-    if (newItem != null) {
-      setState(() {
-        newItem['isFeatured'] = false;
-        _menuItems.insert(0, newItem);
-      });
+    // Refresh database items in MenuManagementView if a new product was created
+    if (result == true) {
+      _menuKey.currentState?.loadMenuData();
     }
   }
 
@@ -127,35 +66,31 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
     final primaryAccent = isDarkMode ? AppColors.cream : AppColors.bobaBrown;
-    final availableCount = _menuItems
-        .where((i) => i['isAvailable'] == true)
-        .length;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 1. Header with dynamic action button
               StoreHeader(
-                selectedTab:
-                    _selectedTab, // Pass the active index (0, 1, 2, or 3)
-                activeCount: availableCount,
+                selectedTab: _selectedTab,
+                activeCount:
+                    _activeCount, // <-- 2. Replaced hardcoded '0' with state variable
                 onActionPressed: () {
                   switch (_selectedTab) {
                     case 0:
-                      _openAddItemModal(); // Open add product modal
+                      _openAddItemModal();
                       break;
                     case 1:
-                      // Handle action for Featured tab
                       break;
                     case 2:
-                      // Handle action for Promos tab (e.g., _openAddPromoModal())
                       break;
                     case 3:
-                      // Handle action for Loyalty tab
                       break;
                   }
                 },
@@ -163,6 +98,8 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
                 isDarkMode: isDarkMode,
               ),
               const SizedBox(height: 16),
+
+              // 2. Tab Navigation Bar
               StoreNavBar(
                 selectedTab: _selectedTab,
                 onTabChanged: (index) => setState(() => _selectedTab = index),
@@ -170,19 +107,30 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
                 isDarkMode: isDarkMode,
               ),
               const SizedBox(height: 20),
+
+              // 3. Indexed Tab Views
               IndexedStack(
                 index: _selectedTab,
                 children: [
                   MenuManagementView(
-                    menuItems: _menuItems,
-                    onToggleAvailability: _toggleAvailability,
-                    onToggleFeatured: _toggleFeatured,
+                    key: _menuKey,
                     primaryAccent: primaryAccent,
                     isDarkMode: isDarkMode,
+                    onAddItemPressed: _openAddItemModal,
+                    onActiveCountChanged: (count) {
+                      // <-- 3. Callback updates state safely after build completes
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() => _activeCount = count);
+                        }
+                      });
+                    },
                   ),
                   FeaturedItemsView(
-                    menuItems: _menuItems,
-                    onToggleFeatured: _toggleFeatured,
+                    menuItems: const [],
+                    onToggleFeatured: (id) {
+                      // TODO: Implement toggle featured logic here if needed
+                    },
                     primaryAccent: primaryAccent,
                     isDarkMode: isDarkMode,
                   ),
