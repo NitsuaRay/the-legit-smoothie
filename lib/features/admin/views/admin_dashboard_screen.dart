@@ -4,7 +4,7 @@ import '../../auth/services/auth_service.dart';
 import '../../auth/views/login_screen.dart';
 import '../../../core/widgets/custom_bottom_navbar.dart';
 
-import 'tabs/admin_menu_tab.dart';
+import 'tabs/admin_store_tab.dart';
 import 'tabs/admin_users_tab.dart';
 import 'tabs/admin_settings_tab.dart';
 
@@ -50,7 +50,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     final List<Widget> pages = [
       const AdminAnalyticsHomeTab(),
-      const AdminMenuTab(),
+      const AdminStoreTab(),
       const AdminUsersTab(),
       AdminSettingsTab(
         onLogout: _handleLogout,

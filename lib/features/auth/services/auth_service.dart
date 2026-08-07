@@ -23,32 +23,68 @@ class AuthService {
           .eq('id', response.user!.id)
           .single();
 
-      return profile['role'] as String; // Returns 'admin', 'seller', or 'customer'
+      return profile['role'] as String;
     } catch (e) {
       throw e.toString();
     }
   }
 
-  // Registration Method (For Customers/Sellers)
+  // Registration Method (Customers Only)
   Future<void> register({
     required String email,
     required String password,
     required String firstName,
     required String middleName,
     required String lastName,
-    String role = 'customer',
+    required String phoneNumber,
+    required String region,
+    required String province,
+    required String cityMunicipality,
+    required String barangay,
+    required String streetAddress,
+    required bool termsAccepted,
   }) async {
     try {
-      await _supabase.auth.signUp(
+      final now = DateTime.now().toIso8601String();
+
+      // 1. Sign up user as 'customer'
+      final response = await _supabase.auth.signUp(
         email: email,
         password: password,
         data: {
+          'full_name': '$firstName $lastName',
           'first_name': firstName,
           'middle_name': middleName,
           'last_name': lastName,
-          'role': role,
+          'phone_number': phoneNumber,
+          'role': 'customer',
+          'terms_accepted': termsAccepted,
+          'terms_accepted_at': now,
         },
       );
+
+      final user = response.user;
+      if (user == null) {
+        throw 'Registration failed. User creation returned null.';
+      }
+
+      // 2. Insert primary address into public.addresses
+      await _supabase.from('addresses').insert({
+        'user_id': user.id,
+        'region': region,
+        'province': province,
+        'city_municipality': cityMunicipality,
+        'barangay': barangay,
+        'street_address': streetAddress,
+        'is_default': true,
+      });
+
+      // 3. Update public.profiles table with terms tracking
+      await _supabase.from('profiles').update({
+        'terms_accepted': termsAccepted,
+        'terms_accepted_at': now,
+      }).eq('id', user.id);
+
     } catch (e) {
       throw e.toString();
     }

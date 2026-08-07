@@ -40,7 +40,7 @@ class CustomBottomNavBar extends StatelessWidget {
           CustomNavBarItem(
             icon: Icons.store_outlined,
             selectedIcon: Icons.store_rounded,
-            label: 'Sellers',
+            label: 'Store',
           ),
           CustomNavBarItem(
             icon: Icons.people_outline,
