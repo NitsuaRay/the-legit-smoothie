@@ -57,7 +57,7 @@ class _SellerMenuTabState extends State<SellerMenuTab> {
                 primaryAccent: primaryAccent,
                 isDarkMode: isDarkMode,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
 
               // 2. Direct Menu Management View
               MenuManagementView(

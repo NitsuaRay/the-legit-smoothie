@@ -19,22 +19,38 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
       'customer': 'Angelica Cruz',
       'phone': '+63 917 123 4567',
       'items': [
-        {'name': 'Avocado Smoothie', 'qty': 1, 'price': 120.0, 'customization': 'Less Ice, 50% Sugar'},
-        {'name': 'Cheese Foam', 'qty': 2, 'price': 80.0, 'customization': 'Extra Salted Cheese'},
+        {
+          'name': 'Avocado Smoothie',
+          'qty': 1,
+          'price': 120.0,
+          'customization': 'Less Ice, 50% Sugar',
+        },
+        {
+          'name': 'Cheese Foam',
+          'qty': 2,
+          'price': 80.0,
+          'customization': 'Extra Salted Cheese',
+        },
       ],
       'total': 280.0,
       'status': 'Pending',
       'time': '3 mins ago',
       'type': 'Pickup',
       'paymentMethod': 'GCash (Paid)',
-      'notes': 'Please pack the cheese foam in a separate container if possible.',
+      'notes':
+          'Please pack the cheese foam in a separate container if possible.',
     },
     {
       'id': 'ORD-2002',
       'customer': 'Mark Reyes',
       'phone': '+63 928 987 6543',
       'items': [
-        {'name': 'Classic Pearl Boba', 'qty': 2, 'price': 120.0, 'customization': 'Regular Ice, Normal Sugar'},
+        {
+          'name': 'Classic Pearl Boba',
+          'qty': 2,
+          'price': 120.0,
+          'customization': 'Regular Ice, Normal Sugar',
+        },
       ],
       'total': 240.0,
       'status': 'Preparing',
@@ -48,7 +64,12 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
       'customer': 'Sarah Jenkins',
       'phone': '+63 999 555 1122',
       'items': [
-        {'name': 'Taro Smoothie Supreme', 'qty': 1, 'price': 140.0, 'customization': 'No Pearls, Extra Pudding'},
+        {
+          'name': 'Taro Smoothie Supreme',
+          'qty': 1,
+          'price': 140.0,
+          'customization': 'No Pearls, Extra Pudding',
+        },
       ],
       'total': 140.0,
       'status': 'Ready',
@@ -62,7 +83,12 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
       'customer': 'Kevin Tan',
       'phone': '+63 918 333 4455',
       'items': [
-        {'name': 'Mango Graham Special', 'qty': 1, 'price': 150.0, 'customization': 'Extra Mangos'},
+        {
+          'name': 'Mango Graham Special',
+          'qty': 1,
+          'price': 150.0,
+          'customization': 'Extra Mangos',
+        },
       ],
       'total': 150.0,
       'status': 'Completed',
@@ -114,7 +140,14 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
     return items.map((i) => '${i['qty']}x ${i['name']}').join(', ');
   }
 
-  void _showOrderDetailsModal(BuildContext context, Map<String, dynamic> order, Color cardColor, Color primaryTextColor, Color secondaryTextColor, bool isDark) {
+  void _showOrderDetailsModal(
+    BuildContext context,
+    Map<String, dynamic> order,
+    Color cardColor,
+    Color primaryTextColor,
+    Color secondaryTextColor,
+    bool isDark,
+  ) {
     final status = order['status'] as String;
     final statusColor = _getStatusColor(status);
     final items = order['items'] as List<dynamic>;
@@ -128,7 +161,7 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
       ),
       builder: (context) {
         return Padding(
-          padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,28 +171,52 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
                 children: [
                   Text(
                     order['id'],
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryTextColor),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: primaryTextColor,
+                    ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: statusColor.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       status,
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusColor),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              Text('Customer Information', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: primaryTextColor)),
+              Text(
+                'Customer Information',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: primaryTextColor,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('${order['customer']} (${order['phone']})', style: TextStyle(fontSize: 13, color: secondaryTextColor)),
+              Text(
+                '${order['customer']} (${order['phone']})',
+                style: TextStyle(fontSize: 13, color: secondaryTextColor),
+              ),
               const SizedBox(height: 8),
-              Text('Fulfillment Type: ${order['type']} | Payment: ${order['paymentMethod']}', style: TextStyle(fontSize: 13, color: secondaryTextColor)),
-              
+              Text(
+                'Fulfillment Type: ${order['type']} | Payment: ${order['paymentMethod']}',
+                style: TextStyle(fontSize: 13, color: secondaryTextColor),
+              ),
+
               if (order['notes'].isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -170,12 +227,20 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.note_alt_rounded, size: 18, color: Colors.amber),
+                      const Icon(
+                        Icons.note_alt_rounded,
+                        size: 18,
+                        color: Colors.amber,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Note: ${order['notes']}',
-                          style: TextStyle(fontSize: 12, color: primaryTextColor, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: primaryTextColor,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
@@ -184,33 +249,76 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
               ],
 
               const SizedBox(height: 16),
-              Text('Order Items', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: primaryTextColor)),
-              const SizedBox(height: 8),
-              ...items.map((item) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${item['qty']}x ${item['name']}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primaryTextColor)),
-                          if (item['customization'].isNotEmpty)
-                            Text(item['customization'], style: TextStyle(fontSize: 11, color: secondaryTextColor)),
-                        ],
-                      ),
-                    ),
-                    Text('₱${(item['price'] * item['qty']).toStringAsFixed(2)}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: primaryTextColor)),
-                  ],
+              Text(
+                'Order Items',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: primaryTextColor,
                 ),
-              )),
+              ),
+              const SizedBox(height: 8),
+              ...items.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${item['qty']}x ${item['name']}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: primaryTextColor,
+                              ),
+                            ),
+                            if (item['customization'].isNotEmpty)
+                              Text(
+                                item['customization'],
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: secondaryTextColor,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '₱${(item['price'] * item['qty']).toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: primaryTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const Divider(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Total Amount', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: primaryTextColor)),
-                  Text('₱${(order['total'] as double).toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? AppColors.cream : AppColors.bobaBrown)),
+                  Text(
+                    'Total Amount',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: primaryTextColor,
+                    ),
+                  ),
+                  Text(
+                    '₱${(order['total'] as double).toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.cream : AppColors.bobaBrown,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -220,10 +328,18 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.bobaBrown,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Close', style: TextStyle(color: AppColors.cream, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      color: AppColors.cream,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -254,7 +370,7 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
       backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -334,10 +450,20 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildOrdersList(activeOrders, cardColor, primaryTextColor,
-                        secondaryTextColor, isDark),
-                    _buildOrdersList(pastOrders, cardColor, primaryTextColor,
-                        secondaryTextColor, isDark),
+                    _buildOrdersList(
+                      activeOrders,
+                      cardColor,
+                      primaryTextColor,
+                      secondaryTextColor,
+                      isDark,
+                    ),
+                    _buildOrdersList(
+                      pastOrders,
+                      cardColor,
+                      primaryTextColor,
+                      secondaryTextColor,
+                      isDark,
+                    ),
                   ],
                 ),
               ),
@@ -389,7 +515,14 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
         final itemsSummary = _getItemsSummary(order['items']);
 
         return InkWell(
-          onTap: () => _showOrderDetailsModal(context, order, cardColor, primaryTextColor, secondaryTextColor, isDark),
+          onTap: () => _showOrderDetailsModal(
+            context,
+            order,
+            cardColor,
+            primaryTextColor,
+            secondaryTextColor,
+            isDark,
+          ),
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.all(16.0),
@@ -428,7 +561,9 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: isDark
                                 ? AppColors.bobaBrown.withOpacity(0.4)
@@ -447,8 +582,10 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
                       ],
                     ),
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: statusColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(20),
@@ -478,10 +615,7 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
                   itemsSummary,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: secondaryTextColor,
-                  ),
+                  style: TextStyle(fontSize: 13, color: secondaryTextColor),
                 ),
                 const SizedBox(height: 12),
                 Divider(
@@ -502,7 +636,9 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: isDark ? AppColors.cream : AppColors.bobaBrown,
+                            color: isDark
+                                ? AppColors.cream
+                                : AppColors.bobaBrown,
                           ),
                         ),
                         Text(
@@ -524,7 +660,9 @@ class _SellerOrdersTabState extends State<SellerOrdersTab>
                         ),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.bobaBrown,
                             borderRadius: BorderRadius.circular(8),

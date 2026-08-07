@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:philippines_rpcmb/philippines_rpcmb.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
+import 'package:the_legit_smoothie/main.dart';
 import '../services/auth_service.dart';
 import 'package:flutter/services.dart';
 
@@ -50,6 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   final AuthService _authService = AuthService();
 
+  late AnimationController _floatController;
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -58,10 +62,15 @@ class _RegisterScreenState extends State<RegisterScreen>
   void initState() {
     super.initState();
     _phoneController.text = '+63 9';
+    _floatController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
+    _floatController.dispose();
     _pageController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -107,15 +116,15 @@ class _RegisterScreenState extends State<RegisterScreen>
   double _getCardHeight() {
     switch (_currentStep) {
       case 0:
-        return 380; // Increased from 330 to fit validation errors cleanly
+        return 400; // Increased from 330 to fit validation errors cleanly
       case 1:
-        return 380; // Increased from 340
+        return 420; // Increased from 340
       case 2:
-        return 420;
+        return 460;
       case 3:
-        return 400;
+        return 440;
       default:
-        return 380;
+        return 420;
     }
   }
 
@@ -193,13 +202,23 @@ class _RegisterScreenState extends State<RegisterScreen>
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Customer account created successfully!'),
+          content: Text('Customer account created successfully! 🥤'),
           backgroundColor: AppColors.bobaBrown,
           behavior: SnackBarBehavior.floating,
         ),
       );
 
-      Navigator.of(context).pop();
+      // Navigate to AuthGate passing the current theme mode & theme switcher
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => AuthGate(
+            currentThemeMode: widget.currentThemeMode,
+            onThemeModeChanged: widget.onThemeModeChanged,
+          ),
+        ),
+        (route) =>
+            false, // Clears the back stack so user cannot pop back to RegisterScreen
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -241,65 +260,195 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Determine if light mode is active
+    final bool isLightMode =
+        widget.currentThemeMode == ThemeMode.light ||
+        (widget.currentThemeMode == ThemeMode.system &&
+            MediaQuery.of(context).platformBrightness == Brightness.light);
+
+    // Select background image based on current theme mode
+    final String backgroundImagePath = isLightMode
+        ? 'assets/bgWhite.png'
+        : 'assets/bgBrown.png';
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLightMode ? AppColors.background : AppColors.darkText,
       body: Stack(
         children: [
+          // --- Dynamic Full Screen Background Image ---
           Positioned.fill(
             child: Image.asset(
-              'assets/bgBrown.png',
+              backgroundImagePath,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  Container(color: AppColors.background),
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: isLightMode ? AppColors.background : AppColors.darkText,
+              ),
             ),
           ),
+
+          // --- Floating Full-Color Image Background ---
+          AnimatedBuilder(
+            animation: _floatController,
+            builder: (context, child) {
+              final offset = math.sin(_floatController.value * math.pi) * 10;
+
+              return Stack(
+                children: [
+                  Positioned(
+                    top: 65 + offset,
+                    left: 10,
+                    child: _buildFloatingItem(
+                      'assets/mangooreo.png',
+                      size: 75,
+                      angle: -0.2,
+                    ),
+                  ),
+                  Positioned(
+                    top: 85 - offset,
+                    right: 10,
+                    child: _buildFloatingItem(
+                      'assets/avocadograham.png',
+                      size: 85,
+                      angle: 0.15,
+                    ),
+                  ),
+                  Positioned(
+                    top: MediaQuery.of(context).size.height * 0.45 + offset,
+                    right: 15,
+                    child: _buildFloatingItem(
+                      'assets/dragonfruit.png',
+                      size: 70,
+                      angle: 0.3,
+                    ),
+                  ),
+                  Positioned(
+                    top: MediaQuery.of(context).size.height * 0.48 - offset,
+                    left: 15,
+                    child: _buildFloatingItem(
+                      'assets/camel.png',
+                      size: 65,
+                      angle: -0.25,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 45 + offset,
+                    left: 15,
+                    child: _buildFloatingItem(
+                      'assets/cookiesandcream.png',
+                      size: 80,
+                      angle: -0.1,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 55 - offset,
+                    right: 15,
+                    child: _buildFloatingItem(
+                      'assets/lemon.png',
+                      size: 75,
+                      angle: 0.2,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+
+          // --- Theme Toggle Button ---
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: IconButton.filledTonal(
+                  onPressed: () {
+                    final nextMode = isLightMode
+                        ? ThemeMode.dark
+                        : ThemeMode.light;
+                    widget.onThemeModeChanged(nextMode);
+                  },
+                  icon: Icon(
+                    isLightMode
+                        ? Icons.dark_mode_rounded
+                        : Icons.light_mode_rounded,
+                    color: AppColors.bobaBrown,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.cardWhite.withValues(
+                      alpha: 0.85,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24.0,
-                  vertical: 20.0,
+                  vertical: 32.0,
                 ),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 460),
+                  constraints: const BoxConstraints(maxWidth: 440),
                   child: Column(
                     children: [
-                      // Header Logo
                       Container(
-                        width: 80,
-                        height: 80,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        width: 170,
+                        height: 170,
+                        decoration: BoxDecoration(
+                          color: AppColors.cardWhite,
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.bobaBrown.withValues(alpha: 0.3),
+                            width: 3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.bobaBrown.withValues(
+                                alpha: 0.18,
+                              ),
+                              blurRadius: 28,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
                         ),
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(16),
                         child: ClipOval(
                           child: Image.asset(
                             'assets/logoSmoothie.png',
                             fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(
-                                  Icons.local_drink,
-                                  size: 40,
-                                  color: AppColors.bobaBrown,
-                                ),
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.local_drink_rounded,
+                                size: 80,
+                                color: AppColors.bobaBrown,
+                              );
+                            },
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 24),
                       Text(
                         _getStepTitle(),
-                        style: const TextStyle(
-                          fontSize: 22,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 28,
                           fontWeight: FontWeight.w900,
                           color: AppColors.bobaBrown,
+                          letterSpacing: -0.8,
                         ),
                       ),
+                      const SizedBox(height: 6),
                       Text(
                         'Step ${_currentStep + 1} of $_totalSteps',
-                        style: const TextStyle(
-                          color: AppColors.cardWhite,
-                          fontSize: 12,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: isLightMode
+                              ? AppColors.darkText.withValues(alpha: 0.8)
+                              : AppColors.cardWhite,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -309,10 +458,20 @@ class _RegisterScreenState extends State<RegisterScreen>
                         duration: const Duration(milliseconds: 250),
                         curve: Curves.easeInOut,
                         height: _getCardHeight(),
-                        padding: const EdgeInsets.all(20.0),
+                        padding: const EdgeInsets.all(32.0),
                         decoration: BoxDecoration(
-                          color: AppColors.cardWhite.withValues(alpha: 0.95),
-                          borderRadius: BorderRadius.circular(24),
+                          color: AppColors.cardWhite.withValues(
+                            alpha: isLightMode ? 0.92 : 0.96,
+                          ),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.darkText.withValues(alpha: 0.08),
+                              blurRadius: 32,
+                              offset: const Offset(0, 12),
+                            ),
+                          ],
                         ),
                         child: PageView(
                           controller: _pageController,
@@ -365,12 +524,26 @@ class _RegisterScreenState extends State<RegisterScreen>
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    autocorrect: false,
-                    enableSuggestions: false,
-                    textCapitalization: TextCapitalization.none,
+                    style: const TextStyle(
+                      color: AppColors.darkText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
                     decoration: _buildInputDecoration(
-                      'Email Address',
-                      Icons.email_outlined,
+                      label: 'Email Address',
+                      icon: Icons.email_outlined,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: AppColors.greyText,
+                          size: 20,
+                        ),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
+                      ),
                     ),
                     validator: (v) {
                       final email = v?.trim() ?? '';
@@ -388,14 +561,20 @@ class _RegisterScreenState extends State<RegisterScreen>
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
+                    style: const TextStyle(
+                      color: AppColors.darkText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
                     decoration: _buildInputDecoration(
-                      'Password',
-                      Icons.lock_outline,
+                      label: 'Password',
+                      icon: Icons.lock_outline_rounded,
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: AppColors.greyText,
                           size: 20,
                         ),
                         onPressed: () => setState(
@@ -410,9 +589,14 @@ class _RegisterScreenState extends State<RegisterScreen>
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPassword,
+                    style: const TextStyle(
+                      color: AppColors.darkText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
                     decoration: _buildInputDecoration(
-                      'Confirm Password',
-                      Icons.lock_reset,
+                      label: 'Confitm Password',
+                      icon: Icons.lock_outline_rounded,
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscureConfirmPassword
@@ -426,6 +610,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                         ),
                       ),
                     ),
+
                     validator: (v) => v != _passwordController.text
                         ? 'Passwords do not match'
                         : null,
@@ -442,6 +627,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                         child: Checkbox(
                           value: _acceptedTerms,
                           activeColor: AppColors.bobaBrown,
+                          checkColor:
+                              Colors.white, // Colors the checkmark icon white
+                          side: BorderSide(
+                            color: AppColors.bobaBrown,
+                            width: 2,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -544,9 +735,14 @@ class _RegisterScreenState extends State<RegisterScreen>
                 children: [
                   TextFormField(
                     controller: _firstNameController,
+                    style: const TextStyle(
+                      color: AppColors.darkText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
                     decoration: _buildInputDecoration(
-                      'First Name',
-                      Icons.person_outline,
+                      label: 'First Name',
+                      icon: Icons.person_outline,
                     ),
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required' : null,
@@ -554,17 +750,27 @@ class _RegisterScreenState extends State<RegisterScreen>
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: _middleNameController,
+                    style: const TextStyle(
+                      color: AppColors.darkText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
                     decoration: _buildInputDecoration(
-                      'Middle Name (Optional)',
-                      Icons.person_outline,
+                      label: 'MIddle Name (Optional)',
+                      icon: Icons.person_outline,
                     ),
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: _lastNameController,
+                    style: const TextStyle(
+                      color: AppColors.darkText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
                     decoration: _buildInputDecoration(
-                      'Last Name',
-                      Icons.person_outline,
+                      label: 'Last Name',
+                      icon: Icons.person_outline,
                     ),
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required' : null,
@@ -573,6 +779,11 @@ class _RegisterScreenState extends State<RegisterScreen>
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
+                    style: const TextStyle(
+                      color: AppColors.darkText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
                     maxLength: 14,
                     inputFormatters: [
                       TextInputFormatter.withFunction((oldValue, newValue) {
@@ -592,8 +803,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                       FilteringTextInputFormatter.allow(RegExp(r'^\+63 9\d*')),
                     ],
                     decoration: _buildInputDecoration(
-                      '+63 9XXXXXXXXX',
-                      Icons.phone_outlined,
+                      label: '+63 9XXXXXXXXX',
+                      icon: Icons.phone_outlined,
                     ).copyWith(counterText: ''),
                     validator: (v) {
                       final phone = v?.trim() ?? '';
@@ -684,8 +895,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                   TextFormField(
                     controller: _streetAddressController,
                     decoration: _buildInputDecoration(
-                      'House No. / Street Address',
-                      Icons.home_outlined,
+                      label: 'House No. / Street Address',
+                      icon: Icons.email_outlined,
                     ),
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required' : null,
@@ -978,36 +1189,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 
-  // --- UI Helpers ---
-  InputDecoration _buildInputDecoration(
-    String labelText,
-    IconData icon, {
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      hintText: labelText,
-      hintStyle: const TextStyle(color: AppColors.greyText, fontSize: 14),
-      prefixIcon: Icon(icon, color: AppColors.bobaBrown, size: 18),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: AppColors.background.withValues(alpha: 0.5),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      isDense: true,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.greyBorder),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.greyBorder),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.bobaBrown, width: 1.5),
-      ),
-    );
-  }
-
   Widget _buildDropdownContainer({required Widget child}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1068,6 +1249,61 @@ class _RegisterScreenState extends State<RegisterScreen>
       backgroundColor: AppColors.bobaBrown,
       foregroundColor: AppColors.cream,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    );
+  }
+
+  Widget _buildFloatingItem(
+    String assetPath, {
+    required double size,
+    required double angle,
+  }) {
+    return Transform.rotate(
+      angle: angle,
+      child: Image.asset(
+        assetPath,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration({
+    required String label,
+    required IconData icon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(
+        color: AppColors.greyText,
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+      ),
+      prefixIcon: Icon(icon, color: AppColors.bobaBrown, size: 22),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: AppColors.background.withValues(alpha: 0.6),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+          color: AppColors.greyBorder.withValues(alpha: 0.8),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.bobaBrown, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.error, width: 2),
+      ),
     );
   }
 }

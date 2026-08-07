@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
 import 'package:the_legit_smoothie/features/auth/views/register_screen.dart';
-import 'package:the_legit_smoothie/main.dart'; // Import AuthGate from main.dart
+import 'package:the_legit_smoothie/main.dart';
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -33,7 +33,6 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
-    // Continuous floating movement for background product images
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
@@ -61,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (!mounted) return;
 
-      if (role == 'admin') {
+      if (role == 'admin' || role == 'seller') {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => AuthGate(
@@ -71,25 +70,10 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         );
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Welcome back, Admin Austin! 🥤'),
-            backgroundColor: AppColors.bobaBrown,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } else if (role == 'seller') {
-        // TODO: Navigate to Seller Dashboard
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => AuthGate(
-              currentThemeMode: widget.currentThemeMode,
-              onThemeModeChanged: widget.onThemeModeChanged,
+          SnackBar(
+            content: Text(
+              'Welcome back, ${role == 'admin' ? 'Admin' : 'Seller'} Austin! 🥤',
             ),
-          ),
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Welcome back, Seller Austin! 🥤'),
             backgroundColor: AppColors.bobaBrown,
             behavior: SnackBarBehavior.floating,
           ),
@@ -113,17 +97,27 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Determine if light mode is active
+    final bool isLightMode = widget.currentThemeMode == ThemeMode.light ||
+        (widget.currentThemeMode == ThemeMode.system &&
+            MediaQuery.of(context).platformBrightness == Brightness.light);
+
+    // Select background image based on current theme mode
+    final String backgroundImagePath =
+        isLightMode ? 'assets/bgWhite.png' : 'assets/bgBrown.png';
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLightMode ? AppColors.background : AppColors.darkText,
       body: Stack(
         children: [
-          // --- Full Screen Background Image ---
+          // --- Dynamic Full Screen Background Image ---
           Positioned.fill(
             child: Image.asset(
-              'assets/bgBrown.png',
+              backgroundImagePath,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  Container(color: AppColors.background),
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: isLightMode ? AppColors.background : AppColors.darkText,
+              ),
             ),
           ),
 
@@ -135,74 +129,65 @@ class _LoginScreenState extends State<LoginScreen>
 
               return Stack(
                 children: [
-                  // Top Left: Mango Oreo
                   Positioned(
                     top: 65 + offset,
                     left: 10,
-                    child: _buildFloatingItem(
-                      'assets/mangooreo.png',
-                      size: 75,
-                      angle: -0.2,
-                    ),
+                    child: _buildFloatingItem('assets/mangooreo.png', size: 75, angle: -0.2),
                   ),
-
-                  // Top Right: Avocado Graham
                   Positioned(
                     top: 85 - offset,
                     right: 10,
-                    child: _buildFloatingItem(
-                      'assets/avocadograham.png',
-                      size: 85,
-                      angle: 0.15,
-                    ),
+                    child: _buildFloatingItem('assets/avocadograham.png', size: 85, angle: 0.15),
                   ),
-
-                  // Mid Right: Dragonfruit
                   Positioned(
                     top: MediaQuery.of(context).size.height * 0.45 + offset,
                     right: 15,
-                    child: _buildFloatingItem(
-                      'assets/dragonfruit.png',
-                      size: 70,
-                      angle: 0.3,
-                    ),
+                    child: _buildFloatingItem('assets/dragonfruit.png', size: 70, angle: 0.3),
                   ),
-
-                  // Mid Left: Caramel / Camel
                   Positioned(
                     top: MediaQuery.of(context).size.height * 0.48 - offset,
                     left: 15,
-                    child: _buildFloatingItem(
-                      'assets/camel.png',
-                      size: 65,
-                      angle: -0.25,
-                    ),
+                    child: _buildFloatingItem('assets/camel.png', size: 65, angle: -0.25),
                   ),
-
-                  // Bottom Left: Cookies & Cream
                   Positioned(
                     bottom: 45 + offset,
                     left: 15,
-                    child: _buildFloatingItem(
-                      'assets/cookiesandcream.png',
-                      size: 80,
-                      angle: -0.1,
-                    ),
+                    child: _buildFloatingItem('assets/cookiesandcream.png', size: 80, angle: -0.1),
                   ),
-
-                  // Bottom Right: Lemon
                   Positioned(
                     bottom: 55 - offset,
                     right: 15,
-                    child: _buildFloatingItem(
-                      'assets/lemon.png',
-                      size: 75,
-                      angle: 0.2,
-                    ),
+                    child: _buildFloatingItem('assets/lemon.png', size: 75, angle: 0.2),
                   ),
                 ],
               );
             },
+          ),
+
+          // --- Theme Toggle Button ---
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: IconButton.filledTonal(
+                  onPressed: () {
+                    final nextMode =
+                        isLightMode ? ThemeMode.dark : ThemeMode.light;
+                    widget.onThemeModeChanged(nextMode);
+                  },
+                  icon: Icon(
+                    isLightMode
+                        ? Icons.dark_mode_rounded
+                        : Icons.light_mode_rounded,
+                    color: AppColors.bobaBrown,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.cardWhite.withValues(alpha: 0.85),
+                  ),
+                ),
+              ),
+            ),
           ),
 
           // --- Main Interactive Content ---
@@ -214,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen>
                   vertical: 32.0,
                 ),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 440),
+                  constraints: const BoxConstraints(maxWidth: 460),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -223,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen>
                         width: 170,
                         height: 170,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.cardWhite,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: AppColors.bobaBrown.withValues(alpha: 0.3),
@@ -231,9 +216,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.bobaBrown.withValues(
-                                alpha: 0.18,
-                              ),
+                              color: AppColors.bobaBrown.withValues(alpha: 0.18),
                               blurRadius: 28,
                               offset: const Offset(0, 10),
                             ),
@@ -272,18 +255,22 @@ class _LoginScreenState extends State<LoginScreen>
                         'Crafted fresh. Log in to your account.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: AppColors.cardWhite.withValues(alpha: 0.9),
+                          color: isLightMode
+                              ? AppColors.darkText.withValues(alpha: 0.8)
+                              : AppColors.cardWhite,
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 36),
+                      const SizedBox(height: 14),
 
                       // --- Main Form Card ---
                       Container(
                         padding: const EdgeInsets.all(32.0),
                         decoration: BoxDecoration(
-                          color: AppColors.cardWhite.withValues(alpha: 0.92),
+                          color: AppColors.cardWhite.withValues(
+                            alpha: isLightMode ? 0.92 : 0.96,
+                          ),
                           borderRadius: BorderRadius.circular(28),
                           border: Border.all(color: Colors.white, width: 1.5),
                           boxShadow: [
@@ -314,9 +301,9 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                                 validator: (value) =>
                                     value == null || value.trim().isEmpty
-                                    ? 'Please enter your email'
-                                    : null,
-                              ),
+                                        ? 'Please enter your email'
+                                        : null,
+                               ),
                               const SizedBox(height: 20),
 
                               // Password Input
@@ -340,15 +327,14 @@ class _LoginScreenState extends State<LoginScreen>
                                       size: 20,
                                     ),
                                     onPressed: () => setState(
-                                      () =>
-                                          _obscurePassword = !_obscurePassword,
+                                      () => _obscurePassword = !_obscurePassword,
                                     ),
                                   ),
                                 ),
                                 validator: (value) =>
                                     value == null || value.trim().isEmpty
-                                    ? 'Please enter your password'
-                                    : null,
+                                        ? 'Please enter your password'
+                                        : null,
                               ),
 
                               // --- Forgot Password Link ---
@@ -356,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
                                   onPressed: () {
-                                    // TODO: Navigate to Forgot Password Screen or show dialog
+                                    // TODO: Navigate to Forgot Password Screen
                                   },
                                   style: TextButton.styleFrom(
                                     padding: const EdgeInsets.only(
