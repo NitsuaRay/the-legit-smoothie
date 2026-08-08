@@ -159,48 +159,48 @@ class _FeaturedItemsViewState extends State<FeaturedItemsView> {
             ),
             const SizedBox(height: 20),
           ],
-
-          // ==================== SLOT 2: FEATURE GRID ====================
+          // ==================== SLOT 2: FEATURED ITEMS ====================
           _buildSectionHeader(
-            'Featured Grid (Slot #2)',
+            'Featured Items (Slot #2)',
             textColor,
             subtextColor,
           ),
           const SizedBox(height: 8),
           if (slot2Items.isNotEmpty)
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: .85,
+            SizedBox(
+              height: 180, // Reduced height so it doesn't dominate the page
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: slot2Items.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  final featured = slot2Items[index];
+                  if (featured.menuItem == null) return const SizedBox.shrink();
+
+                  return SizedBox(
+                    width:
+                        140, // Fixed compact width -> shows ~2.5 cards side-by-side!
+                    child: _buildGridCard(
+                      context: context,
+                      featured: featured,
+                      item: featured.menuItem!,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      textColor: textColor,
+                      subtextColor: subtextColor,
+                    ),
+                  );
+                },
               ),
-              itemCount: slot2Items.length,
-              itemBuilder: (context, index) {
-                final featured = slot2Items[index];
-                if (featured.menuItem == null) return const SizedBox.shrink();
-                return _buildGridCard(
-                  context: context,
-                  featured: featured,
-                  item: featured.menuItem!,
-                  cardColor: cardColor,
-                  borderColor: borderColor,
-                  textColor: textColor,
-                  subtextColor: subtextColor,
-                );
-              },
             )
           else
             _buildEmptySlotPlaceholder(
               slotNum: 2,
-              title: 'Add items to Feature Grid',
+              title: 'Add items to Featured Carousel',
               cardColor: cardColor,
               borderColor: borderColor,
               subtextColor: subtextColor,
             ),
-
           const SizedBox(height: 20),
 
           // ==================== SLOT 3: HERO CAROUSEL SLIDER ====================
@@ -403,7 +403,7 @@ class _FeaturedItemsViewState extends State<FeaturedItemsView> {
     );
   }
 
-  /// 2. Feature Grid Card Widget (Slot #2)
+  /// 2. Feature Compact Card Widget (Slot #2)
   Widget _buildGridCard({
     required BuildContext context,
     required FeaturedItemModel featured,
@@ -416,10 +416,10 @@ class _FeaturedItemsViewState extends State<FeaturedItemsView> {
     final badgeText = featured.customBadge ?? 'FEATURED';
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
       ),
       child: Column(
@@ -432,19 +432,19 @@ class _FeaturedItemsViewState extends State<FeaturedItemsView> {
               Flexible(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 3,
+                    horizontal: 6,
+                    vertical: 2,
                   ),
                   decoration: BoxDecoration(
                     color: widget.primaryAccent.withOpacity(0.18),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    badgeText,
+                    badgeText.toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.bold,
                       color: widget.primaryAccent,
                     ),
@@ -454,45 +454,33 @@ class _FeaturedItemsViewState extends State<FeaturedItemsView> {
               InkWell(
                 onTap: () => widget.onRemoveFeatured(featured.id),
                 borderRadius: BorderRadius.circular(12),
-                child: const Padding(
-                  padding: EdgeInsets.all(2.0),
-                  child: Icon(
-                    Icons.star_rounded,
-                    color: Colors.amber,
-                    size: 22,
-                  ),
+                child: const Icon(
+                  Icons.star_rounded,
+                  color: Colors.amber,
+                  size: 20,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
 
-          // Item Image for Slot 2
-          Center(
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: subtextColor.withOpacity(
-                  0.05,
-                ), // Subtle gray/tint background
-                borderRadius: BorderRadius.circular(12),
-              ),
+          // Item Image
+          Expanded(
+            child: Center(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 child: item.imagePath != null && item.imagePath!.isNotEmpty
                     ? Image.network(
                         item.imagePath!,
-                        fit: BoxFit
-                            .contain, // Fits the whole tall image without cropping!
+                        fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) =>
-                            _placeholder(size: 60, iconSize: 24),
+                            _placeholder(size: 50, iconSize: 20),
                       )
-                    : _placeholder(size: 60, iconSize: 24),
+                    : _placeholder(size: 50, iconSize: 20),
               ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 6),
 
           // Item Name
           Text(
@@ -500,7 +488,7 @@ class _FeaturedItemsViewState extends State<FeaturedItemsView> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               color: textColor,
             ),
@@ -508,10 +496,10 @@ class _FeaturedItemsViewState extends State<FeaturedItemsView> {
 
           // Category Name
           Text(
-            item.category?.name ?? 'Special Blend',
+            item.category?.name ?? 'Special',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 11, color: subtextColor),
+            style: TextStyle(fontSize: 10, color: subtextColor),
           ),
           const SizedBox(height: 2),
 
@@ -519,7 +507,7 @@ class _FeaturedItemsViewState extends State<FeaturedItemsView> {
           Text(
             '₱${item.price.toStringAsFixed(2)}',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
               color: widget.primaryAccent,
             ),

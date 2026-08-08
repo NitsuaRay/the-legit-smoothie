@@ -77,9 +77,9 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading store data: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading store data: $e')));
       }
     }
   }
@@ -95,9 +95,9 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading menu items: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading menu items: $e')));
       }
     }
   }
@@ -142,9 +142,7 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddFeaturedItemScreen(
-          menuItems: _menuItems,
-        ),
+        builder: (context) => AddFeaturedItemScreen(menuItems: _menuItems),
       ),
     );
 
@@ -152,8 +150,147 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
     await _loadInitialData();
   }
 
-  /// Removes a featured item from the database
-  Future<void> _removeFeaturedItem(int featuredId) async {
+  /// Removes a featured item from the database with user confirmation
+  Future<void> _removeFeaturedItem(int featuredId, [String? itemName]) async {
+    // 1. Get the item name for the dialog prompt
+    String title = itemName ?? '';
+    if (title.isEmpty) {
+      try {
+        final target = _featuredList.firstWhere((e) => e.id == featuredId);
+        title = target.menuItem?.name ?? 'this item';
+      } catch (_) {
+        title = 'this item';
+      }
+    }
+
+    final shouldRemove = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        // Check system/app brightness
+        final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
+
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          backgroundColor: isDark
+              ? const Color(0xFF24201D)
+              : AppColors.cardWhite,
+          elevation: 10,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 1. Soft Circular Icon Badge
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(
+                      alpha: isDark ? 0.2 : 0.12,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.error,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // 2. Title
+                Text(
+                  'Remove Featured Item',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.darkText,
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // 3. Description
+                Text(
+                  'Are you sure you want to remove "$title" from featured items?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                    color: isDark
+                        ? AppColors.cream.withValues(alpha: 0.8)
+                        : AppColors.greyText,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // 4. Action Buttons Row
+                Row(
+                  children: [
+                    // Cancel Button
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(
+                            color: isDark
+                                ? Colors.white24
+                                : AppColors.greyBorder,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: isDark ? Colors.white70 : AppColors.darkText,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Remove Button
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: AppColors.error,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        child: const Text(
+                          'Remove',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    // If user canceled or tapped outside the dialog, exit early
+    if (shouldRemove != true) return;
+
+    // 3. Perform removal logic
     try {
       // Optimistic state update
       setState(() {
@@ -162,12 +299,26 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
 
       // Remove from database via service
       await _menuService.removeFeaturedItem(featuredId);
+
+      // Show success snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('"$title" removed from featured items.'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
       // Refresh on error to restore state
       await _fetchFeaturedItems();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to remove featured item: $e')),
+          SnackBar(
+            content: Text('Failed to remove featured item: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
         );
       }
     }
