@@ -86,27 +86,32 @@ class MenuDatabaseService {
   // FEATURED ITEMS METHODS (3-SLOT ARCHITECTURE)
   // ==========================================
 
-  /// Fetch active featured items with complete menu item details attached
-  Future<List<FeaturedItemModel>> getFeaturedItems() async {
-    final response = await _supabase
-        .from('featured_items')
-        .select('''
-          *,
-          menu_items (
-            *,
-            categories (*),
-            item_sizes ( sizes (*) ),
-            item_add_ons ( add_ons (*) ),
-            item_flavors ( flavors (*) )
-          )
-        ''')
-        .eq('is_active', true)
-        .order('slot_number', ascending: true)
-        .order('display_order', ascending: true);
+  /// Deletes a record from the `featured_items` table by its primary key ID
+  Future<void> removeFeaturedItem(int featuredId) async {
+    try {
+      await _supabase.from('featured_items').delete().eq('id', featuredId);
+    } catch (e) {
+      throw Exception('Failed to delete featured item from Supabase: $e');
+    }
+  }
 
-    return (response as List)
-        .map((json) => FeaturedItemModel.fromJson(json))
-        .toList();
+  /// Fetches all featured item slots joined with their corresponding `menu_items` data
+  Future<List<FeaturedItemModel>> getFeaturedItems() async {
+    try {
+      final List<dynamic> response = await _supabase
+          .from('featured_items')
+          .select('*, menu_items(*, categories(*))')
+          .order('slot_number', ascending: true)
+          .order('display_order', ascending: true);
+
+      return response
+          .map(
+            (json) => FeaturedItemModel.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch featured items: $e');
+    }
   }
 
   /// Assign or replace an item in a specific featured slot

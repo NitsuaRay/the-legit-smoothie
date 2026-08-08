@@ -6,6 +6,7 @@ import 'package:the_legit_smoothie/features/admin/views/tabs/store_tab/menu_mana
 import 'package:the_legit_smoothie/features/admin/views/tabs/store_tab/promos_discount_view.dart';
 import 'package:the_legit_smoothie/features/admin/views/tabs/store_tab/store_header.dart';
 import 'package:the_legit_smoothie/features/admin/views/tabs/store_tab/store_nav_bar.dart';
+import 'package:the_legit_smoothie/features/store/models/featured_item_model.dart';
 import 'package:the_legit_smoothie/features/store/models/menu_item_model.dart';
 import 'package:the_legit_smoothie/features/store/services/menu_database_service.dart';
 import 'package:the_legit_smoothie/features/widgets/add_featured_item_screen.dart';
@@ -29,8 +30,9 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
   int _activeCount = 0;
   bool _isLoading = true;
 
-  // Real menu items state fetched from Supabase
+  // Real menu items & featured items state fetched from Supabase
   List<MenuItemModel> _menuItems = [];
+  List<FeaturedItemModel> _featuredList = [];
 
   // Promos & Loyalty program state
   final List<Map<String, dynamic>> _promos = [
@@ -56,7 +58,30 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
   @override
   void initState() {
     super.initState();
-    _fetchMenuItems();
+    _loadInitialData();
+  }
+
+  /// Fetches both menu items and featured items from Supabase
+  Future<void> _loadInitialData() async {
+    try {
+      final items = await _menuService.getMenuItems();
+      final featured = await _menuService.getFeaturedItems();
+
+      if (mounted) {
+        setState(() {
+          _menuItems = items;
+          _featuredList = featured;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading store data: $e')),
+        );
+      }
+    }
   }
 
   /// Fetches menu items directly from Supabase
@@ -66,15 +91,31 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
       if (mounted) {
         setState(() {
           _menuItems = items;
-          _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading menu items: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading menu items: $e')),
+        );
+      }
+    }
+  }
+
+  /// Fetches featured items directly from Supabase
+  Future<void> _fetchFeaturedItems() async {
+    try {
+      final featured = await _menuService.getFeaturedItems();
+      if (mounted) {
+        setState(() {
+          _featuredList = featured;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading featured items: $e')),
+        );
       }
     }
   }
@@ -98,39 +139,35 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
 
   /// Opens the Add/Manage Featured Items Screen
   Future<void> _openAddFeaturedItemModal() async {
-  await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => AddFeaturedItemScreen(
-        menuItems: _menuItems,
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddFeaturedItemScreen(
+          menuItems: _menuItems,
+        ),
       ),
-    ),
-  );
+    );
 
-  // Refresh menu items when coming back
-  await _fetchMenuItems();
-}
-  /// Toggles featured status locally and syncs with Supabase database
-  Future<void> _toggleFeaturedStatus(int itemId, bool currentStatus) async {
+    // Refresh data when returning from manage screen
+    await _loadInitialData();
+  }
+
+  /// Removes a featured item from the database
+  Future<void> _removeFeaturedItem(int featuredId) async {
     try {
       // Optimistic state update
       setState(() {
-        final index = _menuItems.indexWhere((item) => item.id == itemId);
-        if (index != -1) {
-          _menuItems[index] = _menuItems[index].copyWith(
-            isFeatured: !currentStatus,
-          );
-        }
+        _featuredList.removeWhere((item) => item.id == featuredId);
       });
 
-      // Update in Supabase database
-      await _menuService.toggleFeatured(itemId, currentStatus);
+      // Remove from database via service
+      await _menuService.removeFeaturedItem(featuredId);
     } catch (e) {
-      // Rollback on error
-      await _fetchMenuItems();
+      // Refresh on error to restore state
+      await _fetchFeaturedItems();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update featured status: $e')),
+          SnackBar(content: Text('Failed to remove featured item: $e')),
         );
       }
     }
@@ -207,13 +244,8 @@ class _AdminStoreTabState extends State<AdminStoreTab> {
                           },
                         ),
                         FeaturedItemsView(
-                          menuItems: _menuItems,
-                          onToggleFeatured: (id) {
-                            final item = _menuItems.firstWhere(
-                              (i) => i.id == id,
-                            );
-                            _toggleFeaturedStatus(id, item.isFeatured);
-                          },
+                          featuredList: _featuredList,
+                          onRemoveFeatured: _removeFeaturedItem,
                           onManagePressed: _openAddFeaturedItemModal,
                           primaryAccent: primaryAccent,
                           isDarkMode: isDarkMode,

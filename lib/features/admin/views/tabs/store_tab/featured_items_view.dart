@@ -1,35 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/core/constants/app_colors.dart';
+import 'package:the_legit_smoothie/features/store/models/featured_item_model.dart';
 import 'package:the_legit_smoothie/features/store/models/menu_item_model.dart';
 
-class FeaturedItemsView extends StatelessWidget {
-  final List<MenuItemModel> menuItems;
-  final Function(int id) onToggleFeatured;
+class FeaturedItemsView extends StatefulWidget {
+  final List<FeaturedItemModel> featuredList;
+  final Function(int featuredId) onRemoveFeatured;
   final VoidCallback? onManagePressed;
   final Color primaryAccent;
   final bool isDarkMode;
 
   const FeaturedItemsView({
     super.key,
-    required this.menuItems,
-    required this.onToggleFeatured,
+    required this.featuredList,
+    required this.onRemoveFeatured,
     this.onManagePressed,
     required this.primaryAccent,
     required this.isDarkMode,
   });
 
   @override
-  Widget build(BuildContext context) {
-    // Filter active featured items
-    final featuredItems = menuItems.where((item) => item.isFeatured).toList();
+  State<FeaturedItemsView> createState() => _FeaturedItemsViewState();
+}
 
-    final textColor = isDarkMode ? AppColors.cream : AppColors.darkText;
-    final subtextColor =
-        isDarkMode ? AppColors.cream.withOpacity(0.7) : AppColors.greyText;
-    final cardColor = isDarkMode
+class _FeaturedItemsViewState extends State<FeaturedItemsView> {
+  final PageController _carouselController = PageController();
+  int _currentCarouselPage = 0;
+
+  @override
+  void dispose() {
+    _carouselController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Only process active items from DB
+    final activeFeatured = widget.featuredList
+        .where((item) => item.isActive)
+        .toList();
+
+    // Group items by slot_number according to your Supabase schema
+    final slot1Item = activeFeatured
+        .where((e) => e.slotNumber == 1)
+        .firstOrNull;
+    final slot2Items = activeFeatured.where((e) => e.slotNumber == 2).toList();
+    final slot3Items = activeFeatured.where((e) => e.slotNumber == 3).toList();
+
+    final textColor = widget.isDarkMode ? AppColors.cream : AppColors.darkText;
+    final subtextColor = widget.isDarkMode
+        ? AppColors.cream.withOpacity(0.7)
+        : AppColors.greyText;
+    final cardColor = widget.isDarkMode
         ? AppColors.darkText.withOpacity(0.85)
         : AppColors.cardWhite.withOpacity(0.92);
-    final borderColor = isDarkMode
+    final borderColor = widget.isDarkMode
         ? AppColors.bobaBrown.withOpacity(0.5)
         : AppColors.greyBorder;
 
@@ -52,25 +77,29 @@ class FeaturedItemsView extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Active on customer app (${featuredItems.length})',
+                  'Active showcase slots (${activeFeatured.length})',
                   style: TextStyle(fontSize: 12, color: subtextColor),
                 ),
               ],
             ),
-            if (onManagePressed != null)
+            if (widget.onManagePressed != null)
               TextButton.icon(
-                onPressed: onManagePressed,
+                onPressed: widget.onManagePressed,
                 style: TextButton.styleFrom(
-                  backgroundColor: primaryAccent.withOpacity(0.15),
+                  backgroundColor: widget.primaryAccent.withOpacity(0.15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                icon: Icon(Icons.tune_rounded, size: 18, color: primaryAccent),
+                icon: Icon(
+                  Icons.tune_rounded,
+                  size: 18,
+                  color: widget.primaryAccent,
+                ),
                 label: Text(
                   'Manage',
                   style: TextStyle(
-                    color: primaryAccent,
+                    color: widget.primaryAccent,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -80,7 +109,7 @@ class FeaturedItemsView extends StatelessWidget {
         const SizedBox(height: 16),
 
         // --- Empty State ---
-        if (featuredItems.isEmpty)
+        if (activeFeatured.isEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
@@ -94,7 +123,7 @@ class FeaturedItemsView extends StatelessWidget {
                 Icon(
                   Icons.stars_rounded,
                   size: 48,
-                  color: primaryAccent.withOpacity(0.6),
+                  color: widget.primaryAccent.withOpacity(0.6),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -107,7 +136,7 @@ class FeaturedItemsView extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Tap "Manage" to select smoothies for the home screen spotlight.',
+                  'Tap "Manage" to set featured slots from your database.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 12, color: subtextColor),
                 ),
@@ -115,118 +144,130 @@ class FeaturedItemsView extends StatelessWidget {
             ),
           )
         else ...[
-          // --- TWIST 1 & 3: Hero Spotlight Card (First Featured Item) ---
-          _buildHeroSpotlightCard(
-            context: context,
-            item: featuredItems.first,
-            primaryAccent: primaryAccent,
-            cardColor: cardColor,
-            borderColor: borderColor,
-            textColor: textColor,
-            subtextColor: subtextColor,
-          ),
-
-          // --- TWIST 3: Grid Layout for Additional Items (#2 and #3) ---
-          if (featuredItems.length > 1) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSecondaryGridCard(
-                    context: context,
-                    item: featuredItems[1],
-                    badgeText: _getDynamicBadge(featuredItems[1], featuredItems),
-                    primaryAccent: primaryAccent,
-                    cardColor: cardColor,
-                    borderColor: borderColor,
-                    textColor: textColor,
-                    subtextColor: subtextColor,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                if (featuredItems.length > 2)
-                  Expanded(
-                    child: _buildSecondaryGridCard(
-                      context: context,
-                      item: featuredItems[2],
-                      badgeText: _getDynamicBadge(featuredItems[2], featuredItems),
-                      primaryAccent: primaryAccent,
-                      cardColor: cardColor,
-                      borderColor: borderColor,
-                      textColor: textColor,
-                      subtextColor: subtextColor,
-                    ),
-                  )
-                else
-                  // Empty Slot Placeholder if only 2 items are featured
-                  Expanded(
-                    child: InkWell(
-                      onTap: onManagePressed,
-                      borderRadius: BorderRadius.circular(18),
-                      child: Container(
-                        height: 140,
-                        decoration: BoxDecoration(
-                          color: cardColor.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: borderColor,
-                            style: BorderStyle.solid,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add_circle_outline_rounded,
-                                color: primaryAccent),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Add Slot #3',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: subtextColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+          // ==================== SLOT 1: HERO SPOTLIGHT ====================
+          if (slot1Item != null && slot1Item.menuItem != null) ...[
+            _buildSectionHeader('Spotlight Highlight', textColor, subtextColor),
+            const SizedBox(height: 8),
+            _buildHeroSpotlightCard(
+              context: context,
+              featured: slot1Item,
+              item: slot1Item.menuItem!,
+              cardColor: cardColor,
+              borderColor: borderColor,
+              textColor: textColor,
+              subtextColor: subtextColor,
             ),
+            const SizedBox(height: 20),
           ],
+
+          // ==================== SLOT 2: FEATURE GRID ====================
+          _buildSectionHeader(
+            'Featured Grid (Slot #2)',
+            textColor,
+            subtextColor,
+          ),
+          const SizedBox(height: 8),
+          if (slot2Items.isNotEmpty)
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: .85,
+              ),
+              itemCount: slot2Items.length,
+              itemBuilder: (context, index) {
+                final featured = slot2Items[index];
+                if (featured.menuItem == null) return const SizedBox.shrink();
+                return _buildGridCard(
+                  context: context,
+                  featured: featured,
+                  item: featured.menuItem!,
+                  cardColor: cardColor,
+                  borderColor: borderColor,
+                  textColor: textColor,
+                  subtextColor: subtextColor,
+                );
+              },
+            )
+          else
+            _buildEmptySlotPlaceholder(
+              slotNum: 2,
+              title: 'Add items to Feature Grid',
+              cardColor: cardColor,
+              borderColor: borderColor,
+              subtextColor: subtextColor,
+            ),
+
+          const SizedBox(height: 20),
+
+          // ==================== SLOT 3: HERO CAROUSEL SLIDER ====================
+          _buildSectionHeader(
+            'Carousel Specials (Slot #3)',
+            textColor,
+            subtextColor,
+          ),
+          const SizedBox(height: 8),
+          if (slot3Items.isNotEmpty)
+            _buildHeroCarouselSlider(
+              slot3Items: slot3Items,
+              cardColor: cardColor,
+              borderColor: borderColor,
+              textColor: textColor,
+              subtextColor: subtextColor,
+            )
+          else
+            _buildEmptySlotPlaceholder(
+              slotNum: 3,
+              title: 'Add items to Hero Carousel',
+              cardColor: cardColor,
+              borderColor: borderColor,
+              subtextColor: subtextColor,
+            ),
         ],
       ],
     );
   }
 
-  /// Dynamic Smart Badging Logic (Twist 2)
-  String _getDynamicBadge(MenuItemModel item, List<MenuItemModel> allFeatured) {
-    final minPrice = allFeatured.map((e) => e.price).reduce((a, b) => a < b ? a : b);
-    if (item.price == minPrice) {
-      return '🏷️ Best Value';
-    }
-    return '🐼 Panda\'s Pick';
+  /// Section Header helper
+  Widget _buildSectionHeader(
+    String title,
+    Color textColor,
+    Color subtextColor,
+  ) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: textColor,
+        letterSpacing: 0.5,
+      ),
+    );
   }
 
-  /// 1. Hero Spotlight Card Widget
+  /// 1. Hero Spotlight Card (Slot #1)
   Widget _buildHeroSpotlightCard({
     required BuildContext context,
+    required FeaturedItemModel featured,
     required MenuItemModel item,
-    required Color primaryAccent,
     required Color cardColor,
     required Color borderColor,
     required Color textColor,
     required Color subtextColor,
   }) {
+    final badgeLabel = featured.customBadge ?? 'DAILY SPOTLIGHT';
+
     return Container(
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: primaryAccent, width: 1.5),
+        border: Border.all(color: widget.primaryAccent, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: primaryAccent.withOpacity(0.12),
+            color: widget.primaryAccent.withOpacity(0.12),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -235,40 +276,53 @@ class FeaturedItemsView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Banner: Daily Spotlight & Points Multiplier
+          // Top Banner showing Custom Badge / Slot Tag
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: primaryAccent,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              color: widget.primaryAccent,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.bolt_rounded, size: 16, color: AppColors.darkText),
-                    SizedBox(width: 4),
+                    Icon(
+                      Icons.bolt_rounded,
+                      size: 16,
+                      color: widget.isDarkMode
+                          ? AppColors.darkText
+                          : AppColors.cream, // <-- Fixed lowercase 'w'
+                    ),
+                    const SizedBox(width: 4),
                     Text(
-                      'DAILY SPOTLIGHT',
+                      badgeLabel.toUpperCase(),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.8,
-                        color: AppColors.darkText,
+                        color: widget.isDarkMode
+                            ? AppColors.darkText
+                            : AppColors.cream, // <-- Fixed lowercase 'w'
                       ),
                     ),
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.darkText,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text(
-                    '⚡ 2x Points',
-                    style: TextStyle(
+                  child: Text(
+                    'Slot #${featured.slotNumber}',
+                    style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: AppColors.cream,
@@ -279,28 +333,26 @@ class FeaturedItemsView extends StatelessWidget {
             ),
           ),
 
-          // Content Body
+          // Body Content
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: item.imagePath != null && item.imagePath!.isNotEmpty
                       ? Image.network(
                           item.imagePath!,
-                          width: 80,
-                          height: 80,
+                          width: 85,
+                          height: 85,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) =>
-                              _placeholder(primaryAccent),
+                              _placeholder(size: 85, iconSize: 36),
                         )
-                      : _placeholder(primaryAccent),
+                      : _placeholder(size: 85, iconSize: 36),
                 ),
                 const SizedBox(width: 14),
-
-                // Details
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,30 +365,35 @@ class FeaturedItemsView extends StatelessWidget {
                           color: textColor,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.category?.name ?? 'Special Blend',
-                        style: TextStyle(fontSize: 13, color: subtextColor),
-                      ),
+                      if (item.category?.name != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          item.category!.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12, color: subtextColor),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Text(
                         '₱${item.price.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: primaryAccent,
+                          color: widget.primaryAccent,
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                // Unstar Action Button
                 IconButton(
-                  icon: const Icon(Icons.star_rounded,
-                      color: Colors.amber, size: 28),
+                  icon: const Icon(
+                    Icons.star_rounded,
+                    color: Colors.amber,
+                    size: 28,
+                  ),
                   tooltip: 'Remove from featured',
-                  onPressed: () => onToggleFeatured(item.id),
+                  onPressed: () => widget.onRemoveFeatured(featured.id),
                 ),
               ],
             ),
@@ -346,19 +403,19 @@ class FeaturedItemsView extends StatelessWidget {
     );
   }
 
-  /// 2. Grid Card Widget (#2 & #3)
-  Widget _buildSecondaryGridCard({
+  /// 2. Feature Grid Card Widget (Slot #2)
+  Widget _buildGridCard({
     required BuildContext context,
+    required FeaturedItemModel featured,
     required MenuItemModel item,
-    required String badgeText,
-    required Color primaryAccent,
     required Color cardColor,
     required Color borderColor,
     required Color textColor,
     required Color subtextColor,
   }) {
+    final badgeText = featured.customBadge ?? 'FEATURED';
+
     return Container(
-      height: 155,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: cardColor,
@@ -368,52 +425,103 @@ class FeaturedItemsView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row: Badge & Toggle Icon
+          // Header Badge & Action Button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: primaryAccent.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  badgeText,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: primaryAccent,
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: widget.primaryAccent.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    badgeText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: widget.primaryAccent,
+                    ),
                   ),
                 ),
               ),
               InkWell(
-                onTap: () => onToggleFeatured(item.id),
-                child: const Icon(Icons.star_rounded,
-                    color: Colors.amber, size: 20),
+                onTap: () => widget.onRemoveFeatured(featured.id),
+                borderRadius: BorderRadius.circular(12),
+                child: const Padding(
+                  padding: EdgeInsets.all(2.0),
+                  child: Icon(
+                    Icons.star_rounded,
+                    color: Colors.amber,
+                    size: 22,
+                  ),
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 8),
+
+          // Item Image for Slot 2
+          Center(
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: subtextColor.withOpacity(
+                  0.05,
+                ), // Subtle gray/tint background
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: item.imagePath != null && item.imagePath!.isNotEmpty
+                    ? Image.network(
+                        item.imagePath!,
+                        fit: BoxFit
+                            .contain, // Fits the whole tall image without cropping!
+                        errorBuilder: (_, __, ___) =>
+                            _placeholder(size: 60, iconSize: 24),
+                      )
+                    : _placeholder(size: 60, iconSize: 24),
+              ),
+            ),
+          ),
           const Spacer(),
 
-          // Name and Price
+          // Item Name
           Text(
             item.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: textColor,
             ),
           ),
+
+          // Category Name
+          Text(
+            item.category?.name ?? 'Special Blend',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11, color: subtextColor),
+          ),
           const SizedBox(height: 2),
+
+          // Price
           Text(
             '₱${item.price.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: primaryAccent,
+              fontWeight: FontWeight.w800,
+              color: widget.primaryAccent,
             ),
           ),
         ],
@@ -421,12 +529,211 @@ class FeaturedItemsView extends StatelessWidget {
     );
   }
 
-  Widget _placeholder(Color primaryAccent) {
+  /// 3. Hero Carousel Slider Widget (Slot #3)
+  Widget _buildHeroCarouselSlider({
+    required List<FeaturedItemModel> slot3Items,
+    required Color cardColor,
+    required Color borderColor,
+    required Color textColor,
+    required Color subtextColor,
+  }) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 160,
+          child: PageView.builder(
+            controller: _carouselController,
+            onPageChanged: (index) {
+              setState(() => _currentCarouselPage = index);
+            },
+            itemCount: slot3Items.length,
+            itemBuilder: (context, index) {
+              final featured = slot3Items[index];
+              final item = featured.menuItem;
+              if (item == null) return const SizedBox.shrink();
+
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: widget.primaryAccent.withOpacity(0.4),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.primaryAccent.withOpacity(0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child:
+                          item.imagePath != null && item.imagePath!.isNotEmpty
+                          ? Image.network(
+                              item.imagePath!,
+                              width: 100,
+                              height: 120,
+                              fit: BoxFit
+                                  .contain, // <--- Scale to show full image without cropping
+                              errorBuilder: (_, __, ___) =>
+                                  _placeholder(size: 100, iconSize: 40),
+                            )
+                          : _placeholder(size: 100, iconSize: 40),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: widget.primaryAccent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              (featured.customBadge ?? 'CAROUSEL')
+                                  .toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: widget.isDarkMode
+                                    ? AppColors.darkText
+                                    : AppColors
+                                          .cream, // <-- Fixed lowercase 'w'
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            item.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item.category?.name ?? 'Special Item',
+                            style: TextStyle(fontSize: 11, color: subtextColor),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '₱${item.price.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: widget.primaryAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.star_rounded,
+                        color: Colors.amber,
+                        size: 26,
+                      ),
+                      onPressed: () => widget.onRemoveFeatured(featured.id),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Carousel Dot Indicators
+        if (slot3Items.length > 1)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              slot3Items.length,
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: _currentCarouselPage == index ? 20 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _currentCarouselPage == index
+                      ? widget.primaryAccent
+                      : borderColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Empty Slot Placeholder Component
+  Widget _buildEmptySlotPlaceholder({
+    required int slotNum,
+    required String title,
+    required Color cardColor,
+    required Color borderColor,
+    required Color subtextColor,
+  }) {
+    return InkWell(
+      onTap: widget.onManagePressed,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        height: 110,
+        decoration: BoxDecoration(
+          color: cardColor.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_circle_outline_rounded,
+              color: widget.primaryAccent,
+              size: 28,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: subtextColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _placeholder({required double size, required double iconSize}) {
     return Container(
-      width: 80,
-      height: 80,
-      color: primaryAccent.withOpacity(0.15),
-      child: Icon(Icons.local_drink_rounded, color: primaryAccent, size: 36),
+      width: size,
+      height: size,
+      color: widget.primaryAccent.withOpacity(0.15),
+      child: Icon(
+        Icons.local_drink_rounded,
+        color: widget.primaryAccent,
+        size: iconSize,
+      ),
     );
   }
 }
