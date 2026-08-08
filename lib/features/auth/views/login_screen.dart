@@ -266,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen>
 
                       // --- Main Form Card ---
                       Container(
-                        padding: const EdgeInsets.all(32.0),
+                        padding: const EdgeInsets.all(26.0),
                         decoration: BoxDecoration(
                           color: AppColors.cardWhite.withValues(
                             alpha: isLightMode ? 0.92 : 0.96,

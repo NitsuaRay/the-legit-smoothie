@@ -6,6 +6,7 @@ import '../models/add_on_model.dart';
 import '../models/size_model.dart';
 import '../models/flavor_model.dart';
 import '../models/menu_item_model.dart';
+import '../models/featured_item_model.dart';
 
 class MenuDatabaseService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -76,7 +77,70 @@ class MenuDatabaseService {
         .eq('is_available', true)
         .order('name');
 
-    return (response as List).map((json) => FlavorModel.fromJson(json)).toList();
+    return (response as List)
+        .map((json) => FlavorModel.fromJson(json))
+        .toList();
+  }
+
+  // ==========================================
+  // FEATURED ITEMS METHODS (3-SLOT ARCHITECTURE)
+  // ==========================================
+
+  /// Fetch active featured items with complete menu item details attached
+  Future<List<FeaturedItemModel>> getFeaturedItems() async {
+    final response = await _supabase
+        .from('featured_items')
+        .select('''
+          *,
+          menu_items (
+            *,
+            categories (*),
+            item_sizes ( sizes (*) ),
+            item_add_ons ( add_ons (*) ),
+            item_flavors ( flavors (*) )
+          )
+        ''')
+        .eq('is_active', true)
+        .order('slot_number', ascending: true)
+        .order('display_order', ascending: true);
+
+    return (response as List)
+        .map((json) => FeaturedItemModel.fromJson(json))
+        .toList();
+  }
+
+  /// Assign or replace an item in a specific featured slot
+  Future<void> assignFeaturedSlot({
+    required int menuItemId,
+    required int slotNumber,
+    int displayOrder = 1,
+    String? customBadge,
+  }) async {
+    // Upsert into featured_items table
+    await _supabase.from('featured_items').upsert({
+      'menu_item_id': menuItemId,
+      'slot_number': slotNumber,
+      'display_order': displayOrder,
+      'custom_badge': customBadge,
+      'is_active': true,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'menu_item_id');
+  }
+
+  /// Remove an item from the featured list by menu_item_id
+  Future<void> removeFeaturedSlotByMenuItem(int menuItemId) async {
+    await _supabase
+        .from('featured_items')
+        .delete()
+        .eq('menu_item_id', menuItemId);
+  }
+
+  /// Clear an entire slot number (e.g., clear all Carousel items in Slot 3)
+  Future<void> clearFeaturedSlot(int slotNumber) async {
+    await _supabase
+        .from('featured_items')
+        .delete()
+        .eq('slot_number', slotNumber);
   }
 
   // ==========================================

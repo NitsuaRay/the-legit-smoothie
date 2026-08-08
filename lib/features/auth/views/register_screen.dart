@@ -66,6 +66,32 @@ class _RegisterScreenState extends State<RegisterScreen>
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
+
+    // Auto-select and lock region to NCR on screen initialization
+    _lockToNCR();
+  }
+
+  void _lockToNCR() {
+    try {
+      // 1. Find NCR Region from philippineRegions
+      final ncrRegion = philippineRegions.firstWhere((r) {
+        final regionName = _getLocationName(r).toUpperCase();
+        return regionName.contains('NCR') ||
+            regionName.contains('NATIONAL CAPITAL REGION');
+      });
+      _selectedRegion = ncrRegion;
+
+      // 2. Find NCR, Second District (where Quezon City is located)
+      if (ncrRegion.provinces.isNotEmpty) {
+        final secondDistrict = ncrRegion.provinces.firstWhere((p) {
+          final provName = _getLocationName(p).toUpperCase();
+          return provName.contains('SECOND') || provName.contains('2ND');
+        }, orElse: () => ncrRegion.provinces.first);
+        _selectedProvince = secondDistrict;
+      }
+    } catch (e) {
+      debugPrint('Failed to initialize NCR region & province: $e');
+    }
   }
 
   @override
@@ -116,15 +142,15 @@ class _RegisterScreenState extends State<RegisterScreen>
   double _getCardHeight() {
     switch (_currentStep) {
       case 0:
-        return 400; // Increased from 330 to fit validation errors cleanly
+        return 400; // Fits validation errors cleanly
       case 1:
-        return 420; // Increased from 340
-      case 2:
-        return 460;
-      case 3:
-        return 440;
-      default:
         return 420;
+      case 2:
+        return 420;
+      case 3:
+        return 540;
+      default:
+        return 440;
     }
   }
 
@@ -217,7 +243,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           ),
         ),
         (route) =>
-            false, // Clears the back stack so user cannot pop back to RegisterScreen
+            false, // Clears stack so user cannot pop back to RegisterScreen
       );
     } catch (e) {
       if (!mounted) return;
@@ -458,7 +484,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                         duration: const Duration(milliseconds: 250),
                         curve: Curves.easeInOut,
                         height: _getCardHeight(),
-                        padding: const EdgeInsets.all(32.0),
+                        padding: const EdgeInsets.all(26.0),
                         decoration: BoxDecoration(
                           color: AppColors.cardWhite.withValues(
                             alpha: isLightMode ? 0.92 : 0.96,
@@ -519,8 +545,9 @@ class _RegisterScreenState extends State<RegisterScreen>
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const SizedBox(height: 6),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -532,18 +559,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                     decoration: _buildInputDecoration(
                       label: 'Email Address',
                       icon: Icons.email_outlined,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                          color: AppColors.greyText,
-                          size: 20,
-                        ),
-                        onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
-                        ),
-                      ),
                     ),
                     validator: (v) {
                       final email = v?.trim() ?? '';
@@ -733,6 +748,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
+                  const SizedBox(height: 6),
                   TextFormField(
                     controller: _firstNameController,
                     style: const TextStyle(
@@ -829,7 +845,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 
-  // --- Step 3: Address Selection ---
+  // --- Step 3: Address Selection (Locked to NCR - 2nd District) ---
   Widget _buildStep3AddressForm() {
     return Form(
       key: _formKeyStep3,
@@ -839,34 +855,76 @@ class _RegisterScreenState extends State<RegisterScreen>
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  _buildDropdownContainer(
-                    child: PhilippineRegionDropdownView(
-                      value: _selectedRegion,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedRegion = value;
-                          _selectedProvince = null;
-                          _selectedMunicipality = null;
-                          _selectedBarangay = null;
-                        });
-                      },
+                  // 1. Service Area Banner (Region & Province Locked)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.bobaBrown.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.bobaBrown.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_rounded,
+                          color: AppColors.bobaBrown,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Service Area',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '${_getLocationName(_selectedRegion)} • ${_getLocationName(_selectedProvince)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.bobaBrown,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.bobaBrown,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text(
+                                  'Quezon City & Nearby',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  _buildDropdownContainer(
-                    child: PhilippineProvinceDropdownView(
-                      provinces: _selectedRegion?.provinces ?? [],
-                      value: _selectedProvince,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedProvince = value;
-                          _selectedMunicipality = null;
-                          _selectedBarangay = null;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+
+                  // 2. Municipality / City Dropdown (Filtered to 2nd District Cities like Quezon City)
                   _buildDropdownContainer(
                     child: PhilippineMunicipalityDropdownView(
                       municipalities: _selectedProvince?.municipalities ?? [],
@@ -880,6 +938,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                     ),
                   ),
                   const SizedBox(height: 8),
+
+                  // 3. Barangay Dropdown
                   _buildDropdownContainer(
                     child: PhilippineBarangayDropdownView(
                       barangays: _selectedMunicipality?.barangays ?? [],
@@ -892,11 +952,13 @@ class _RegisterScreenState extends State<RegisterScreen>
                     ),
                   ),
                   const SizedBox(height: 8),
+
+                  // 4. House No. / Street Address
                   TextFormField(
                     controller: _streetAddressController,
                     decoration: _buildInputDecoration(
                       label: 'House No. / Street Address',
-                      icon: Icons.email_outlined,
+                      icon: Icons.home_outlined,
                     ),
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required' : null,
