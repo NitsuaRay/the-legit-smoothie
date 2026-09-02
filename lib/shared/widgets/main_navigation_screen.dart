@@ -4,16 +4,13 @@ import 'package:the_legit_smoothie/features/cart/services/cart_service.dart';
 import 'package:the_legit_smoothie/features/catalog/screens/home_screen.dart';
 import 'package:the_legit_smoothie/features/orders/screens/order_history_screen.dart';
 import 'package:the_legit_smoothie/features/profile/screens/profile_screen.dart';
+import 'package:the_legit_smoothie/features/promotions/screens/promotions_screen.dart';
 import '../../../core/constants/app_colors.dart';
-
 
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
 
-  const MainNavigationScreen({
-    super.key,
-    this.initialIndex = 0,
-  });
+  const MainNavigationScreen({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -42,6 +39,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
+    PromotionsScreen(),
     CartScreen(),
     OrderHistoryScreen(),
     ProfileScreen(),
@@ -50,10 +48,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -70,6 +65,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             icon: Icon(Icons.storefront_outlined),
             activeIcon: Icon(Icons.storefront),
             label: 'Store',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.local_offer_outlined),
+            activeIcon: Icon(Icons.local_offer),
+            label: 'Deals',
           ),
           BottomNavigationBarItem(
             icon: Badge(

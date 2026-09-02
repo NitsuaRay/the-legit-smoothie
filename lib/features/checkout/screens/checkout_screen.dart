@@ -24,8 +24,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   static const double _deliveryFeeAmount = 45.00;
 
-  double get _deliveryFee => _orderType == 'delivery' ? _deliveryFeeAmount : 0.0;
+  double get _deliveryFee =>
+      _orderType == 'delivery' ? _deliveryFeeAmount : 0.0;
   double get _grandTotal => _cartService.subtotal + _deliveryFee;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedProfile();
+  }
 
   @override
   void dispose() {
@@ -35,33 +42,64 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
+  Future<void> _loadSavedProfile() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final data = await supabase
+          .from('profiles')
+          .select('phone_number, default_address')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (data != null && mounted) {
+        setState(() {
+          if (data['phone_number'] != null && _contactController.text.isEmpty) {
+            _contactController.text = data['phone_number'];
+          }
+          if (data['default_address'] != null &&
+              _addressController.text.isEmpty) {
+            _addressController.text = data['default_address'];
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error auto-loading user profile: $e');
+    }
+  }
+
+  // Update _submitOrder method to save current details to profile:
   Future<void> _submitOrder() async {
     if (_orderType == 'delivery' && !_formKey.currentState!.validate()) {
       return;
     }
 
     final user = supabase.auth.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please sign in to place an order.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
+    if (user == null) return;
 
     setState(() => _isSubmitting = true);
 
     try {
+      // 0. Update default address & phone in profiles table for next time
+      await supabase.from('profiles').upsert({
+        'id': user.id,
+        'phone_number': _contactController.text.trim(),
+        'default_address': _orderType == 'delivery'
+            ? _addressController.text.trim()
+            : null,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+
       // 1. Insert Master Order record into Supabase
       final orderResponse = await supabase
           .from('orders')
           .insert({
             'user_id': user.id,
             'order_type': _orderType,
-            'delivery_address':
-                _orderType == 'delivery' ? _addressController.text.trim() : null,
+            'delivery_address': _orderType == 'delivery'
+                ? _addressController.text.trim()
+                : null,
             'contact_number': _contactController.text.trim(),
             'notes': _notesController.text.trim(),
             'subtotal': _cartService.subtotal,
@@ -74,7 +112,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       final String orderId = orderResponse['id'];
 
-      // 2. Prepare Order Items with selected options JSON
+      // 2. Prepare Order Items
       final orderItemsData = _cartService.items.map((item) {
         return {
           'order_id': orderId,
@@ -87,31 +125,35 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         };
       }).toList();
 
-      // 3. Insert Order Items into Supabase
+      // 3. Insert Order Items
       await supabase.from('order_items').insert(orderItemsData);
 
-      // 4. Clear cart after successful order creation
+      // 4. Clear cart
       _cartService.clearCart();
 
       if (!mounted) return;
 
-      // Navigate to order confirmation
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (_) => AlertDialog(
           title: const Text('Order Placed! 🎉'),
           content: Text(
-            'Your order #$orderId has been successfully submitted and is pending confirmation.',
+            'Your order #${orderId.substring(0, 8)} has been successfully submitted.',
           ),
           actions: [
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).popUntil((route) => route.isFirst); // Back to Home
+                Navigator.of(context).pop();
+                Navigator.of(context).popUntil((route) => route.isFirst);
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              child: const Text('Back to Home', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: const Text(
+                'Back to Home',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -133,9 +175,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Checkout'),
-      ),
+      appBar: AppBar(title: const Text('Checkout')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: Form(
@@ -222,7 +262,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 style: const TextStyle(color: AppColors.textPrimary),
                 decoration: const InputDecoration(
                   labelText: 'Contact Number',
-                  prefixIcon: Icon(Icons.phone_outlined, color: AppColors.textSecondary),
+                  prefixIcon: Icon(
+                    Icons.phone_outlined,
+                    color: AppColors.textSecondary,
+                  ),
                   hintText: 'e.g., 09123456789',
                 ),
                 validator: (value) {
@@ -242,8 +285,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   style: const TextStyle(color: AppColors.textPrimary),
                   decoration: const InputDecoration(
                     labelText: 'Delivery Address',
-                    prefixIcon:
-                        Icon(Icons.location_on_outlined, color: AppColors.textSecondary),
+                    prefixIcon: Icon(
+                      Icons.location_on_outlined,
+                      color: AppColors.textSecondary,
+                    ),
                     hintText: 'Street, Barangay, City / Landmark',
                   ),
                   validator: (value) {
@@ -264,7 +309,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 style: const TextStyle(color: AppColors.textPrimary),
                 decoration: const InputDecoration(
                   labelText: 'Special Notes / Rider Instructions',
-                  prefixIcon: Icon(Icons.note_alt_outlined, color: AppColors.textSecondary),
+                  prefixIcon: Icon(
+                    Icons.note_alt_outlined,
+                    color: AppColors.textSecondary,
+                  ),
                   hintText: 'e.g., Extra ice, call upon arrival',
                 ),
               ),
@@ -275,8 +323,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius:
-                      BorderRadius.circular(AppConstants.defaultBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.defaultBorderRadius,
+                  ),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: Column(
@@ -294,8 +343,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Subtotal',
-                            style: TextStyle(color: AppColors.textSecondary)),
+                        const Text(
+                          'Subtotal',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
                         Text(AppHelpers.formatCurrency(_cartService.subtotal)),
                       ],
                     ),
@@ -303,8 +354,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Delivery Fee',
-                            style: TextStyle(color: AppColors.textSecondary)),
+                        const Text(
+                          'Delivery Fee',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
                         Text(
                           _orderType == 'delivery'
                               ? AppHelpers.formatCurrency(_deliveryFee)

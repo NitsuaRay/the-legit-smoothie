@@ -28,7 +28,7 @@ class TheLegitSmoothieApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'The Legit Smoothie',
+      title: 'The Legit',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
