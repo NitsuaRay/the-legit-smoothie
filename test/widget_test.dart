@@ -5,7 +5,6 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:the_legit_smoothie/main.dart';
@@ -14,7 +13,7 @@ void main() {
   testWidgets('App load test', (WidgetTester tester) async {
     // Build our app with initialThemeMode provided
     await tester.pumpWidget(
-      const TheLegitSmoothieApp(initialThemeMode: ThemeMode.light),
+      const TheLegitSmoothieApp(),
     );
 
     // Note: The counter test assertions from the default template can be removed 
