@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/features/catalog/screens/product_detail_modal.dart';
 import 'package:the_legit_smoothie/features/checkout/screens/checkout_screen.dart';
 import 'package:the_legit_smoothie/shared/widgets/custom_app_bar.dart';
+import 'package:the_legit_smoothie/shared/widgets/main_navigation_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/helpers.dart';
@@ -84,7 +85,7 @@ class _CartScreenState extends State<CartScreen> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: MainAppBar(
         showLogo: false,
         showBackButton: false,
@@ -504,7 +505,9 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                 ),
 
-                // Order Summary Footer Container
+                // ============================================================
+                // ORDER SUMMARY FOOTER
+                // ============================================================
                 Container(
                   padding: EdgeInsets.fromLTRB(
                     AppConstants.defaultPadding,
@@ -527,6 +530,9 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                   child: Column(
                     children: [
+                      // ========================================================
+                      // SUBTOTAL
+                      // ========================================================
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -548,23 +554,316 @@ class _CartScreenState extends State<CartScreen> {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 16),
+
+                      // ========================================================
+                      // PROCEED TO CHECKOUT BUTTON
+                      // ========================================================
                       SizedBox(
                         width: double.infinity,
-                        height: 52,
+                        height: 54,
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
+                            // ====================================================
+                            // CONFIRMATION DIALOG
+                            // ====================================================
+                            final bool? shouldProceed = await showDialog<bool>(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (BuildContext dialogContext) {
+                                return Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(24),
+                                      border: Border.all(
+                                        color: AppColors.border.withValues(
+                                          alpha: 0.45,
+                                        ),
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.14,
+                                          ),
+                                          blurRadius: 32,
+                                          offset: const Offset(0, 18),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(24),
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          22,
+                                          22,
+                                          22,
+                                          18,
+                                        ),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            // ======================================
+                                            // ICON
+                                            // ======================================
+                                            Container(
+                                              width: 62,
+                                              height: 62,
+                                              decoration: BoxDecoration(
+                                                color: Colors.amber.withValues(
+                                                  alpha: 0.12,
+                                                ),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.shopping_bag_outlined,
+                                                color: Colors.amber,
+                                                size: 34,
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 18),
+
+                                            // ======================================
+                                            // TITLE
+                                            // ======================================
+                                            const Text(
+                                              'Proceed to Checkout?',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                fontSize: 22,
+                                                height: 1.15,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: -0.4,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 10),
+
+                                            // ======================================
+                                            // DESCRIPTION
+                                            // ======================================
+                                            const Text(
+                                              'Please review your cart carefully before continuing.',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                height: 1.45,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 20),
+
+                                            // ======================================
+                                            // INFORMATION BOX
+                                            // ======================================
+                                            Container(
+                                              padding: const EdgeInsets.all(16),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary
+                                                    .withValues(alpha: 0.06),
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
+                                                border: Border.all(
+                                                  color: AppColors.primary
+                                                      .withValues(alpha: 0.12),
+                                                ),
+                                              ),
+                                              child: const Column(
+                                                children: [
+                                                  _CheckoutInfoRow(
+                                                    icon: Icons
+                                                        .inventory_2_outlined,
+                                                    text:
+                                                        'Confirm all items and quantities.',
+                                                  ),
+
+                                                  SizedBox(height: 12),
+
+                                                  _CheckoutInfoRow(
+                                                    icon:
+                                                        Icons.edit_off_outlined,
+                                                    text:
+                                                        'Items cannot be edited after placing the order.',
+                                                  ),
+
+                                                  SizedBox(height: 12),
+
+                                                  _CheckoutInfoRow(
+                                                    icon: Icons
+                                                        .local_shipping_outlined,
+                                                    text:
+                                                        'Delivery details will be confirmed next.',
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 22),
+
+                                            // ======================================
+                                            // ACTION BUTTONS
+                                            // ======================================
+                                            Row(
+                                              children: [
+                                                // ----------------------------------
+                                                // REVIEW CART
+                                                // ----------------------------------
+                                                Expanded(
+                                                  child: OutlinedButton(
+                                                    style: OutlinedButton.styleFrom(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            vertical: 14,
+                                                          ),
+                                                      side: BorderSide(
+                                                        color: AppColors.border
+                                                            .withValues(
+                                                              alpha: 0.9,
+                                                            ),
+                                                      ),
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              14,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                    onPressed: () {
+                                                      Navigator.of(
+                                                        dialogContext,
+                                                      ).pop(false);
+                                                    },
+                                                    child: const Text(
+                                                      'Review Cart',
+                                                      style: TextStyle(
+                                                        color: AppColors
+                                                            .textPrimary,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                const SizedBox(width: 12),
+
+                                                // ----------------------------------
+                                                // CONTINUE
+                                                // ----------------------------------
+                                                Expanded(
+                                                  child: ElevatedButton(
+                                                    style: ElevatedButton.styleFrom(
+                                                      elevation: 0,
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            vertical: 14,
+                                                          ),
+                                                      backgroundColor:
+                                                          AppColors.primary,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              14,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                    onPressed: () {
+                                                      Navigator.of(
+                                                        dialogContext,
+                                                      ).pop(true);
+                                                    },
+                                                    child: const Text(
+                                                      'Continue',
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+
+                            // ====================================================
+                            // USER CANCELLED
+                            // ====================================================
+                            if (shouldProceed != true) {
+                              return;
+                            }
+
+                            if (!context.mounted) return;
+
                             Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const CheckoutScreen(),
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) {
+                                      return const CheckoutScreen();
+                                    },
+
+                                transitionsBuilder:
+                                    (
+                                      context,
+                                      animation,
+                                      secondaryAnimation,
+                                      child,
+                                    ) {
+                                      const begin = Offset(1.0, 0.0);
+                                      const end = Offset.zero;
+                                      const curve = Curves.easeOutCubic;
+
+                                      final curvedAnimation = CurvedAnimation(
+                                        parent: animation,
+                                        curve: curve,
+                                      );
+
+                                      final slideAnimation = Tween<Offset>(
+                                        begin: begin,
+                                        end: end,
+                                      ).animate(curvedAnimation);
+
+                                      final fadeAnimation = Tween<double>(
+                                        begin: 0.0,
+                                        end: 1.0,
+                                      ).animate(curvedAnimation);
+
+                                      return FadeTransition(
+                                        opacity: fadeAnimation,
+                                        child: SlideTransition(
+                                          position: slideAnimation,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+
+                                transitionDuration: const Duration(
+                                  milliseconds: 320,
+                                ),
                               ),
                             );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             elevation: 0,
+                            shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(18),
                             ),
                           ),
                           child: const Row(
@@ -574,14 +873,17 @@ class _CartScreenState extends State<CartScreen> {
                                 'Proceed to Checkout',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w800,
                                   color: Colors.white,
+                                  letterSpacing: -0.1,
                                 ),
                               ),
+
                               SizedBox(width: 8),
+
                               Icon(
                                 Icons.arrow_forward_rounded,
-                                size: 18,
+                                size: 20,
                                 color: Colors.white,
                               ),
                             ],
@@ -641,9 +943,12 @@ class _CartScreenState extends State<CartScreen> {
               height: 46,
               child: OutlinedButton(
                 onPressed: () {
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-                  }
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (_) => const MainNavigationScreen(),
+                    ),
+                    (route) => false, // Clears all screens in the stack
+                  );
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.primary, width: 1.5),
@@ -682,6 +987,35 @@ class _CartScreenState extends State<CartScreen> {
           color: AppColors.primary,
         ),
       ),
+    );
+  }
+}
+
+class _CheckoutInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _CheckoutInfoRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.35,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:the_legit_smoothie/shared/widgets/main_navigation_screen.dart';
 import '../../../core/constants/app_colors.dart';
 
 /// Section Header Widget for Checkout Sections
@@ -342,7 +343,13 @@ class OrderSuccessDialog extends StatelessWidget {
                   ],
                 ),
                 child: ElevatedButton(
-                  onPressed: onDismiss,
+                  onPressed: () {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+                      (route) =>
+                          false, // Removes all previous routes from the stack
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
@@ -351,7 +358,7 @@ class OrderSuccessDialog extends StatelessWidget {
                     ),
                   ),
                   child: const Text(
-                    'Back to Home',
+                    'Continue Shopping',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:the_legit_smoothie/features/catalog/screens/home_screen.dart';
+import 'package:the_legit_smoothie/shared/widgets/main_navigation_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../services/auth_service.dart';
@@ -44,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // Navigate to Home upon successful login
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
       );
     } on AuthException catch (error) {
       if (!mounted) return;

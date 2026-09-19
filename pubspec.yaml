@@ -41,6 +41,7 @@ dependencies:
   philippines_rpcmb: ^0.0.3
   image_picker: ^1.2.3
   intl: ^0.20.3
+  intl_phone_number_input: ^0.7.5
 
 dev_dependencies:
   flutter_test:

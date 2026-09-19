@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/features/checkout/widgets/checkout_widgets.dart.dart';
+import 'package:the_legit_smoothie/features/profile/screens/profile_screen.dart';
 import 'package:the_legit_smoothie/shared/widgets/custom_app_bar.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../main.dart';
 import '../../cart/services/cart_service.dart';
+import 'order_receipt_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -71,7 +73,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  // Update _submitOrder method to save current details to profile:
   Future<void> _submitOrder() async {
     if (_orderType == 'delivery' && !_formKey.currentState!.validate()) {
       return;
@@ -83,7 +84,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      // 0. Update default address & phone in profiles table for next time
+      final double subtotalSnapshot = _cartService.subtotal;
+      final double deliveryFeeSnapshot = _deliveryFee;
+      final double grandTotalSnapshot = _grandTotal;
+
+      // 0. Update default address & phone in profiles table
       await supabase.from('profiles').upsert({
         'id': user.id,
         'phone_number': _contactController.text.trim(),
@@ -104,9 +109,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 : null,
             'contact_number': _contactController.text.trim(),
             'notes': _notesController.text.trim(),
-            'subtotal': _cartService.subtotal,
-            'delivery_fee': _deliveryFee,
-            'total_price': _grandTotal,
+            'subtotal': subtotalSnapshot,
+            'delivery_fee': deliveryFeeSnapshot,
+            'total_price': grandTotalSnapshot,
             'status': 'pending',
           })
           .select('id')
@@ -135,14 +140,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       if (!mounted) return;
 
-      // Show Modern Premium Dialog Widget from checkout_widgets.dart
-      await OrderSuccessDialog.show(
-        context: context,
-        orderId: orderId,
-        onDismiss: () {
-          Navigator.of(context).pop();
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        },
+      // 5. Navigate to Receipt Screen with saved order context
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => OrderReceiptScreen(
+            orderId: orderId,
+            orderType: _orderType,
+            contactNumber: _contactController.text.trim(),
+            deliveryAddress: _orderType == 'delivery'
+                ? _addressController.text.trim()
+                : null,
+            notes: _notesController.text.trim(),
+            subtotal: subtotalSnapshot,
+            deliveryFee: deliveryFeeSnapshot,
+            grandTotal: grandTotalSnapshot,
+            items: orderItemsData,
+            orderDate: DateTime.now(),
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -154,6 +169,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _openProfile() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+
+    // Reload phone and address after returning from Profile.
+    if (mounted) {
+      await _loadSavedProfile();
+      setState(() {});
     }
   }
 
@@ -184,7 +211,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ),
               child: const Icon(
-                Icons.receipt_long_rounded,
+                Icons.money_rounded,
                 size: 18,
                 color: AppColors.primary,
               ),
@@ -306,19 +333,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   children: [
                     TextFormField(
                       controller: _contactController,
-                      keyboardType: TextInputType.phone,
+                      readOnly: true,
+                      showCursor: false,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                       decoration: buildCheckoutInputDecoration(
                         label: 'Contact Number',
-                        hint: 'e.g., 09123456789',
+                        hint: 'No contact number saved',
                         icon: Icons.phone_outlined,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter contact number for updates';
+                          return 'Please add a contact number in your profile';
                         }
                         return null;
                       },
@@ -331,6 +359,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               padding: const EdgeInsets.only(top: 14),
                               child: TextFormField(
                                 controller: _addressController,
+                                readOnly: true,
+                                showCursor: false,
                                 maxLines: 2,
                                 style: const TextStyle(
                                   color: AppColors.textPrimary,
@@ -338,19 +368,41 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 ),
                                 decoration: buildCheckoutInputDecoration(
                                   label: 'Delivery Address',
-                                  hint: 'Street, Barangay, City / Landmark',
+                                  hint: 'No delivery address saved',
                                   icon: Icons.location_on_outlined,
                                 ),
                                 validator: (value) {
                                   if (_orderType == 'delivery' &&
                                       (value == null || value.trim().isEmpty)) {
-                                    return 'Please provide complete delivery address';
+                                    return 'Please add a delivery address in your profile';
                                   }
                                   return null;
                                 },
                               ),
                             )
                           : const SizedBox.shrink(),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: _openProfile,
+                        icon: const Icon(
+                          Icons.edit_outlined,
+                          size: 17,
+                          color: AppColors.primary,
+                        ),
+                        label: const Text(
+                          'Edit contact & delivery information',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 14),
@@ -374,8 +426,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               const SizedBox(height: 24),
 
               const CheckoutSectionHeader(
-                title: 'Payment Summary',
-                subtitle: 'Review your total costs',
+                title: 'Contact & Delivery',
+                subtitle: 'Your saved contact and delivery information',
               ),
               const SizedBox(height: 12),
 
@@ -399,7 +451,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   children: [
                     SummaryRowItem(
                       label: 'Subtotal',
-                      value: AppHelpers.formatCurrency(200.00),
+                      value: AppHelpers.formatCurrency(_cartService.subtotal),
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 10),

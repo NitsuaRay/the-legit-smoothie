@@ -161,6 +161,7 @@ class UpdateNotesDialog extends StatefulWidget {
 
 class _UpdateNotesDialogState extends State<UpdateNotesDialog> {
   late final TextEditingController _controller;
+  bool _isLoading = false; // 1. Added loading state
 
   @override
   void initState() {
@@ -229,6 +230,7 @@ class _UpdateNotesDialogState extends State<UpdateNotesDialog> {
             const SizedBox(height: 16),
             TextField(
               controller: _controller,
+              enabled: !_isLoading, // Disable input while saving
               maxLines: 3,
               style: const TextStyle(
                 color: AppColors.textPrimary,
@@ -261,24 +263,45 @@ class _UpdateNotesDialogState extends State<UpdateNotesDialog> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: () {
-                  widget.onSave(_controller.text.trim());
-                  Navigator.of(context).pop();
-                },
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        setState(() => _isLoading = true);
+                        try {
+                          await widget.onSave(_controller.text.trim());
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() => _isLoading = false);
+                          }
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  'Save Instructions',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    : const Text(
+                        'Save Instructions',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
           ],
