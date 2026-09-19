@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:the_legit_smoothie/features/cart/models/cart_item_model.dart';
 import 'package:the_legit_smoothie/features/cart/services/cart_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
@@ -9,15 +10,28 @@ import '../models/product_option_model.dart';
 
 class ProductDetailModal extends StatefulWidget {
   final ProductModel product;
+  final CartItemModel? cartItem; // If provided, we are editing an existing item
 
-  const ProductDetailModal({super.key, required this.product});
+  const ProductDetailModal({
+    super.key,
+    required this.product,
+    this.cartItem,
+  });
 
-  static Future<void> show(BuildContext context, ProductModel product) {
+  static Future<void> show(
+    BuildContext context,
+    ProductModel product, {
+    CartItemModel? cartItem,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ProductDetailModal(product: product),
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (_) => ProductDetailModal(
+        product: product,
+        cartItem: cartItem,
+      ),
     );
   }
 
@@ -27,21 +41,21 @@ class ProductDetailModal extends StatefulWidget {
 
 class _ProductDetailModalState extends State<ProductDetailModal> {
   bool _isLoading = true;
-  int _quantity = 1;
+  late int _quantity;
 
-  // Options grouped by category (e.g., {"Size": [...], "Toppings": [...]})
+  // Options grouped by category
   Map<String, List<ProductOptionModel>> _groupedOptions = {};
 
   // User Selections
-  // Single choice options (Size, Sugar Level, Flavor) -> GroupName: Option
   final Map<String, ProductOptionModel> _singleSelections = {};
-
-  // Multiple choice options (Toppings, Add-ons) -> List<Option>
   final List<ProductOptionModel> _multiSelections = [];
+
+  bool get _isEditing => widget.cartItem != null;
 
   @override
   void initState() {
     super.initState();
+    _quantity = widget.cartItem?.quantity ?? 1;
     _fetchOptions();
   }
 
@@ -65,12 +79,29 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
       setState(() {
         _groupedOptions = grouped;
 
-        // Auto-select first item in single-choice groups (e.g. Size, Sugar)
-        grouped.forEach((group, opts) {
-          if (group != 'Toppings' && group != 'Add-ons' && opts.isNotEmpty) {
-            _singleSelections[group] = opts.first;
+        if (_isEditing) {
+          // Pre-select existing options from cart item
+          final selectedOptionNames = widget.cartItem!.selectedOptions
+              .map((o) => o['name'] as String)
+              .toSet();
+
+          for (var opt in options) {
+            if (selectedOptionNames.contains(opt.optionName)) {
+              if (opt.optionGroup == 'Toppings' || opt.optionGroup == 'Add-ons') {
+                _multiSelections.add(opt);
+              } else {
+                _singleSelections[opt.optionGroup] = opt;
+              }
+            }
           }
-        });
+        } else {
+          // Default selection for non-editing mode
+          grouped.forEach((group, opts) {
+            if (group != 'Toppings' && group != 'Add-ons' && opts.isNotEmpty) {
+              _singleSelections[group] = opts.first;
+            }
+          });
+        }
 
         _isLoading = false;
       });
@@ -79,16 +110,13 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
     }
   }
 
-  // Price Calculation: (Base + Options) * Quantity
   double get _calculatedTotalPrice {
     double total = widget.product.basePrice;
 
-    // Add single selection prices
     for (var opt in _singleSelections.values) {
       total += opt.extraPrice;
     }
 
-    // Add multi selection prices
     for (var opt in _multiSelections) {
       total += opt.extraPrice;
     }
@@ -96,7 +124,7 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
     return total * _quantity;
   }
 
-  void _handleAddToCart() {
+  void _handleSaveCart() {
     final selectedOptionsJson = [
       ..._singleSelections.values.map(
         (opt) => {
@@ -114,7 +142,6 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
       ),
     ];
 
-    // Calculate unit price for 1 item
     double singleUnitPrice = widget.product.basePrice;
     for (var opt in _singleSelections.values) {
       singleUnitPrice += opt.extraPrice;
@@ -123,7 +150,10 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
       singleUnitPrice += opt.extraPrice;
     }
 
-    // Add to global cart state
+    if (_isEditing) {
+      CartService().removeItem(widget.cartItem!.id);
+    }
+
     CartService().addItem(
       product: widget.product,
       selectedOptions: selectedOptionsJson,
@@ -133,8 +163,24 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Added ${_quantity}x ${widget.product.name} to Cart!'),
-        backgroundColor: AppColors.success,
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _isEditing
+                    ? 'Updated ${widget.product.name} in Cart!'
+                    : 'Added ${_quantity}x ${widget.product.name} to Cart!',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -145,47 +191,64 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 25,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      height: MediaQuery.of(context).size.height * 0.85,
+      height: MediaQuery.of(context).size.height * 0.88,
       child: Column(
         children: [
-          // Drag handle
           const SizedBox(height: 12),
           Container(
-            width: 40,
-            height: 5,
+            width: 38,
+            height: 4.5,
             decoration: BoxDecoration(
               color: AppColors.border,
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          const SizedBox(height: 12),
 
-          // Modal Header & Item Info
+          // Header
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppConstants.defaultPadding,
+            padding: const EdgeInsets.fromLTRB(
+              AppConstants.defaultPadding,
+              12,
+              AppConstants.defaultPadding,
+              16,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 70,
-                  height: 70,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
-                    color: AppColors.primaryAccent.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.6),
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.local_drink_rounded,
-                    size: 40,
-                    color: AppColors.primary,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: widget.product.imageUrl != null &&
+                            widget.product.imageUrl!.isNotEmpty
+                        ? Image.network(
+                            widget.product.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                          )
+                        : _buildPlaceholder(),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -193,33 +256,71 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.product.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.product.name,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.4,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => Navigator.of(context).pop(),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.border.withValues(alpha: 0.6),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                size: 18,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       if (widget.product.description != null) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
                           widget.product.description!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.3,
+                            color: AppColors.textSecondary.withValues(alpha: 0.9),
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                      const SizedBox(height: 6),
-                      Text(
-                        AppHelpers.formatCurrency(widget.product.basePrice),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.secondaryDark,
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          AppHelpers.formatCurrency(widget.product.basePrice),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],
@@ -228,18 +329,20 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
               ],
             ),
           ),
-          const Divider(height: 24),
+          Divider(height: 1, color: AppColors.border.withValues(alpha: 0.5)),
 
-          // Dynamic Customization Options
+          // Body
           Expanded(
             child: _isLoading
                 ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary,
+                      strokeWidth: 2.5,
+                    ),
                   )
                 : ListView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppConstants.defaultPadding,
-                    ),
+                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                    physics: const BouncingScrollPhysics(),
                     children: [
                       ..._groupedOptions.entries.map((entry) {
                         final groupName = entry.key;
@@ -250,31 +353,38 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              groupName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  groupName,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                Text(
+                                  isMultiSelect ? 'Optional' : 'Required',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: isMultiSelect
+                                        ? AppColors.textSecondary
+                                        : AppColors.primary,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 8),
-
-                            // Single Choice Radio Tiles or Multi Choice Checkboxes
-                            ...options.map((opt) {
-                              if (isMultiSelect) {
-                                final isSelected = _multiSelections.contains(
-                                  opt,
-                                );
-                                return CheckboxListTile(
-                                  value: isSelected,
-                                  activeColor: AppColors.primary,
-                                  title: Text(opt.optionName),
-                                  subtitle: opt.extraPrice > 0
-                                      ? Text(
-                                          '+ ${AppHelpers.formatCurrency(opt.extraPrice)}',
-                                        )
-                                      : null,
+                            const SizedBox(height: 12),
+                            if (isMultiSelect)
+                              ...options.map((opt) {
+                                final isSelected =
+                                    _multiSelections.contains(opt);
+                                return _buildMultiSelectTile(
+                                  option: opt,
+                                  isSelected: isSelected,
                                   onChanged: (selected) {
                                     setState(() {
                                       if (selected == true) {
@@ -285,37 +395,26 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
                                     });
                                   },
                                 );
-                              } else {
-                                // Wrap your tiles collection with a RadioGroup
-                                return RadioGroup<ProductOptionModel>(
-                                  groupValue: _singleSelections[groupName],
-                                  onChanged: (val) {
-                                    if (val != null) {
+                              })
+                            else
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: options.map((opt) {
+                                  final isSelected =
+                                      _singleSelections[groupName] == opt;
+                                  return _buildSingleSelectChip(
+                                    option: opt,
+                                    isSelected: isSelected,
+                                    onTap: () {
                                       setState(() {
-                                        _singleSelections[groupName] = val;
+                                        _singleSelections[groupName] = opt;
                                       });
-                                    }
-                                  },
-                                  child: Builder(
-                                    builder: (context) {
-                                      // Look up individual items. Note that 'isSelected' is deleted
-                                      // since RadioGroup handles the active/selected UI states natively.
-                                      return RadioListTile<ProductOptionModel>(
-                                        value: opt,
-                                        activeColor: AppColors.primary,
-                                        title: Text(opt.optionName),
-                                        subtitle: opt.extraPrice > 0
-                                            ? Text(
-                                                '+ ${AppHelpers.formatCurrency(opt.extraPrice)}',
-                                              )
-                                            : null,
-                                      );
                                     },
-                                  ),
-                                );
-                              }
-                            }),
-                            const SizedBox(height: 16),
+                                  );
+                                }).toList(),
+                              ),
+                            const SizedBox(height: 24),
                           ],
                         );
                       }),
@@ -323,59 +422,118 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
                   ),
           ),
 
-          // Bottom Bar (Quantity Selector & Add to Cart)
+          // Bottom Action Bar
           Container(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            decoration: const BoxDecoration(
+            padding: EdgeInsets.fromLTRB(
+              AppConstants.defaultPadding,
+              14,
+              AppConstants.defaultPadding,
+              14 + MediaQuery.of(context).padding.bottom,
+            ),
+            decoration: BoxDecoration(
               color: AppColors.surface,
-              border: Border(top: BorderSide(color: AppColors.border)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -4),
+                ),
+              ],
             ),
             child: Row(
               children: [
-                // Quantity Counter
+                // Stepper
                 Container(
+                  height: 48,
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.border),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.8),
+                    ),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.remove, size: 18),
+                        icon: const Icon(Icons.remove_rounded, size: 18),
+                        splashRadius: 20,
+                        color: _quantity > 1
+                            ? AppColors.textPrimary
+                            : AppColors.border,
                         onPressed: _quantity > 1
                             ? () => setState(() => _quantity--)
                             : null,
                       ),
-                      Text(
-                        '$_quantity',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          '$_quantity',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.add, size: 18),
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        splashRadius: 20,
+                        color: AppColors.textPrimary,
                         onPressed: () => setState(() => _quantity++),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
 
-                // Add to Cart Button
+                // Primary Button
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleAddToCart,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: Text(
-                      'Add to Cart - ${AppHelpers.formatCurrency(_calculatedTotalPrice)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Colors.white,
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _handleSaveCart,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _isEditing ? 'Update Cart' : 'Add to Cart',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              AppHelpers.formatCurrency(_calculatedTotalPrice),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -384,6 +542,162 @@ class _ProductDetailModalState extends State<ProductDetailModal> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSingleSelectChip({
+    required ProductOptionModel option,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.border.withValues(alpha: 0.8),
+            width: 1.2,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              option.optionName,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
+            if (option.extraPrice > 0) ...[
+              const SizedBox(width: 6),
+              Text(
+                '+${AppHelpers.formatCurrency(option.extraPrice)}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.85)
+                      : AppColors.primary,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMultiSelectTile({
+    required ProductOptionModel option,
+    required bool isSelected,
+    required ValueChanged<bool?> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: isSelected
+            ? AppColors.primary.withValues(alpha: 0.05)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => onChanged(!isSelected),
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.6)
+                    : AppColors.border.withValues(alpha: 0.6),
+                width: 1.2,
+              ),
+            ),
+            child: Row(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textSecondary.withValues(alpha: 0.4),
+                      width: 1.8,
+                    ),
+                  ),
+                  child: isSelected
+                      ? const Icon(
+                          Icons.check_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    option.optionName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                if (option.extraPrice > 0)
+                  Text(
+                    '+${AppHelpers.formatCurrency(option.extraPrice)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppColors.primaryAccent.withValues(alpha: 0.12),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.local_drink_rounded,
+          size: 32,
+          color: AppColors.primary,
+        ),
       ),
     );
   }

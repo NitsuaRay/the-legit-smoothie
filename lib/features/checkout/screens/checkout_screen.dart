@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:the_legit_smoothie/features/checkout/widgets/checkout_widgets.dart.dart';
+import 'package:the_legit_smoothie/shared/widgets/custom_app_bar.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/helpers.dart';
@@ -133,30 +135,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       if (!mounted) return;
 
-      showDialog(
+      // Show Modern Premium Dialog Widget from checkout_widgets.dart
+      await OrderSuccessDialog.show(
         context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          title: const Text('Order Placed! 🎉'),
-          content: Text(
-            'Your order #${orderId.substring(0, 8)} has been successfully submitted.',
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: const Text(
-                'Back to Home',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
+        orderId: orderId,
+        onDismiss: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        },
       );
     } catch (e) {
       if (!mounted) return;
@@ -175,210 +161,271 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Checkout')),
+      appBar: MainAppBar(
+        showLogo: false,
+        showBackButton: true,
+        titleWidget: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.15),
+                    AppColors.primary.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: const Icon(
+                Icons.receipt_long_rounded,
+                size: 18,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [AppColors.textPrimary, AppColors.primary],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(bounds),
+                    child: const Text(
+                      'Checkout',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                        color: AppColors.surface,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Complete your order details',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                      color: AppColors.textSecondary.withValues(alpha: 0.8),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Order Type Selection
-              const Text(
-                'Order Type',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8.0),
-                          child: Text('🛵 Delivery'),
-                        ),
-                      ),
-                      selected: _orderType == 'delivery',
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surface,
-                      labelStyle: TextStyle(
-                        color: _orderType == 'delivery'
-                            ? Colors.white
-                            : AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      onSelected: (_) {
-                        setState(() => _orderType = 'delivery');
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8.0),
-                          child: Text('🛍️ Store Pickup'),
-                        ),
-                      ),
-                      selected: _orderType == 'pickup',
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surface,
-                      labelStyle: TextStyle(
-                        color: _orderType == 'pickup'
-                            ? Colors.white
-                            : AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      onSelected: (_) {
-                        setState(() => _orderType = 'pickup');
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Contact & Address Details Form
-              const Text(
-                'Contact & Delivery Details',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+              const CheckoutSectionHeader(
+                title: 'Order Type',
+                subtitle: 'Select how you want to receive your smoothies',
               ),
               const SizedBox(height: 12),
 
-              // Contact Phone Number
-              TextFormField(
-                controller: _contactController,
-                keyboardType: TextInputType.phone,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: const InputDecoration(
-                  labelText: 'Contact Number',
-                  prefixIcon: Icon(
-                    Icons.phone_outlined,
-                    color: AppColors.textSecondary,
+              // Segmented Switcher using OrderTypeTab widget
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.6),
                   ),
-                  hintText: 'e.g., 09123456789',
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter contact number for order updates';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-
-              // Delivery Address (Only required for Delivery)
-              if (_orderType == 'delivery') ...[
-                TextFormField(
-                  controller: _addressController,
-                  maxLines: 2,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(
-                    labelText: 'Delivery Address',
-                    prefixIcon: Icon(
-                      Icons.location_on_outlined,
-                      color: AppColors.textSecondary,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OrderTypeTab(
+                        label: 'Delivery',
+                        icon: Icons.delivery_dining_rounded,
+                        value: 'delivery',
+                        groupValue: _orderType,
+                        onTap: (val) => setState(() => _orderType = val),
+                      ),
                     ),
-                    hintText: 'Street, Barangay, City / Landmark',
-                  ),
-                  validator: (value) {
-                    if (_orderType == 'delivery' &&
-                        (value == null || value.trim().isEmpty)) {
-                      return 'Please provide complete delivery address';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // Special Instructions
-              TextFormField(
-                controller: _notesController,
-                maxLines: 2,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: const InputDecoration(
-                  labelText: 'Special Notes / Rider Instructions',
-                  prefixIcon: Icon(
-                    Icons.note_alt_outlined,
-                    color: AppColors.textSecondary,
-                  ),
-                  hintText: 'e.g., Extra ice, call upon arrival',
+                    Expanded(
+                      child: OrderTypeTab(
+                        label: 'Store Pickup',
+                        icon: Icons.storefront_rounded,
+                        value: 'pickup',
+                        groupValue: _orderType,
+                        onTap: (val) => setState(() => _orderType = val),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Payment Summary Box
+              const CheckoutSectionHeader(
+                title: 'Contact & Delivery',
+                subtitle: 'Enter your location and contact details',
+              ),
+              const SizedBox(height: 12),
+
+              // Form Card Container
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(
-                    AppConstants.defaultBorderRadius,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.6),
                   ),
-                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Payment Summary',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    TextFormField(
+                      controller: _contactController,
+                      keyboardType: TextInputType.phone,
+                      style: const TextStyle(
                         color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: buildCheckoutInputDecoration(
+                        label: 'Contact Number',
+                        hint: 'e.g., 09123456789',
+                        icon: Icons.phone_outlined,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter contact number for updates';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      child: _orderType == 'delivery'
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 14),
+                              child: TextFormField(
+                                controller: _addressController,
+                                maxLines: 2,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                decoration: buildCheckoutInputDecoration(
+                                  label: 'Delivery Address',
+                                  hint: 'Street, Barangay, City / Landmark',
+                                  icon: Icons.location_on_outlined,
+                                ),
+                                validator: (value) {
+                                  if (_orderType == 'delivery' &&
+                                      (value == null || value.trim().isEmpty)) {
+                                    return 'Please provide complete delivery address';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    TextFormField(
+                      controller: _notesController,
+                      maxLines: 2,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: buildCheckoutInputDecoration(
+                        label: 'Notes / Instructions',
+                        hint: 'e.g., Less sugar, call upon arrival',
+                        icon: Icons.note_alt_outlined,
                       ),
                     ),
-                    const Divider(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Subtotal',
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                        Text(AppHelpers.formatCurrency(_cartService.subtotal)),
-                      ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const CheckoutSectionHeader(
+                title: 'Payment Summary',
+                subtitle: 'Review your total costs',
+              ),
+              const SizedBox(height: 12),
+
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.6),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Delivery Fee',
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                        Text(
-                          _orderType == 'delivery'
-                              ? AppHelpers.formatCurrency(_deliveryFee)
-                              : 'FREE (Pickup)',
-                          style: TextStyle(
-                            color: _orderType == 'pickup'
-                                ? AppColors.success
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    SummaryRowItem(
+                      label: 'Subtotal',
+                      value: AppHelpers.formatCurrency(200.00),
                     ),
-                    const Divider(height: 20),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Divider(height: 1),
+                    ),
+                    SummaryRowItem(
+                      label: 'Delivery Fee',
+                      value: _orderType == 'delivery'
+                          ? AppHelpers.formatCurrency(_deliveryFee)
+                          : 'FREE (Pickup)',
+                      valueColor: _orderType == 'pickup'
+                          ? AppColors.success
+                          : AppColors.textPrimary,
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Divider(height: 1),
+                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Total',
+                          'Total Amount',
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
                             color: AppColors.textPrimary,
                           ),
                         ),
@@ -386,8 +433,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           AppHelpers.formatCurrency(_grandTotal),
                           style: const TextStyle(
                             fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.secondaryDark,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primary,
+                            letterSpacing: -0.5,
                           ),
                         ),
                       ],
@@ -397,34 +445,65 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               const SizedBox(height: 28),
 
-              // Confirm Order Button
-              SizedBox(
+              // CTA Place Order Button
+              Container(
                 width: double.infinity,
-                height: 50,
+                height: 54,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primary, AppColors.secondaryDark],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitOrder,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   child: _isSubmitting
                       ? const SizedBox(
-                          height: 24,
-                          width: 24,
+                          height: 22,
+                          width: 22,
                           child: CircularProgressIndicator(
                             color: Colors.white,
-                            strokeWidth: 2,
+                            strokeWidth: 2.5,
                           ),
                         )
-                      : Text(
-                          'Place Order (${AppHelpers.formatCurrency(_grandTotal)})',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.check_circle_outline_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Place Order • ${AppHelpers.formatCurrency(_grandTotal)}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                 ),
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
