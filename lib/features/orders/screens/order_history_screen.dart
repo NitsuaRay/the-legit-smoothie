@@ -789,77 +789,143 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String orderId = order['id'];
-    final String status = (order['status'] ?? 'pending').toString();
-    final String orderType = (order['order_type'] ?? 'delivery').toString();
-    final String notes = (order['notes'] ?? '').toString();
+    final String orderId = order['id']?.toString() ?? '';
+
+    final String status = (order['status'] ?? 'pending')
+        .toString()
+        .toLowerCase();
+
+    final String orderType = (order['order_type'] ?? 'delivery')
+        .toString()
+        .toLowerCase();
+
+    final String notes = (order['notes'] ?? '').toString().trim();
+
     final double totalPrice = (order['total_price'] as num?)?.toDouble() ?? 0.0;
-    final DateTime createdAt = DateTime.parse(order['created_at']).toLocal();
 
-    final isPending = status == 'pending';
-    final isPreparing = status == 'preparing';
-    final isCancelled = status == 'cancelled';
+    final DateTime createdAt = DateTime.parse(
+      order['created_at'].toString(),
+    ).toLocal();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    final bool canUpdateNotes = status == 'pending' || status == 'preparing';
+
+    final bool isDelivery = orderType == 'delivery';
+
+    final bool isNew = _isNewOrder(createdAt, status);
+
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => OrderTrackingScreen(orderId: orderId),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          orderType == 'delivery'
-                              ? Icons.delivery_dining_rounded
-                              : Icons.storefront_rounded,
-                          size: 18,
-                          color: AppColors.primary,
+        onTap: () => _openTracking(context, orderId),
+        borderRadius: BorderRadius.circular(22),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.055)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.035),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(17, 16, 15, 15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // =================================================
+                // TOP
+                // =================================================
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // =============================================
+                    // ORDER ICON
+                    // =============================================
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(
+                          color: AppColors.border.withValues(alpha: 0.30),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Column(
+                      child: Center(
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.09),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            _statusIcon(status),
+                            size: 13,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // =============================================
+                    // ORDER ID + DATE
+                    // =============================================
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Order #${orderId.substring(0, orderId.length > 8 ? 8 : orderId.length).toUpperCase()}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                              color: AppColors.textPrimary,
-                            ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  _shortOrderId(orderId),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    height: 1,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.4,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+
+                              if (isNew) ...[
+                                const SizedBox(width: 7),
+
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.textPrimary,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'NEW',
+                                    style: TextStyle(
+                                      fontSize: 5.8,
+                                      height: 1,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.7,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
 
-                          const SizedBox(height: 3),
+                          const SizedBox(height: 5),
 
                           _OrderStatusDate(
                             orderId: orderId,
@@ -868,151 +934,431 @@ class _OrderCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // =============================================
+                    // STATUS
+                    // =============================================
+                    _CustomerOrderStatusBadge(
+                      label: statusLabel,
+                      color: statusColor,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 15),
+
+                // =================================================
+                // FULFILLMENT
+                // =================================================
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'FULFILLMENT',
+                            style: TextStyle(
+                              fontSize: 6.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.9,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.45,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          Text(
+                            isDelivery ? 'Delivery Order' : 'Pickup Order',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              height: 1,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.15,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // =============================================
+                    // TYPE PILL
+                    // =============================================
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isDelivery
+                                ? Icons.delivery_dining_outlined
+                                : Icons.storefront_outlined,
+                            size: 12,
+                            color: AppColors.textSecondary,
+                          ),
+
+                          const SizedBox(width: 5),
+
+                          Text(
+                            isDelivery ? 'Delivery' : 'Pickup',
+                            style: const TextStyle(
+                              fontSize: 8,
+                              height: 1,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                // =================================================
+                // NOTES
+                // =================================================
+                if (notes.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
-                      vertical: 5,
+                      vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: statusColor.withValues(alpha: 0.3),
-                      ),
+                      color: AppColors.background.withValues(alpha: 0.70),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(
-                      statusLabel,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: statusColor,
-                        letterSpacing: 0.3,
-                      ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.sticky_note_2_outlined,
+                          size: 13,
+                          color: AppColors.textSecondary.withValues(
+                            alpha: 0.75,
+                          ),
+                        ),
+
+                        const SizedBox(width: 6),
+
+                        Expanded(
+                          child: Text(
+                            notes,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 8.5,
+                              height: 1.2,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.82,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-              if (notes.isNotEmpty) ...[
-                const SizedBox(height: 10),
+
+                const SizedBox(height: 14),
+
+                // =================================================
+                // DIVIDER
+                // =================================================
                 Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.sticky_note_2_outlined,
-                        size: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          notes,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  height: 1,
+                  color: AppColors.border.withValues(alpha: 0.24),
                 ),
-              ],
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(height: 1),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Total Price',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary.withValues(alpha: 0.8),
-                        ),
+
+                const SizedBox(height: 13),
+
+                // =================================================
+                // FOOTER
+                // =================================================
+                Row(
+                  children: [
+                    // =============================================
+                    // ORDER TYPE
+                    // =============================================
+                    Icon(
+                      isDelivery
+                          ? Icons.delivery_dining_outlined
+                          : Icons.storefront_outlined,
+                      size: 13,
+                      color: AppColors.textSecondary,
+                    ),
+
+                    const SizedBox(width: 5),
+
+                    Text(
+                      isDelivery ? 'Delivery' : 'Pickup',
+                      style: TextStyle(
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary.withValues(alpha: 0.82),
                       ),
-                      Text(
-                        AppHelpers.formatCurrency(totalPrice),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      if (isPending || isPreparing)
-                        IconButton(
-                          onPressed: onUpdateNotes,
-                          icon: const Icon(Icons.edit_note_rounded),
-                          color: AppColors.primary,
-                          tooltip: 'Update Instructions',
-                          style: IconButton.styleFrom(
-                            backgroundColor: AppColors.primary.withValues(
-                              alpha: 0.08,
+                    ),
+
+                    const Spacer(),
+
+                    // =============================================
+                    // TOTAL
+                    // =============================================
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'TOTAL',
+                          style: TextStyle(
+                            fontSize: 6,
+                            height: 1,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.42,
                             ),
                           ),
                         ),
 
-                      const SizedBox(width: 8),
-                      if (!isCancelled)
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    OrderTrackingScreen(orderId: orderId),
-                              ),
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.near_me_rounded,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                          label: const Text(
-                            'Track',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                        const SizedBox(height: 4),
+
+                        Text(
+                          AppHelpers.formatCurrency(totalPrice),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            height: 1,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.35,
+                            color: AppColors.textPrimary,
                           ),
                         ),
+                      ],
+                    ),
+
+                    const SizedBox(width: 11),
+
+                    // =============================================
+                    // UPDATE NOTES
+                    // =============================================
+                    if (canUpdateNotes) ...[
+                      _CompactActionButton(
+                        tooltip: 'Update Instructions',
+                        icon: Icons.edit_note_rounded,
+                        onTap: onUpdateNotes,
+                      ),
+
+                      const SizedBox(width: 7),
                     ],
-                  ),
-                ],
+
+                    // =============================================
+                    // OPEN / TRACK
+                    // =============================================
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.textPrimary,
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      child: Icon(
+                        status == 'cancelled'
+                            ? Icons.arrow_forward_rounded
+                            : Icons.near_me_rounded,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // NAVIGATION
+  // ============================================================
+
+  void _openTracking(BuildContext context, String orderId) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => OrderTrackingScreen(orderId: orderId)),
+    );
+  }
+
+  // ============================================================
+  // ORDER ID
+  // ============================================================
+
+  String _shortOrderId(String orderId) {
+    if (orderId.isEmpty) {
+      return 'Order';
+    }
+
+    final String shortId = orderId.length >= 8
+        ? orderId.substring(0, 8)
+        : orderId;
+
+    return 'Order #${shortId.toUpperCase()}';
+  }
+
+  // ============================================================
+  // NEW ORDER
+  // ============================================================
+
+  bool _isNewOrder(DateTime createdAt, String status) {
+    if (status != 'pending') {
+      return false;
+    }
+
+    final Duration age = DateTime.now().difference(createdAt);
+
+    return !age.isNegative && age.inMinutes <= 15;
+  }
+
+  // ============================================================
+  // STATUS ICON
+  // ============================================================
+
+  IconData _statusIcon(String status) {
+    switch (status) {
+      case 'pending':
+        return Icons.schedule_rounded;
+
+      case 'accepted':
+        return Icons.check_rounded;
+
+      case 'preparing':
+        return Icons.restaurant_rounded;
+
+      case 'out_for_delivery':
+        return Icons.delivery_dining_rounded;
+
+      case 'ready_for_pickup':
+        return Icons.shopping_bag_rounded;
+
+      case 'completed':
+        return Icons.done_all_rounded;
+
+      case 'cancelled':
+        return Icons.close_rounded;
+
+      default:
+        return Icons.receipt_long_rounded;
+    }
+  }
+}
+
+// ===================================================================
+// CUSTOMER STATUS BADGE
+// ===================================================================
+
+class _CustomerOrderStatusBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _CustomerOrderStatusBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 4),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 5),
+
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontSize: 6.8,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.4,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===================================================================
+// SMALL ACTION BUTTON
+// ===================================================================
+
+class _CompactActionButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _CompactActionButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(11),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(11),
+          child: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.30),
               ),
-            ],
+            ),
+            child: const Icon(
+              Icons.edit_note_rounded,
+              size: 16,
+              color: AppColors.textPrimary,
+            ),
           ),
         ),
       ),

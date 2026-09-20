@@ -98,106 +98,193 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: const MainAppBar(),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: AppColors.primary,
+              ),
             )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Search Bar
-                // Inside your build column:
-                SearchBarWidget(
-                  controller: _searchController,
-                  searchQuery: _searchQuery,
-                  onChanged: (val) {
-                    setState(() {
-                      _searchQuery = val.trim();
-                      _applyFilters();
-                    });
-                  },
-                  onClear: () {
-                    setState(() {
-                      _searchController.clear();
-                      _searchQuery = '';
-                      _applyFilters();
-                    });
-                  },
+          : RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: _fetchCatalogData,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
+                slivers: [
+                  // ====================================================
+                  // SEARCH
+                  // ====================================================
+                  SliverToBoxAdapter(
+                    child: SearchBarWidget(
+                      controller: _searchController,
+                      searchQuery: _searchQuery,
+                      onChanged: (value) {
+                        _searchQuery = value.trim();
+                        _applyFilters();
+                      },
+                      onClear: () {
+                        _searchController.clear();
+                        _searchQuery = '';
+                        _applyFilters();
+                      },
+                    ),
+                  ),
 
-                // Inside your Column widgets list:
-                CategorySelectorWidget(
-                  categories: _categories,
-                  selectedCategoryId: _selectedCategoryId,
-                  getCategoryId: (category) => category
-                      .id, // Replace .id if your model uses a different property name
-                  getCategoryName: (category) => category
-                      .name, // Replace .name if your model uses a different property name
-                  onCategorySelected: (categoryId) {
-                    setState(() {
-                      _selectedCategoryId = categoryId;
-                      _applyFilters();
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
+                  // ====================================================
+                  // CATEGORIES
+                  // ====================================================
+                  SliverToBoxAdapter(
+                    child: CategorySelectorWidget(
+                      categories: _categories,
+                      selectedCategoryId: _selectedCategoryId,
+                      getCategoryId: (category) => category.id,
+                      getCategoryName: (category) => category.name,
+                      onCategorySelected: (categoryId) {
+                        _selectedCategoryId = categoryId;
+                        _applyFilters();
+                      },
+                    ),
+                  ),
 
-                // Products Grid View
-                Expanded(
-                  child: _filteredProducts.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.search_off_rounded,
-                                size: 64,
-                                color: AppColors.textSecondary.withValues(
-                                  alpha: 0.5,
-                                ),
+                  // ====================================================
+                  // PRODUCT COUNT
+                  // ====================================================
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppConstants.defaultPadding,
+                        18,
+                        AppConstants.defaultPadding,
+                        12,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _selectedCategoryId == null
+                                  ? 'All Products'
+                                  : 'Products',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.3,
+                                color: AppColors.textPrimary,
                               ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'No menu items found',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'Try adjusting your search or category filter.',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
-                        )
-                      : GridView.builder(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppConstants.defaultPadding,
-                            vertical: 8,
-                          ),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 0.75,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
+
+                          Text(
+                            '${_filteredProducts.length} items',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.70,
                               ),
-                          itemCount: _filteredProducts.length,
-                          itemBuilder: (context, index) {
-                            final product = _filteredProducts[index];
-                            return ProductCard(
-                              product: product,
-                              onTap: () =>
-                                  ProductDetailModal.show(context, product),
-                            );
-                          },
-                        ),
-                ),
-              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // ====================================================
+                  // EMPTY STATE
+                  // ====================================================
+                  if (_filteredProducts.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildEmptyState(),
+                    )
+                  else
+                    // ==================================================
+                    // PRODUCTS
+                    // ==================================================
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppConstants.defaultPadding,
+                        0,
+                        AppConstants.defaultPadding,
+                        110,
+                      ),
+                      sliver: SliverGrid(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final product = _filteredProducts[index];
+
+                          return ProductCard(
+                            product: product,
+                            onTap: () {
+                              ProductDetailModal.show(context, product);
+                            },
+                          );
+                        }, childCount: _filteredProducts.length),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+
+                              // More room for image + description +
+                              // price without making cards too tall.
+                              childAspectRatio: 0.70,
+
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                      ),
+                    ),
+                ],
+              ),
             ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.45),
+              ),
+            ),
+            child: Icon(
+              Icons.search_off_rounded,
+              size: 30,
+              color: AppColors.textSecondary.withValues(alpha: 0.45),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          const Text(
+            'Nothing here yet',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              color: AppColors.textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          const Text(
+            'Try another search or browse a different category.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.5,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

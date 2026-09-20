@@ -12,7 +12,9 @@ import '../widgets/user_information_section.dart';
 import '../widgets/delivery_information_section.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool showBackButton;
+
+  const ProfileScreen({super.key, this.showBackButton = false});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -1403,7 +1405,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       appBar: MainAppBar(
         showLogo: false,
-        showBackButton: false,
+        showBackButton: widget.showBackButton,
         titleWidget: Row(
           children: [
             Container(

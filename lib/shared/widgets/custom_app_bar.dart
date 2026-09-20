@@ -1,5 +1,7 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 
 class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -7,157 +9,174 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? subtitle;
   final Widget? titleWidget;
   final List<Widget>? actions;
+
   final bool showLogo;
   final bool showBackButton;
   final VoidCallback? onBackPressed;
 
+  // Store status
+  final bool showStoreStatus;
+
   const MainAppBar({
     super.key,
-    this.title = 'The Legit Smoothie',
-    this.subtitle = 'Fresh & Organic Daily',
+    this.title = 'THE LEGIT SMOOTHIE',
+    this.subtitle = 'Freshly made. Made for you.',
     this.titleWidget,
     this.actions,
     this.showLogo = true,
     this.showBackButton = false,
     this.onBackPressed,
+    this.showStoreStatus = true,
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(72);
+  Size get preferredSize => const Size.fromHeight(80);
 
   @override
   Widget build(BuildContext context) {
-    final bool canGoBack = showBackButton;
-
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.85),
+        color: AppColors.surface.withValues(
+          alpha: 0.96,
+        ),
         border: Border(
           bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.5),
-            width: 1,
+            color: AppColors.border.withValues(
+              alpha: 0.40,
+            ),
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
+            color: Colors.black.withValues(
+              alpha: 0.025,
+            ),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: ClipRRect(
+      child: ClipRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(
+            sigmaX: 12,
+            sigmaY: 12,
+          ),
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 9,
+              ),
               child: Row(
                 children: [
-                  // Back Button (replaces logo when navigating sub-screens)
-                  if (canGoBack && !showLogo) ...[
-                    Material(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      child: InkWell(
-                        onTap:
-                            onBackPressed ??
-                            () => Navigator.of(context).maybePop(),
-                        borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          height: 44,
-                          width: 44,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: AppColors.border.withValues(alpha: 0.6),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.02),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            size: 18,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
+                  // =================================================
+                  // BACK BUTTON
+                  // =================================================
+
+                  if (showBackButton && !showLogo) ...[
+                    _AppBarButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      onTap:
+                          onBackPressed ??
+                          () {
+                            Navigator.of(context).maybePop();
+                          },
                     ),
-                    const SizedBox(width: 14),
+
+                    const SizedBox(width: 12),
                   ],
 
-                  // Logo Image (Home Screen)
+                  // =================================================
+                  // LOGO
+                  // =================================================
+
                   if (showLogo) ...[
                     Container(
+                      width: 50,
+                      height: 50,
+                      padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.border.withValues(
+                            alpha: 0.35,
+                          ),
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.2),
+                            color: Colors.black.withValues(
+                              alpha: 0.035,
+                            ),
                             blurRadius: 10,
-                            spreadRadius: 1,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Image.asset(
                         'assets/logoSmoothie.png',
-                        height: 44,
-                        width: 44,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) => const Icon(
-                          Icons.local_drink_rounded,
-                          size: 32,
-                          color: AppColors.primary,
-                        ),
+                        errorBuilder: (
+                          context,
+                          error,
+                          stackTrace,
+                        ) {
+                          return const Icon(
+                            Icons.local_drink_outlined,
+                            size: 28,
+                            color: AppColors.primary,
+                          );
+                        },
                       ),
                     ),
-                    const SizedBox(width: 14),
+
+                    const SizedBox(width: 12),
                   ],
 
-                  // Gradient Title & Subtitle Alignment
+                  // =================================================
+                  // BRAND / TITLE
+                  // =================================================
+
                   Expanded(
                     child:
                         titleWidget ??
                         Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment:
+                              MainAxisAlignment.center,
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
-                            ShaderMask(
-                              shaderCallback: (bounds) => const LinearGradient(
-                                colors: [
-                                  AppColors.textPrimary,
-                                  AppColors.primary,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds),
-                              child: Text(
-                                title,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.5,
-                                  color: AppColors.surface,
-                                ),
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                height: 1.1,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.25,
+                                color: AppColors.textPrimary,
                               ),
                             ),
-                            if (subtitle != null) ...[
-                              const SizedBox(height: 2),
+
+                            if (subtitle != null &&
+                                subtitle!.trim().isNotEmpty) ...[
+                              const SizedBox(height: 5),
+
                               Text(
                                 subtitle!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.2,
-                                  color: AppColors.textSecondary.withValues(
-                                    alpha: 0.8,
+                                  fontSize: 9.5,
+                                  height: 1.1,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textSecondary
+                                      .withValues(
+                                    alpha: 0.78,
                                   ),
                                 ),
                               ),
@@ -166,11 +185,58 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                         ),
                   ),
 
-                  // Actions Slot
-                  if (actions != null) ...actions!,
+                
+                  if (actions != null && actions!.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    ...actions!,
+                  ],
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// ===================================================================
+// REUSABLE APP BAR BUTTON
+// ===================================================================
+
+class _AppBarButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _AppBarButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.border.withValues(
+                alpha: 0.45,
+              ),
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: AppColors.textPrimary,
           ),
         ),
       ),

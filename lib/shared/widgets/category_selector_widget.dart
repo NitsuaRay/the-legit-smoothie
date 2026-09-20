@@ -34,7 +34,7 @@ class CategorySelectorWidget<T> extends StatelessWidget {
           if (index == 0) {
             final isSelected = selectedCategoryId == null;
             return _CategoryPill(
-              label: 'All Items',
+              label: 'All Products',
               icon: Icons.grid_view_rounded,
               isSelected: isSelected,
               onTap: () => onCategorySelected(null),

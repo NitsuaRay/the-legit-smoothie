@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:the_legit_smoothie/shared/widgets/main_navigation_screen.dart';
+import 'package:the_legit_smoothie/shared/widgets/seller_main_navigation_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../services/auth_service.dart';
@@ -30,24 +31,81 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      await _authService.signInWithEmail(
+      // ==========================================================
+      // 1. AUTHENTICATE USER
+      // ==========================================================
+
+      final response = await _authService.signInWithEmail(
         email: _emailController.text,
         password: _passwordController.text,
       );
 
+      if (response.user == null) {
+        throw Exception('Unable to sign in.');
+      }
+
+      // ==========================================================
+      // 2. GET USER ROLE
+      // ==========================================================
+
+      final String? role = await _authService.getCurrentUserRole();
+
+      debugPrint('Logged in user role: $role');
+
       if (!mounted) return;
 
-      // Navigate to Home upon successful login
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+      // ==========================================================
+      // 3. SELLER
+      // ==========================================================
+
+      if (role == 'seller') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const SellerMainNavigationScreen()),
+          (route) => false,
+        );
+
+        return;
+      }
+
+      // ==========================================================
+      // 4. CUSTOMER
+      // ==========================================================
+
+      if (role == 'customer') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+          (route) => false,
+        );
+
+        return;
+      }
+
+      // ==========================================================
+      // UNKNOWN ROLE
+      // ==========================================================
+
+      await _authService.signOut();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Your account does not have a valid role.'),
+          backgroundColor: AppColors.error,
+        ),
       );
     } on AuthException catch (error) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error.message),
@@ -55,7 +113,10 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } catch (error) {
+      debugPrint('Login error: $error');
+
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('An unexpected error occurred. Please try again.'),
@@ -63,7 +124,11 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -80,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 30),
-                
+
                 // Brand Logo Container / Accent Box
                 Center(
                   child: Container(
@@ -126,7 +191,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: const TextStyle(color: AppColors.textPrimary),
                   decoration: const InputDecoration(
                     labelText: 'Email Address',
-                    prefixIcon: Icon(Icons.email_outlined, color: AppColors.textSecondary),
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -147,10 +215,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: const TextStyle(color: AppColors.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline,
+                      color: AppColors.textSecondary,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         color: AppColors.textSecondary,
                       ),
                       onPressed: () {
@@ -176,7 +249,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.defaultBorderRadius,
+                      ),
                     ),
                   ),
                   child: _isLoading

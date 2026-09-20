@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/helpers.dart';
 import '../models/product_model.dart';
@@ -8,174 +9,212 @@ class ProductCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onAddTap;
 
+  // Ready for real review data later.
+  final double? rating;
+  final int reviewCount;
+
   const ProductCard({
     super.key,
     required this.product,
     required this.onTap,
     this.onAddTap,
+    this.rating,
+    this.reviewCount = 0,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.6),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: AppColors.border.withValues(
+                alpha: 0.42,
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: 0.035,
+                ),
+                blurRadius: 18,
+                offset: const Offset(0, 7),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          splashColor: AppColors.primary.withValues(alpha: 0.08),
-          highlightColor: AppColors.primary.withValues(alpha: 0.04),
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(9),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Product Image Area with Subtle Background Glow
-                Expanded(
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: product.imageUrl != null &&
-                                  product.imageUrl!.isNotEmpty
-                              ? Image.network(
-                                  product.imageUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) =>
-                                      _buildPlaceholder(),
-                                )
-                              : _buildPlaceholder(),
-                        ),
-                      ),
+                // ================================================
+                // PRODUCT IMAGE
+                // ================================================
 
-                      // Optional Top Badge (e.g., Popular / Rating)
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(17),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(17),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(7),
+                            child: _buildProductImage(),
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 4,
-                              ),
-                            ],
+
+                          // Rating / New badge
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: _RatingBadge(
+                              rating: rating,
+                              reviewCount: reviewCount,
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(
-                                Icons.star_rounded,
-                                size: 13,
-                                color: Colors.amber,
-                              ),
-                              SizedBox(width: 2),
-                              Text(
-                                '4.8',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 10),
 
-                // Item Name
+                const SizedBox(height: 11),
+
+                // ================================================
+                // NAME
+                // ================================================
+
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 3,
+                  ),
                   child: Text(
                     product.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w700,
                       fontSize: 14,
-                      letterSpacing: -0.2,
+                      height: 1.1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.3,
                       color: AppColors.textPrimary,
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
 
-                // Price & Add Button Row
+                const SizedBox(height: 5),
+
+                // ================================================
+                // DESCRIPTION
+                // ================================================
+
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 3,
+                  ),
+                  child: Text(
+                    product.description?.trim().isNotEmpty == true
+                        ? product.description!
+                        : 'Freshly prepared for you',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      height: 1.3,
+                      color: AppColors.textSecondary.withValues(
+                        alpha: 0.72,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 11),
+
+                // ================================================
+                // PRICE + ADD
+                // ================================================
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 3,
+                  ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Price Tag
-                      Text(
-                        AppHelpers.formatCurrency(product.basePrice),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          color: AppColors.primary,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'FROM',
+                              style: TextStyle(
+                                fontSize: 7,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.7,
+                                color: AppColors.textSecondary
+                                    .withValues(
+                                  alpha: 0.52,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 2),
+
+                            Text(
+                              AppHelpers.formatCurrency(
+                                product.basePrice,
+                              ),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                height: 1,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.4,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
-                      // Quick Add Button with Action Touch State
-                      InkWell(
-                        onTap: onAddTap ?? onTap,
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.add_rounded,
-                            size: 18,
-                            color: Colors.white,
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: onAddTap ?? onTap,
+                          borderRadius:
+                              BorderRadius.circular(13),
+                          child: Ink(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius:
+                                  BorderRadius.circular(13),
+                            ),
+                            child: const Icon(
+                              Icons.add_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
+
+                const SizedBox(height: 3),
               ],
             ),
           ),
@@ -184,19 +223,165 @@ class ProductCard extends StatelessWidget {
     );
   }
 
+  Widget _buildProductImage() {
+    final String? imageUrl = product.imageUrl;
+
+    if (imageUrl == null || imageUrl.trim().isEmpty) {
+      return _buildPlaceholder();
+    }
+
+    return Image.network(
+      imageUrl,
+
+      // IMPORTANT:
+      // Don't crop seller-uploaded product photos.
+      fit: BoxFit.contain,
+      alignment: Alignment.center,
+
+      loadingBuilder: (
+        context,
+        child,
+        loadingProgress,
+      ) {
+        if (loadingProgress == null) {
+          return child;
+        }
+
+        return const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.primary,
+            ),
+          ),
+        );
+      },
+
+      errorBuilder: (
+        context,
+        error,
+        stackTrace,
+      ) {
+        return _buildPlaceholder();
+      },
+    );
+  }
+
   Widget _buildPlaceholder() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.primaryAccent.withValues(alpha: 0.12),
-          shape: BoxShape.circle,
+    return Container(
+      color: AppColors.background,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(
+                  alpha: 0.06,
+                ),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: const Icon(
+                Icons.local_drink_outlined,
+                size: 25,
+                color: AppColors.primary,
+              ),
+            ),
+
+            const SizedBox(height: 7),
+
+            Text(
+              'No image',
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary.withValues(
+                  alpha: 0.55,
+                ),
+              ),
+            ),
+          ],
         ),
-        child: const Icon(
-          Icons.local_drink_rounded,
-          size: 36,
-          color: AppColors.primary,
+      ),
+    );
+  }
+}
+
+// ================================================================
+// RATING BADGE
+// ================================================================
+
+class _RatingBadge extends StatelessWidget {
+  final double? rating;
+  final int reviewCount;
+
+  const _RatingBadge({
+    required this.rating,
+    required this.reviewCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasReviews =
+        rating != null && reviewCount > 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 7,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(
+          alpha: 0.94,
         ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.black.withValues(
+            alpha: 0.04,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.05,
+            ),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            hasReviews
+                ? Icons.star_rounded
+                : Icons.star_outline_rounded,
+            size: 12,
+            color: hasReviews
+                ? const Color(0xFFF5A623)
+                : AppColors.textSecondary,
+          ),
+
+          const SizedBox(width: 3),
+
+          Text(
+            hasReviews
+                ? rating!.toStringAsFixed(1)
+                : 'New',
+            style: TextStyle(
+              fontSize: 8.5,
+              fontWeight: FontWeight.w800,
+              color: hasReviews
+                  ? AppColors.textPrimary
+                  : AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
