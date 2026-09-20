@@ -29,7 +29,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   void initState() {
     super.initState();
 
-    // Real-time order stream
+    // Current order - realtime
     _orderStream = supabase
         .from('orders')
         .stream(primaryKey: ['id'])
@@ -254,7 +254,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 if (status == 'cancelled') ...[
                   CancelledOrderCard(cancelReason: cancelReason),
                 ] else ...[
-                  LiveOrderStatus(status: status, orderType: orderType),
+                  LiveOrderStatus(
+                    status: status,
+                    orderType: orderType,
+                    orderId: widget.orderId,
+                  ),
                 ],
 
                 const SizedBox(height: 24),
@@ -264,7 +268,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                   orderType: orderType,
                   totalPrice: totalPrice,
                 ),
-                
+
                 if (status == 'pending') ...[
                   const SizedBox(height: 32),
 

@@ -594,6 +594,186 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 }
 
+class _OrderStatusDate extends StatefulWidget {
+  final String orderId;
+  final String currentStatus;
+  final DateTime fallbackDate;
+
+  const _OrderStatusDate({
+    required this.orderId,
+    required this.currentStatus,
+    required this.fallbackDate,
+  });
+
+  @override
+  State<_OrderStatusDate> createState() => _OrderStatusDateState();
+}
+
+class _OrderStatusDateState extends State<_OrderStatusDate> {
+  DateTime? _statusDate;
+
+  late final Stream<List<Map<String, dynamic>>> _historyStream;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _historyStream = supabase
+        .from('order_status_history')
+        .stream(primaryKey: ['id'])
+        .eq('order_id', widget.orderId)
+        .order('created_at', ascending: true);
+
+    _loadStatusDate();
+  }
+
+  @override
+  void didUpdateWidget(covariant _OrderStatusDate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // If the order status changes, immediately fetch
+    // the timestamp belonging to the new status.
+    if (oldWidget.currentStatus != widget.currentStatus) {
+      _loadStatusDate();
+    }
+  }
+
+  Future<void> _loadStatusDate() async {
+    try {
+      final response = await supabase
+          .from('order_status_history')
+          .select('status, created_at')
+          .eq('order_id', widget.orderId)
+          .eq('status', widget.currentStatus.toLowerCase())
+          .order('created_at', ascending: false)
+          .limit(1);
+
+      if (!mounted) return;
+
+      if (response.isNotEmpty) {
+        final dynamic value = response.first['created_at'];
+
+        setState(() {
+          _statusDate = DateTime.parse(value.toString()).toLocal();
+        });
+      }
+    } catch (e) {
+      debugPrint(
+        'Failed to load status date for '
+        '${widget.orderId}: $e',
+      );
+    }
+  }
+
+  void _updateFromRealtime(List<Map<String, dynamic>> rows) {
+    Map<String, dynamic>? matchingRow;
+
+    // Search from newest to oldest.
+    for (int i = rows.length - 1; i >= 0; i--) {
+      final String historyStatus = (rows[i]['status'] ?? '')
+          .toString()
+          .trim()
+          .toLowerCase();
+
+      if (historyStatus == widget.currentStatus.trim().toLowerCase()) {
+        matchingRow = rows[i];
+        break;
+      }
+    }
+
+    if (matchingRow == null) return;
+
+    final dynamic value = matchingRow['created_at'];
+
+    if (value == null) return;
+
+    try {
+      final DateTime newDate = DateTime.parse(value.toString()).toLocal();
+
+      if (_statusDate != newDate) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+
+          setState(() {
+            _statusDate = newDate;
+          });
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to parse realtime status date: $e');
+    }
+  }
+
+  String _formatDateTime(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    int hour = date.hour;
+
+    final String minute = date.minute.toString().padLeft(2, '0');
+
+    final String period = hour >= 12 ? 'PM' : 'AM';
+
+    hour %= 12;
+
+    if (hour == 0) {
+      hour = 12;
+    }
+
+    return '${months[date.month - 1]} '
+        '${date.day}, ${date.year} • '
+        '$hour:$minute $period';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _historyStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          _updateFromRealtime(snapshot.data!);
+        }
+
+        final DateTime displayDate = _statusDate ?? widget.fallbackDate;
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.schedule_rounded,
+              size: 11,
+              color: AppColors.textSecondary.withValues(alpha: 0.7),
+            ),
+
+            const SizedBox(width: 4),
+
+            Text(
+              _formatDateTime(displayDate),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _OrderCard extends StatelessWidget {
   final Map<String, dynamic> order;
   final Color statusColor;
@@ -678,14 +858,13 @@ class _OrderCard extends StatelessWidget {
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          Text(
-                            (AppHelpers.formatDate(createdAt)),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary.withValues(
-                                alpha: 0.8,
-                              ),
-                            ),
+
+                          const SizedBox(height: 3),
+
+                          _OrderStatusDate(
+                            orderId: orderId,
+                            currentStatus: status,
+                            fallbackDate: createdAt,
                           ),
                         ],
                       ),
