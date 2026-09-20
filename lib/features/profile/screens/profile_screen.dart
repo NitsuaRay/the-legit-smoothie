@@ -7,6 +7,9 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../features/auth/screens/login_screen.dart';
 import '../../../main.dart';
+import '../widgets/profile_header.dart';
+import '../widgets/user_information_section.dart';
+import '../widgets/delivery_information_section.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -1482,146 +1485,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ==========================================
                   // PROFILE HEADER
                   // ==========================================
-                  Center(
-                    child: Column(
-                      children: [
-                        // Profile Avatar
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            CircleAvatar(
-                              radius: 42,
-                              backgroundColor: AppColors.primaryAccent
-                                  .withValues(alpha: 0.18),
-                              child: Text(
-                                fullName.isNotEmpty
-                                    ? fullName[0].toUpperCase()
-                                    : 'U',
-                                style: const TextStyle(
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-
-                            // Small status indicator
-                            Positioned(
-                              bottom: 2,
-                              right: 2,
-                              child: Container(
-                                width: 18,
-                                height: 18,
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: AppColors.surface,
-                                    width: 3,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // Full Name
-                        Text(
-                          fullName.isNotEmpty ? fullName : 'User',
-                          style: const TextStyle(
-                            fontSize: 21,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                            letterSpacing: -0.3,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        // Email
-                        if (email.isNotEmpty)
-                          Text(
-                            email,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary.withValues(
-                                alpha: 0.85,
-                              ),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-
-                        const SizedBox(height: 10),
-
-                        // Account type / status
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.15),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.person_outline_rounded,
-                                size: 15,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Customer Account',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
+                  ProfileHeader(fullName: fullName, email: email),
 
                   const SizedBox(height: 20),
 
                   // ==========================================
                   // USER INFORMATION
                   // ==========================================
-                  _buildSectionContainer(
-                    title: 'User Information',
-                    icon: Icons.person_outline,
-                    children: [
-                      _buildInfoTile(
-                        label: 'Full Name',
-                        value: _fullNameController.text.isEmpty
-                            ? 'Not set'
-                            : _fullNameController.text,
-                        icon: Icons.badge_outlined,
-                        onEdit: _showNameDialog,
-                      ),
-
-                      const Divider(color: AppColors.border, height: 24),
-
-                      _buildInfoTile(
-                        label: 'Email Address',
-                        value: email.isEmpty ? 'Not set' : email,
-                        icon: Icons.email_outlined,
-                        subtitle: 'Email cannot be changed',
-                      ),
-                    ],
+                  UserInformationSection(
+                    fullName: _fullNameController.text,
+                    email: email,
+                    onEditName: _showNameDialog,
                   ),
 
                   const SizedBox(height: 16),
@@ -1629,47 +1503,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ==========================================
                   // DELIVERY INFORMATION
                   // ==========================================
-                  _buildSectionContainer(
-                    title: 'Delivery Information',
-                    icon: Icons.local_shipping_outlined,
-
-                    children: [
-                      // Small subtitle
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 4, bottom: 12),
-                          child: Text(
-                            'Used for your orders',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary.withValues(
-                                alpha: 0.8,
-                              ),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // PHONE
-                      _buildInfoTile(
-                        label: 'Default Phone Number',
-                        value: displayPhone,
-                        icon: Icons.phone_outlined,
-                        onEdit: _showPhoneDialog,
-                      ),
-
-                      const Divider(color: AppColors.border, height: 24),
-
-                      // ADDRESS
-                      _buildInfoTile(
-                        label: 'Default Delivery Address',
-                        value: displayAddress,
-                        icon: Icons.location_on_outlined,
-                        onEdit: _showAddressDialog,
-                      ),
-                    ],
+                  DeliveryInformationSection(
+                    phone: displayPhone,
+                    address: displayAddress,
+                    onEditPhone: _showPhoneDialog,
+                    onEditAddress: _showAddressDialog,
                   ),
 
                   const SizedBox(height: 24),
@@ -1682,13 +1520,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     height: 50,
                     child: OutlinedButton.icon(
                       onPressed: _handleSignOut,
-
                       icon: const Icon(
                         Icons.logout_rounded,
                         color: AppColors.error,
                         size: 20,
                       ),
-
                       label: const Text(
                         'Log Out',
                         style: TextStyle(
@@ -1698,19 +1534,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           letterSpacing: -0.2,
                         ),
                       ),
-
                       style: OutlinedButton.styleFrom(
                         backgroundColor: AppColors.error.withValues(
                           alpha: 0.08,
                         ),
                         foregroundColor: AppColors.error,
                         elevation: 0,
-
                         side: BorderSide(
                           color: AppColors.error.withValues(alpha: 0.3),
                           width: 1,
                         ),
-
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -1720,103 +1553,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-    );
-  }
-
-  Widget _buildSectionContainer({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoTile({
-    required String label,
-    required String value,
-    required IconData icon,
-    VoidCallback? onEdit,
-    String? subtitle,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(icon, color: AppColors.textSecondary, size: 20),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: value == 'Not set'
-                      ? AppColors.textSecondary
-                      : AppColors.textPrimary,
-                ),
-              ),
-              if (subtitle != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (onEdit != null)
-          IconButton(
-            icon: const Icon(
-              Icons.edit_outlined,
-              size: 20,
-              color: AppColors.primary,
-            ),
-            onPressed: onEdit,
-            tooltip: 'Edit $label',
-          ),
-      ],
     );
   }
 }

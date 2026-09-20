@@ -49,54 +49,191 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-        },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textSecondary,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.storefront_outlined),
-            activeIcon: Icon(Icons.storefront),
-            label: 'Store',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.local_offer_outlined),
-            activeIcon: Icon(Icons.local_offer),
-            label: 'Deals',
-          ),
-          BottomNavigationBarItem(
-            icon: Badge(
-              label: Text('${_cartService.itemCount}'),
-              isLabelVisible: _cartService.itemCount > 0,
-              backgroundColor: AppColors.secondaryDark,
-              child: const Icon(Icons.shopping_bag_outlined),
-            ),
-            activeIcon: Badge(
-              label: Text('${_cartService.itemCount}'),
-              isLabelVisible: _cartService.itemCount > 0,
-              backgroundColor: AppColors.secondaryDark,
-              child: const Icon(Icons.shopping_bag),
-            ),
-            label: 'Cart',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_outlined),
-            activeIcon: Icon(Icons.receipt_long),
-            label: 'Orders',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
+
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    final items = [
+      (
+        icon: Icons.storefront_outlined,
+        activeIcon: Icons.storefront_rounded,
+        label: 'Store',
+      ),
+      (
+        icon: Icons.local_offer_outlined,
+        activeIcon: Icons.local_offer_rounded,
+        label: 'Deals',
+      ),
+      (
+        icon: Icons.shopping_bag_outlined,
+        activeIcon: Icons.shopping_bag_rounded,
+        label: 'Cart',
+      ),
+      (
+        icon: Icons.receipt_long_outlined,
+        activeIcon: Icons.receipt_long_rounded,
+        label: 'Orders',
+      ),
+      (
+        icon: Icons.person_outline_rounded,
+        activeIcon: Icons.person_rounded,
+        label: 'Profile',
+      ),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 24,
+            offset: const Offset(0, -6),
           ),
         ],
+      ),
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+        child: Container(
+          height: 72,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.45)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.025),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: List.generate(items.length, (index) {
+              final item = items[index];
+
+              return Expanded(
+                child: _buildNavItem(
+                  icon: item.icon,
+                  activeIcon: item.activeIcon,
+                  label: item.label,
+                  selected: _currentIndex == index,
+                  badgeCount: index == 2 ? _cartService.itemCount : 0,
+                  onTap: () {
+                    if (_currentIndex != index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    }
+                  },
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    int badgeCount = 0,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.10)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(17),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  transitionBuilder: (child, animation) {
+                    return ScaleTransition(
+                      scale: CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutBack,
+                      ),
+                      child: child,
+                    );
+                  },
+                  child: Icon(
+                    selected ? activeIcon : icon,
+                    key: ValueKey(selected),
+                    size: selected ? 22 : 21,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -9,
+                    top: -8,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 17,
+                        minHeight: 17,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryDark,
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(color: AppColors.surface, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          badgeCount > 99 ? '99+' : '$badgeCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w900,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 3),
+
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                color: selected ? AppColors.primary : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

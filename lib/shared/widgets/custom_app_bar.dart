@@ -27,7 +27,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool canGoBack = showBackButton || Navigator.of(context).canPop();
+    final bool canGoBack = showBackButton;
 
     return Container(
       decoration: BoxDecoration(
@@ -61,7 +61,9 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(14),
                       child: InkWell(
-                        onTap: onBackPressed ?? () => Navigator.of(context).maybePop(),
+                        onTap:
+                            onBackPressed ??
+                            () => Navigator.of(context).maybePop(),
                         borderRadius: BorderRadius.circular(14),
                         child: Container(
                           height: 44,
@@ -121,7 +123,8 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
 
                   // Gradient Title & Subtitle Alignment
                   Expanded(
-                    child: titleWidget ??
+                    child:
+                        titleWidget ??
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,8 +156,9 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.2,
-                                  color: AppColors.textSecondary
-                                      .withValues(alpha: 0.8),
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.8,
+                                  ),
                                 ),
                               ),
                             ],

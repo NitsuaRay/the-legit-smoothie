@@ -158,57 +158,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     return status.toUpperCase().replaceAll('_', ' ');
   }
 
-  Future<void> _cancelOrder(String orderId) async {
-    final confirmed = await CancelOrderDialog.show(context);
-
-    if (!mounted || confirmed != true) return;
-
-    final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Center(
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const CircularProgressIndicator(color: AppColors.primary),
-        ),
-      ),
-    );
-
-    try {
-      await supabase
-          .from('orders')
-          .update({'status': 'cancelled'})
-          .eq('id', orderId);
-
-      if (!mounted) return;
-      navigator.pop();
-
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Order cancelled successfully.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      navigator.pop();
-
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Failed to cancel order: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
   Future<void> _updateNotes(String orderId, String currentNotes) async {
     UpdateNotesDialog.show(
       context: context,
@@ -338,10 +287,183 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 }
 
                 if (snapshot.hasError) {
+                  debugPrint('Orders stream error: ${snapshot.error}');
+
                   return Center(
-                    child: Text(
-                      'Error loading orders: ${snapshot.error}',
-                      style: const TextStyle(color: AppColors.error),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 40,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 380),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // ==========================================
+                            // ERROR ICON
+                            // ==========================================
+                            Container(
+                              width: 88,
+                              height: 88,
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withValues(alpha: 0.08),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.error.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.cloud_off_rounded,
+                                size: 42,
+                                color: AppColors.error.withValues(alpha: 0.8),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // ==========================================
+                            // TITLE
+                            // ==========================================
+                            const Text(
+                              'Unable to Load Orders',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+
+                            const SizedBox(height: 8),
+
+                            // ==========================================
+                            // MESSAGE
+                            // ==========================================
+                            Text(
+                              'We couldn’t retrieve your orders right now. '
+                              'Please check your connection and try again.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                height: 1.5,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textSecondary.withValues(
+                                  alpha: 0.85,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 22),
+
+                            // ==========================================
+                            // ERROR INFORMATION CARD
+                            // ==========================================
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.05,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.10,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(7),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.08,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(
+                                      Icons.info_outline_rounded,
+                                      size: 17,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 10),
+
+                                  Expanded(
+                                    child: Text(
+                                      'Your orders are safe. '
+                                      'This may be a temporary connection issue.',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        height: 1.45,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.textSecondary
+                                            .withValues(alpha: 0.9),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 22),
+
+                            // ==========================================
+                            // TRY AGAIN BUTTON
+                            // ==========================================
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                onPressed: _handleRefresh,
+                                icon: const Icon(
+                                  Icons.refresh_rounded,
+                                  size: 19,
+                                ),
+                                label: const Text(
+                                  'Try Again',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            // ==========================================
+                            // PULL TO REFRESH HINT
+                            // ==========================================
+                            Text(
+                              'You can also pull down to refresh.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary.withValues(
+                                  alpha: 0.65,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   );
                 }
@@ -459,7 +581,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           order['id'],
                           (order['notes'] ?? '').toString(),
                         ),
-                        onCancelOrder: () => _cancelOrder(order['id']),
                       );
                     },
                   ),
@@ -478,14 +599,12 @@ class _OrderCard extends StatelessWidget {
   final Color statusColor;
   final String statusLabel;
   final VoidCallback onUpdateNotes;
-  final VoidCallback onCancelOrder;
 
   const _OrderCard({
     required this.order,
     required this.statusColor,
     required this.statusLabel,
     required this.onUpdateNotes,
-    required this.onCancelOrder,
   });
 
   @override

@@ -37,42 +37,163 @@ class _CartScreenState extends State<CartScreen> {
   void _confirmClearCart() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Clear Cart?',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: const Text(
-          'Are you sure you want to remove all items from your cart?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _cartService.clearCart();
-              Navigator.of(ctx).pop();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.5),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                ),
+              ],
             ),
-            child: const Text(
-              'Clear All',
-              style: TextStyle(color: Colors.white),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // =========================================================
+                // ICON
+                // =========================================================
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.10),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.12),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.delete_sweep_rounded,
+                    size: 30,
+                    color: AppColors.error,
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                // =========================================================
+                // TITLE
+                // =========================================================
+                const Text(
+                  'Clear your cart?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.4,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // =========================================================
+                // DESCRIPTION
+                // =========================================================
+                Text(
+                  'This will remove all items from your cart. '
+                  'You can always add them again later.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.45,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary.withValues(alpha: 0.9),
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                // =========================================================
+                // ACTIONS
+                // =========================================================
+                Row(
+                  children: [
+                    // CANCEL
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.textPrimary,
+                            backgroundColor: AppColors.background,
+                            side: BorderSide(
+                              color: AppColors.border.withValues(alpha: 0.7),
+                            ),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    // CLEAR ALL
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            _cartService.clearCart();
+                            Navigator.of(ctx).pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.delete_outline_rounded, size: 18),
+                              SizedBox(width: 7),
+                              Text(
+                                'Clear All',
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -210,9 +331,14 @@ class _CartScreenState extends State<CartScreen> {
               children: [
                 Expanded(
                   child: ListView.separated(
-                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                    itemCount: cartItems.length,
+                    padding: const EdgeInsets.fromLTRB(
+                      AppConstants.defaultPadding,
+                      8,
+                      AppConstants.defaultPadding,
+                      120,
+                    ),
                     physics: const BouncingScrollPhysics(),
+                    itemCount: cartItems.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 14),
                     itemBuilder: (context, index) {
                       final item = cartItems[index];
@@ -220,26 +346,41 @@ class _CartScreenState extends State<CartScreen> {
                       return Dismissible(
                         key: ValueKey(item.id),
                         direction: DismissDirection.endToStart,
+
+                        // DELETE BACKGROUND
                         background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
                           decoration: BoxDecoration(
-                            color: AppColors.error.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(18),
+                            color: AppColors.error.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(
+                              color: AppColors.error.withValues(alpha: 0.12),
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.delete_sweep_rounded,
-                            color: AppColors.error,
-                            size: 28,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 22),
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.14),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: AppColors.error,
+                              size: 24,
+                            ),
                           ),
                         ),
+
                         onDismissed: (_) {
                           _cartService.removeItem(item.id);
                         },
+
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(22),
                             onTap: () {
                               ProductDetailModal.show(
                                 context,
@@ -247,121 +388,239 @@ class _CartScreenState extends State<CartScreen> {
                                 cartItem: item,
                               );
                             },
+
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(18),
+                                borderRadius: BorderRadius.circular(22),
+
                                 border: Border.all(
                                   color: AppColors.border.withValues(
-                                    alpha: 0.6,
+                                    alpha: 0.45,
                                   ),
+                                  width: 1,
                                 ),
+
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.03),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
+                                    color: Colors.black.withValues(
+                                      alpha: 0.025,
+                                    ),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 7),
+                                  ),
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.025,
+                                    ),
+                                    blurRadius: 24,
+                                    offset: const Offset(0, 3),
                                   ),
                                 ],
                               ),
+
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Product Image
+                                  // =========================================================
+                                  // PRODUCT IMAGE
+                                  // =========================================================
                                   Container(
-                                    width: 72,
-                                    height: 72,
+                                    width: 86,
+                                    height: 86,
                                     decoration: BoxDecoration(
                                       color: AppColors.background,
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: BorderRadius.circular(18),
                                       border: Border.all(
                                         color: AppColors.border.withValues(
-                                          alpha: 0.5,
+                                          alpha: 0.40,
                                         ),
                                       ),
                                     ),
                                     child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(14),
-                                      child:
+                                      borderRadius: BorderRadius.circular(18),
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
                                           item.product.imageUrl != null &&
-                                              item.product.imageUrl!.isNotEmpty
-                                          ? Image.network(
-                                              item.product.imageUrl!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  _buildPlaceholderImage(),
-                                            )
-                                          : _buildPlaceholderImage(),
+                                                  item
+                                                      .product
+                                                      .imageUrl!
+                                                      .isNotEmpty
+                                              ? Image.network(
+                                                  item.product.imageUrl!,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) =>
+                                                      _buildPlaceholderImage(),
+                                                )
+                                              : _buildPlaceholderImage(),
+
+                                          // Subtle image overlay
+                                          Positioned(
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            height: 24,
+                                            child: IgnorePointer(
+                                              child: DecoratedBox(
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                    colors: [
+                                                      Colors.transparent,
+                                                      Colors.black.withValues(
+                                                        alpha: 0.08,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
+
                                   const SizedBox(width: 14),
 
-                                  // Item Specs & Price
+                                  // =========================================================
+                                  // MAIN PRODUCT CONTENT
+                                  // =========================================================
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          item.product.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 15,
-                                            color: AppColors.textPrimary,
-                                            letterSpacing: -0.2,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
+                                        // Product name + edit button
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                item.product.name,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w800,
+                                                  letterSpacing: -0.25,
+                                                  color: AppColors.textPrimary,
+                                                  height: 1.15,
+                                                ),
+                                              ),
+                                            ),
 
-                                        // Custom Option Pills
-                                        if (item
-                                            .selectedOptions
-                                            .isNotEmpty) ...[
-                                          Wrap(
-                                            spacing: 4,
-                                            runSpacing: 4,
-                                            children: item.selectedOptions.map((
-                                              opt,
-                                            ) {
-                                              return Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 2,
-                                                    ),
+                                            const SizedBox(width: 6),
+
+                                            // Edit
+                                            InkWell(
+                                              onTap: () {
+                                                ProductDetailModal.show(
+                                                  context,
+                                                  item.product,
+                                                  cartItem: item,
+                                                );
+                                              },
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              child: Container(
+                                                width: 30,
+                                                height: 30,
                                                 decoration: BoxDecoration(
                                                   color: AppColors.background,
                                                   borderRadius:
-                                                      BorderRadius.circular(6),
+                                                      BorderRadius.circular(10),
                                                   border: Border.all(
                                                     color: AppColors.border
-                                                        .withValues(alpha: 0.5),
+                                                        .withValues(
+                                                          alpha: 0.45,
+                                                        ),
                                                   ),
                                                 ),
-                                                child: Text(
-                                                  opt['name'] ?? '',
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: AppColors
-                                                        .textSecondary
-                                                        .withValues(alpha: 0.9),
-                                                  ),
+                                                child: const Icon(
+                                                  Icons.edit_outlined,
+                                                  size: 14,
+                                                  color:
+                                                      AppColors.textSecondary,
                                                 ),
-                                              );
-                                            }).toList(),
-                                          ),
-                                          const SizedBox(height: 8),
-                                        ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
 
+                                        const SizedBox(height: 8),
+
+                                        // ===================================================
+                                        // OPTIONS
+                                        // ===================================================
+                                        if (item.selectedOptions.isNotEmpty)
+                                          Wrap(
+                                            spacing: 5,
+                                            runSpacing: 5,
+                                            children: item.selectedOptions
+                                                .take(3)
+                                                .map((opt) {
+                                                  return Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.primary
+                                                          .withValues(
+                                                            alpha: 0.055,
+                                                          ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: AppColors.primary
+                                                            .withValues(
+                                                              alpha: 0.10,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      opt['name']?.toString() ??
+                                                          '',
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 10.5,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: AppColors
+                                                            .textSecondary
+                                                            .withValues(
+                                                              alpha: 0.95,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                })
+                                                .toList(),
+                                          ),
+
+                                        const SizedBox(height: 12),
+
+                                        // ===================================================
+                                        // PRICE
+                                        // ===================================================
                                         Text(
                                           AppHelpers.formatCurrency(
                                             item.totalPrice,
                                           ),
                                           style: const TextStyle(
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 15,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: -0.3,
                                             color: AppColors.primary,
                                           ),
                                         ),
@@ -369,129 +628,85 @@ class _CartScreenState extends State<CartScreen> {
                                     ),
                                   ),
 
-                                  // Controls
+                                  const SizedBox(width: 10),
+
+                                  // =========================================================
+                                  // RIGHT SIDE CONTROLS
+                                  // =========================================================
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
+                                      // Quantity stepper
                                       Container(
+                                        height: 38,
                                         decoration: BoxDecoration(
                                           color: AppColors.background,
                                           borderRadius: BorderRadius.circular(
-                                            12,
+                                            13,
                                           ),
                                           border: Border.all(
                                             color: AppColors.border.withValues(
-                                              alpha: 0.8,
+                                              alpha: 0.55,
                                             ),
                                           ),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            InkWell(
-                                              onTap: () => _cartService
-                                                  .decrementQuantity(item.id),
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: const Padding(
-                                                padding: EdgeInsets.all(6.0),
-                                                child: Icon(
-                                                  Icons.remove_rounded,
-                                                  size: 16,
-                                                  color: AppColors.textPrimary,
-                                                ),
-                                              ),
+                                            _buildQuantityButton(
+                                              icon: Icons.remove_rounded,
+                                              onTap: () {
+                                                _cartService.decrementQuantity(
+                                                  item.id,
+                                                );
+                                              },
                                             ),
+
                                             Padding(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    horizontal: 6.0,
+                                                    horizontal: 8,
                                                   ),
                                               child: Text(
                                                 '${item.quantity}',
                                                 style: const TextStyle(
-                                                  fontWeight: FontWeight.w800,
                                                   fontSize: 13,
+                                                  fontWeight: FontWeight.w800,
                                                   color: AppColors.textPrimary,
                                                 ),
                                               ),
                                             ),
-                                            InkWell(
-                                              onTap: () => _cartService
-                                                  .incrementQuantity(item.id),
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: const Padding(
-                                                padding: EdgeInsets.all(6.0),
-                                                child: Icon(
-                                                  Icons.add_rounded,
-                                                  size: 16,
-                                                  color: AppColors.textPrimary,
-                                                ),
-                                              ),
+
+                                            _buildQuantityButton(
+                                              icon: Icons.add_rounded,
+                                              onTap: () {
+                                                _cartService.incrementQuantity(
+                                                  item.id,
+                                                );
+                                              },
                                             ),
                                           ],
                                         ),
                                       ),
+
                                       const SizedBox(height: 8),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          InkWell(
-                                            onTap: () {
-                                              ProductDetailModal.show(
-                                                context,
-                                                item.product,
-                                                cartItem: item,
-                                              );
-                                            },
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                            child: const Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 4,
-                                                vertical: 2,
-                                              ),
-                                              child: Text(
-                                                'Edit',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppColors.primary,
-                                                ),
-                                              ),
+
+                                      // Remove button
+                                      InkWell(
+                                        onTap: () {
+                                          _cartService.removeItem(item.id);
+                                        },
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(5),
+                                          child: Icon(
+                                            Icons.delete_outline_rounded,
+                                            size: 17,
+                                            color: AppColors.error.withValues(
+                                              alpha: 0.75,
                                             ),
                                           ),
-                                          const Text(
-                                            ' • ',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: AppColors.textSecondary,
-                                            ),
-                                          ),
-                                          InkWell(
-                                            onTap: () => _cartService
-                                                .removeItem(item.id),
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                            child: const Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 4,
-                                                vertical: 2,
-                                              ),
-                                              child: Text(
-                                                'Remove',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.error,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -985,6 +1200,26 @@ class _CartScreenState extends State<CartScreen> {
           Icons.local_drink_rounded,
           size: 24,
           color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuantityButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(11),
+        child: SizedBox(
+          width: 32,
+          height: 36,
+          child: Center(
+            child: Icon(icon, size: 16, color: AppColors.textPrimary),
+          ),
         ),
       ),
     );
