@@ -45,12 +45,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // GETTERS
   // =============================================================
 
+  double get _subtotal {
+    return _cartService.subtotal;
+  }
+
+  double get _discountedSubtotal {
+    return _cartService.discountedSubtotal;
+  }
+
   double get _deliveryFee {
     return _orderType == 'delivery' ? _deliveryFeeAmount : 0.0;
   }
 
   double get _grandTotal {
-    return _cartService.subtotal + _deliveryFee;
+    return _discountedSubtotal + _deliveryFee;
   }
 
   int get _totalItemCount {
@@ -64,11 +72,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
+
+    _cartService.addListener(_onCartChanged);
+
     _loadSavedProfile();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_cartService.items.isNotEmpty) {
+        await _cartService.calculatePromotion();
+      }
+    });
+  }
+
+  void _onCartChanged() {
+    if (!mounted) return;
+
+    setState(() {});
   }
 
   @override
   void dispose() {
+    _cartService.removeListener(_onCartChanged);
+
     _addressController.dispose();
     _contactController.dispose();
     _notesController.dispose();
@@ -174,12 +199,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final user = supabase.auth.currentUser;
 
     if (user == null) {
+      _showMessage(
+        'You need to be signed in to place an order.',
+        isError: true,
+      );
       return;
     }
 
     if (_cartService.items.isEmpty) {
       _showMessage('Your cart is empty.');
-
       return;
     }
 
@@ -189,14 +217,38 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     try {
       // ==========================================================
+      // RE-CALCULATE PROMOTION BEFORE CHECKOUT
+      // ==========================================================
+      //
+      // This is important because calculate_best_promotion()
+      // now checks max_uses_per_user against promotion_redemptions.
+      //
+      // If the customer already used Triple Drink Combo,
+      // it will no longer be returned here.
+      // ==========================================================
+
+      await _cartService.calculatePromotion();
+
+      // Make sure the cart was not emptied while calculating.
+      if (_cartService.items.isEmpty) {
+        throw Exception('Your cart is empty.');
+      }
+
+      // ==========================================================
       // SNAPSHOT VALUES
       // ==========================================================
 
-      final double subtotalSnapshot = _cartService.subtotal;
+      final double originalSubtotalSnapshot = _cartService.subtotal;
+
+      final promotionSnapshot = _cartService.appliedPromotion;
+
+      final double discountSnapshot = _cartService.discountAmount;
+
+      final double subtotalSnapshot = _cartService.discountedSubtotal;
 
       final double deliveryFeeSnapshot = _deliveryFee;
 
-      final double grandTotalSnapshot = _grandTotal;
+      final double grandTotalSnapshot = subtotalSnapshot + deliveryFeeSnapshot;
 
       final String contactSnapshot = _contactController.text.trim();
 
@@ -205,6 +257,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           : null;
 
       final String notesSnapshot = _notesController.text.trim();
+
+      // ==========================================================
+      // SNAPSHOT CART ITEMS
+      // ==========================================================
+      //
+      // Build these before clearing the cart.
+      // ==========================================================
+
+      final orderItemsData = _cartService.items.map((item) {
+        return {
+          'product_id': item.product.id,
+          'product_name': item.product.name,
+          'quantity': item.quantity,
+          'unit_price': item.unitPrice,
+          'total_price': item.totalPrice,
+          'selected_options': item.selectedOptions,
+        };
+      }).toList();
 
       // ==========================================================
       // UPDATE USER PROFILE
@@ -225,13 +295,40 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           .from('orders')
           .insert({
             'user_id': user.id,
+
             'order_type': _orderType,
-            'delivery_address': addressSnapshot,
+
+            'delivery_address': _orderType == 'delivery'
+                ? addressSnapshot
+                : null,
+
             'contact_number': contactSnapshot,
+
             'notes': notesSnapshot,
+
+            // ----------------------------------------------------
+            // TOTALS
+            // ----------------------------------------------------
+
+            // Your current schema stores the already-discounted
+            // subtotal here.
             'subtotal': subtotalSnapshot,
+
             'delivery_fee': deliveryFeeSnapshot,
+
             'total_price': grandTotalSnapshot,
+
+            // ----------------------------------------------------
+            // PROMOTION
+            // ----------------------------------------------------
+            'discount_amount': discountSnapshot,
+
+            'promotion_id': promotionSnapshot?.id,
+
+            'promotion_title': promotionSnapshot?.title,
+
+            'promotion_snapshot': promotionSnapshot?.snapshot,
+
             'status': 'pending',
           })
           .select('id')
@@ -243,19 +340,65 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // CREATE ORDER ITEMS
       // ==========================================================
 
-      final orderItemsData = _cartService.items.map((item) {
-        return {
-          'order_id': orderId,
-          'product_id': item.product.id,
-          'product_name': item.product.name,
-          'quantity': item.quantity,
-          'unit_price': item.unitPrice,
-          'total_price': item.totalPrice,
-          'selected_options': item.selectedOptions,
-        };
+      final orderItemsWithOrderId = orderItemsData.map((item) {
+        return {...item, 'order_id': orderId};
       }).toList();
 
-      await supabase.from('order_items').insert(orderItemsData);
+      await supabase.from('order_items').insert(orderItemsWithOrderId);
+
+      // ==========================================================
+      // CREATE PROMOTION REDEMPTION
+      // ==========================================================
+      //
+      // Only create a redemption when:
+      //
+      // 1. A promotion was actually applied.
+      // 2. The discount is greater than zero.
+      //
+      // This row is what max_uses_per_user uses to determine
+      // whether this customer has already redeemed the promotion.
+      // ==========================================================
+
+      if (promotionSnapshot != null && discountSnapshot > 0) {
+        await supabase.from('promotion_redemptions').insert({
+          'promotion_id': promotionSnapshot.id,
+
+          'order_id': orderId,
+
+          'user_id': user.id,
+
+          'promotion_title': promotionSnapshot.title,
+
+          'discount_amount': discountSnapshot,
+
+          'promotion_snapshot': promotionSnapshot.snapshot,
+        });
+      }
+
+      // ==========================================================
+      // DEBUG
+      // ==========================================================
+
+      debugPrint('Order created: $orderId');
+
+      if (promotionSnapshot != null && discountSnapshot > 0) {
+        debugPrint(
+          'Promotion redeemed: '
+          '${promotionSnapshot.title}',
+        );
+
+        debugPrint(
+          'Promotion ID: '
+          '${promotionSnapshot.id}',
+        );
+
+        debugPrint(
+          'Discount: '
+          '$discountSnapshot',
+        );
+      } else {
+        debugPrint('Order has no promotion.');
+      }
 
       // ==========================================================
       // CLEAR CART
@@ -273,19 +416,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         MaterialPageRoute(
           builder: (_) => OrderReceiptScreen(
             orderId: orderId,
+
             orderType: _orderType,
+
             contactNumber: contactSnapshot,
+
             deliveryAddress: addressSnapshot,
+
             notes: notesSnapshot,
+
+            originalSubtotal: originalSubtotalSnapshot,
+
+            discountAmount: discountSnapshot,
+
+            promotionTitle: promotionSnapshot?.title,
+
             subtotal: subtotalSnapshot,
+
             deliveryFee: deliveryFeeSnapshot,
+
             grandTotal: grandTotalSnapshot,
-            items: orderItemsData,
+
+            items: orderItemsWithOrderId,
+
             orderDate: DateTime.now(),
           ),
         ),
       );
     } catch (e) {
+      debugPrint('Checkout error: $e');
+
       if (!mounted) return;
 
       _showMessage('Failed to submit order: $e', isError: true);
@@ -431,9 +591,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       CheckoutOrderSummary(
                         totalItemCount: _totalItemCount,
                         orderType: _orderType,
-                        subtotal: _cartService.subtotal,
+                        subtotal: _subtotal,
                         deliveryFee: _deliveryFee,
                         grandTotal: _grandTotal,
+                        promotion: _cartService.appliedPromotion,
+                        isCalculatingPromotion:
+                            _cartService.isCalculatingPromotion,
                       ),
 
                       const SizedBox(height: 17),

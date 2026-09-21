@@ -30,18 +30,17 @@ class CartHeader extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: AppColors.textPrimary,
+
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: AppColors.border.withValues(
-                  alpha: 0.32,
-                ),
+                color: AppColors.border.withValues(alpha: 0.32),
               ),
             ),
             child: const Icon(
               Icons.shopping_bag_outlined,
               size: 20,
-              color: AppColors.textPrimary,
+              color: AppColors.surface,
             ),
           ),
 
@@ -49,8 +48,7 @@ class CartHeader extends StatelessWidget {
 
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'YOUR ORDER',
@@ -58,8 +56,7 @@ class CartHeader extends StatelessWidget {
                     fontSize: 7,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.1,
-                    color: AppColors.textSecondary
-                        .withValues(alpha: 0.55),
+                    color: AppColors.textSecondary.withValues(alpha: 0.55),
                   ),
                 ),
 
@@ -85,8 +82,7 @@ class CartHeader extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary
-                        .withValues(alpha: 0.65),
+                    color: AppColors.textSecondary.withValues(alpha: 0.65),
                   ),
                 ),
               ],
@@ -98,25 +94,21 @@ class CartHeader extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 onTap: onClear,
-                borderRadius:
-                    BorderRadius.circular(13),
+                borderRadius: BorderRadius.circular(13),
                 child: Container(
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius:
-                        BorderRadius.circular(13),
+                    borderRadius: BorderRadius.circular(13),
                     border: Border.all(
-                      color: AppColors.border
-                          .withValues(alpha: 0.30),
+                      color: AppColors.border.withValues(alpha: 0.30),
                     ),
                   ),
                   child: Icon(
                     Icons.delete_outline_rounded,
                     size: 18,
-                    color: AppColors.error
-                        .withValues(alpha: 0.85),
+                    color: AppColors.error.withValues(alpha: 0.85),
                   ),
                 ),
               ),

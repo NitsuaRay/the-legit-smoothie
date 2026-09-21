@@ -6,19 +6,28 @@ import '../../../../core/utils/helpers.dart';
 class SellerOrderItemsCard extends StatelessWidget {
   final List<Map<String, dynamic>> items;
 
+  final double originalSubtotal;
+  final double discountAmount;
+  final String? promotionTitle;
+  final int promotionApplications;
+
   const SellerOrderItemsCard({
     super.key,
     required this.items,
+    required this.originalSubtotal,
+    required this.discountAmount,
+    this.promotionTitle,
+    this.promotionApplications = 0,
   });
+
+
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
       return _buildCard(
         child: const Padding(
-          padding: EdgeInsets.symmetric(
-            vertical: 20,
-          ),
+          padding: EdgeInsets.symmetric(vertical: 20),
           child: Center(
             child: Text(
               'No order items found.',
@@ -34,30 +43,20 @@ class SellerOrderItemsCard extends StatelessWidget {
     }
 
     return Column(
-      children: List.generate(
-        items.length,
-        (index) {
+      children: [
+        ...List.generate(items.length, (index) {
           return Padding(
-            padding: EdgeInsets.only(
-              bottom:
-                  index < items.length - 1
-                      ? 12
-                      : 0,
-            ),
-            child: _OrderItem(
-              item: items[index],
-              itemNumber: index + 1,
-            ),
+            padding: EdgeInsets.only(bottom: 12),
+            child: _OrderItem(item: items[index], itemNumber: index + 1),
           );
-        },
-      ),
+        }),
+      ],
     );
   }
 
   Widget _buildCard({
     required Widget child,
-    EdgeInsetsGeometry padding =
-        const EdgeInsets.all(16),
+    EdgeInsetsGeometry padding = const EdgeInsets.all(16),
   }) {
     return Container(
       width: double.infinity,
@@ -65,16 +64,10 @@ class SellerOrderItemsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.border.withValues(
-            alpha: 0.40,
-          ),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.40)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: 0.025,
-            ),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 14,
             offset: const Offset(0, 5),
           ),
@@ -93,41 +86,24 @@ class _OrderItem extends StatelessWidget {
   final Map<String, dynamic> item;
   final int itemNumber;
 
-  const _OrderItem({
-    required this.item,
-    required this.itemNumber,
-  });
+  const _OrderItem({required this.item, required this.itemNumber});
 
   @override
   Widget build(BuildContext context) {
-    final String name =
-        item['product_name']
-                ?.toString()
-                .trim() ??
-            'Product';
+    final String name = item['product_name']?.toString().trim() ?? 'Product';
 
-    final int quantity =
-        (item['quantity'] as num?)
-                ?.toInt() ??
-            1;
+    final int quantity = (item['quantity'] as num?)?.toInt() ?? 1;
 
-    final double unitPrice =
-        (item['unit_price'] as num?)
-                ?.toDouble() ??
-            0;
+    final double unitPrice = (item['unit_price'] as num?)?.toDouble() ?? 0;
 
     final double itemTotal =
-        (item['total_price'] as num?)
-                ?.toDouble() ??
-            (unitPrice * quantity);
+        (item['total_price'] as num?)?.toDouble() ?? (unitPrice * quantity);
 
-    final List<Map<String, dynamic>>
-        options = _parseSelectedOptions(
+    final List<Map<String, dynamic>> options = _parseSelectedOptions(
       item['selected_options'],
     );
 
-    final Map<String, List<Map<String, dynamic>>>
-        groupedOptions =
+    final Map<String, List<Map<String, dynamic>>> groupedOptions =
         _groupOptions(options);
 
     return Container(
@@ -135,60 +111,42 @@ class _OrderItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.border.withValues(
-            alpha: 0.42,
-          ),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.42)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: 0.025,
-            ),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 14,
             offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // =====================================================
           // PRODUCT HEADER
           // =====================================================
-
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              14,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
             child: Row(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // =================================================
                 // QUANTITY
                 // =================================================
-
                 Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color:
-                        AppColors.textPrimary,
-                    borderRadius:
-                        BorderRadius.circular(14),
+                    color: AppColors.textPrimary,
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Center(
                     child: Text(
                       '$quantity×',
                       style: const TextStyle(
                         fontSize: 15,
-                        fontWeight:
-                            FontWeight.w900,
+                        fontWeight: FontWeight.w900,
                         color: Colors.white,
                       ),
                     ),
@@ -200,23 +158,18 @@ class _OrderItem extends StatelessWidget {
                 // =================================================
                 // PRODUCT NAME
                 // =================================================
-
                 Expanded(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'ITEM $itemNumber',
                         style: TextStyle(
                           fontSize: 7.5,
                           height: 1,
-                          fontWeight:
-                              FontWeight.w900,
+                          fontWeight: FontWeight.w900,
                           letterSpacing: 1,
-                          color: AppColors
-                              .textSecondary
-                              .withValues(
+                          color: AppColors.textSecondary.withValues(
                             alpha: 0.55,
                           ),
                         ),
@@ -226,15 +179,12 @@ class _OrderItem extends StatelessWidget {
 
                       Text(
                         name,
-                        style:
-                            const TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
                           height: 1.2,
-                          fontWeight:
-                              FontWeight.w900,
+                          fontWeight: FontWeight.w900,
                           letterSpacing: -0.25,
-                          color: AppColors
-                              .textPrimary,
+                          color: AppColors.textPrimary,
                         ),
                       ),
 
@@ -244,11 +194,8 @@ class _OrderItem extends StatelessWidget {
                         '${AppHelpers.formatCurrency(unitPrice)} each',
                         style: TextStyle(
                           fontSize: 10.5,
-                          fontWeight:
-                              FontWeight.w600,
-                          color: AppColors
-                              .textSecondary
-                              .withValues(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary.withValues(
                             alpha: 0.75,
                           ),
                         ),
@@ -262,41 +209,28 @@ class _OrderItem extends StatelessWidget {
                 // =================================================
                 // TOTAL
                 // =================================================
-
                 Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
                       'TOTAL',
                       style: TextStyle(
                         fontSize: 7,
-                        fontWeight:
-                            FontWeight.w900,
+                        fontWeight: FontWeight.w900,
                         letterSpacing: 0.8,
-                        color: AppColors
-                            .textSecondary
-                            .withValues(
-                          alpha: 0.50,
-                        ),
+                        color: AppColors.textSecondary.withValues(alpha: 0.50),
                       ),
                     ),
 
                     const SizedBox(height: 5),
 
                     Text(
-                      AppHelpers
-                          .formatCurrency(
-                        itemTotal,
-                      ),
-                      style:
-                          const TextStyle(
+                      AppHelpers.formatCurrency(itemTotal),
+                      style: const TextStyle(
                         fontSize: 14,
-                        fontWeight:
-                            FontWeight.w900,
+                        fontWeight: FontWeight.w900,
                         letterSpacing: -0.2,
-                        color: AppColors
-                            .textPrimary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ],
@@ -308,69 +242,41 @@ class _OrderItem extends StatelessWidget {
           // =====================================================
           // OPTIONS
           // =====================================================
-
           if (options.isNotEmpty) ...[
-            Divider(
-              height: 1,
-              color: AppColors.border.withValues(
-                alpha: 0.30,
-              ),
-            ),
+            Divider(height: 1, color: AppColors.border.withValues(alpha: 0.30)),
 
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(
-                16,
-                14,
-                16,
-                16,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               decoration: BoxDecoration(
-                color: AppColors.background
-                    .withValues(
-                  alpha: 0.55,
-                ),
-                borderRadius:
-                    const BorderRadius.only(
-                  bottomLeft:
-                      Radius.circular(20),
-                  bottomRight:
-                      Radius.circular(20),
+                color: AppColors.background.withValues(alpha: 0.55),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
                 ),
               ),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ===============================================
                   // CUSTOMIZATION HEADER
                   // ===============================================
-
                   Row(
                     children: [
                       Container(
                         width: 29,
                         height: 29,
-                        decoration:
-                            BoxDecoration(
-                          color:
-                              AppColors.surface,
-                          borderRadius:
-                              BorderRadius
-                                  .circular(9),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(9),
                           border: Border.all(
-                            color: AppColors
-                                .border
-                                .withValues(
-                              alpha: 0.30,
-                            ),
+                            color: AppColors.border.withValues(alpha: 0.30),
                           ),
                         ),
                         child: const Icon(
                           Icons.tune_rounded,
                           size: 14,
-                          color: AppColors
-                              .textPrimary,
+                          color: AppColors.textPrimary,
                         ),
                       ),
 
@@ -380,10 +286,8 @@ class _OrderItem extends StatelessWidget {
                         'Customizations',
                         style: TextStyle(
                           fontSize: 11.5,
-                          fontWeight:
-                              FontWeight.w800,
-                          color: AppColors
-                              .textPrimary,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -394,25 +298,15 @@ class _OrderItem extends StatelessWidget {
                   // ===============================================
                   // OPTION GROUPS
                   // ===============================================
-
-                  ...groupedOptions.entries.map(
-                    (entry) {
-                      return Padding(
-                        padding:
-                            const EdgeInsets
-                                .only(
-                          bottom: 10,
-                        ),
-                        child:
-                            _OptionGroup(
-                          group:
-                              entry.key,
-                          options:
-                              entry.value,
-                        ),
-                      );
-                    },
-                  ),
+                  ...groupedOptions.entries.map((entry) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _OptionGroup(
+                        group: entry.key,
+                        options: entry.value,
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),
@@ -426,22 +320,14 @@ class _OrderItem extends StatelessWidget {
   // PARSE OPTIONS
   // ============================================================
 
-  List<Map<String, dynamic>>
-      _parseSelectedOptions(
-    dynamic value,
-  ) {
+  List<Map<String, dynamic>> _parseSelectedOptions(dynamic value) {
     if (value is! List) {
       return [];
     }
 
     return value
         .whereType<Map>()
-        .map(
-          (option) =>
-              Map<String, dynamic>.from(
-            option,
-          ),
-        )
+        .map((option) => Map<String, dynamic>.from(option))
         .toList();
   }
 
@@ -449,23 +335,15 @@ class _OrderItem extends StatelessWidget {
   // GROUP OPTIONS
   // ============================================================
 
-  Map<String, List<Map<String, dynamic>>>
-      _groupOptions(
+  Map<String, List<Map<String, dynamic>>> _groupOptions(
     List<Map<String, dynamic>> options,
   ) {
-    final Map<
-            String,
-            List<Map<String, dynamic>>>
-        grouped = {};
+    final Map<String, List<Map<String, dynamic>>> grouped = {};
 
     for (final option in options) {
-      final String group =
-          _optionGroup(option);
+      final String group = _optionGroup(option);
 
-      grouped.putIfAbsent(
-        group,
-        () => [],
-      );
+      grouped.putIfAbsent(group, () => []);
 
       grouped[group]!.add(option);
     }
@@ -477,19 +355,13 @@ class _OrderItem extends StatelessWidget {
   // OPTION GROUP
   // ============================================================
 
-  String _optionGroup(
-    Map<String, dynamic> option,
-  ) {
+  String _optionGroup(Map<String, dynamic> option) {
     // Support the common keys in case the
     // checkout snapshot uses either naming style.
     final String rawGroup =
-        option['option_group']
-                ?.toString()
-                .trim() ??
-            option['group']
-                ?.toString()
-                .trim() ??
-            '';
+        option['option_group']?.toString().trim() ??
+        option['group']?.toString().trim() ??
+        '';
 
     if (rawGroup.isEmpty) {
       return 'Options';
@@ -511,9 +383,7 @@ class _OrderItem extends StatelessWidget {
         .replaceAll('_', ' ')
         .trim()
         .split(' ')
-        .where(
-          (word) => word.isNotEmpty,
-        )
+        .where((word) => word.isNotEmpty)
         .map(
           (word) =>
               '${word[0].toUpperCase()}'
@@ -531,41 +401,28 @@ class _OptionGroup extends StatelessWidget {
   final String group;
   final List<Map<String, dynamic>> options;
 
-  const _OptionGroup({
-    required this.group,
-    required this.options,
-  });
+  const _OptionGroup({required this.group, required this.options});
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // =======================================================
         // GROUP
         // =======================================================
-
         SizedBox(
           width: 72,
           child: Padding(
-            padding:
-                const EdgeInsets.only(
-              top: 7,
-            ),
+            padding: const EdgeInsets.only(top: 7),
             child: Text(
               group.toUpperCase(),
               style: TextStyle(
                 fontSize: 7.5,
                 height: 1.2,
-                fontWeight:
-                    FontWeight.w900,
+                fontWeight: FontWeight.w900,
                 letterSpacing: 0.8,
-                color: AppColors
-                    .textSecondary
-                    .withValues(
-                  alpha: 0.58,
-                ),
+                color: AppColors.textSecondary.withValues(alpha: 0.58),
               ),
             ),
           ),
@@ -576,118 +433,79 @@ class _OptionGroup extends StatelessWidget {
         // =======================================================
         // VALUES
         // =======================================================
-
         Expanded(
           child: Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: options.map(
-              (option) {
-                final String optionName =
-                    _optionName(option);
+            children: options.map((option) {
+              final String optionName = _optionName(option);
 
-                final double optionPrice =
-                    _optionPrice(option);
+              final double optionPrice = _optionPrice(option);
 
-                return Container(
-                  padding:
-                      const EdgeInsets
-                          .symmetric(
-                    horizontal: 10,
-                    vertical: 7,
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.35),
                   ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius:
-                        BorderRadius.circular(
-                      10,
-                    ),
-                    border: Border.all(
-                      color: AppColors.border
-                          .withValues(
-                        alpha: 0.35,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      optionName,
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize:
-                        MainAxisSize.min,
-                    children: [
+
+                    if (optionPrice > 0) ...[
+                      const SizedBox(width: 5),
+
                       Text(
-                        optionName,
-                        style:
-                            const TextStyle(
-                          fontSize: 10.5,
-                          fontWeight:
-                              FontWeight.w700,
-                          color: AppColors
-                              .textPrimary,
-                        ),
-                      ),
-
-                      if (optionPrice >
-                          0) ...[
-                        const SizedBox(
-                          width: 5,
-                        ),
-
-                        Text(
-                          '+${AppHelpers.formatCurrency(optionPrice)}',
-                          style:
-                              TextStyle(
-                            fontSize: 9,
-                            fontWeight:
-                                FontWeight.w700,
-                            color: AppColors
-                                .textSecondary
-                                .withValues(
-                              alpha: 0.72,
-                            ),
+                        '+${AppHelpers.formatCurrency(optionPrice)}',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textSecondary.withValues(
+                            alpha: 0.72,
                           ),
                         ),
-                      ],
+                      ),
                     ],
-                  ),
-                );
-              },
-            ).toList(),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
         ),
       ],
     );
   }
 
-  String _optionName(
-    Map<String, dynamic> option,
-  ) {
+  String _optionName(Map<String, dynamic> option) {
     final String name =
-        option['name']
-                ?.toString()
-                .trim() ??
-            option['option_name']
-                ?.toString()
-                .trim() ??
-            '';
+        option['name']?.toString().trim() ??
+        option['option_name']?.toString().trim() ??
+        '';
 
-    return name.isEmpty
-        ? 'Option'
-        : name;
+    return name.isEmpty ? 'Option' : name;
   }
 
-  double _optionPrice(
-    Map<String, dynamic> option,
-  ) {
-    final dynamic value =
-        option['extra_price'] ??
-            option['price'];
+  double _optionPrice(Map<String, dynamic> option) {
+    final dynamic value = option['extra_price'] ?? option['price'];
 
     if (value is num) {
       return value.toDouble();
     }
 
-    return double.tryParse(
-          value?.toString() ?? '',
-        ) ??
-        0;
+    return double.tryParse(value?.toString() ?? '') ?? 0;
   }
 }

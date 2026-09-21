@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:the_legit_smoothie/features/catalog/screens/home_screen.dart';
+import 'package:the_legit_smoothie/widgets/main_navigation_screen.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({
-    super.key,
-  });
+  const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() =>
-      _RegisterScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
@@ -81,10 +78,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      _showMessage(
-        'Account created successfully! Welcome!',
-        isSuccess: true,
-      );
+      _showMessage('Account created successfully! Welcome!', isSuccess: true);
 
       // ==========================================================
       // NAVIGATE TO HOME
@@ -92,21 +86,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (_) => const HomeScreen(),
+          builder: (_) => const MainNavigationScreen(initialIndex: 0),
         ),
         (route) => false,
       );
     } on AuthException catch (error) {
       if (!mounted) return;
 
-      _showMessage(
-        error.message,
-        isError: true,
-      );
+      _showMessage(error.message, isError: true);
     } catch (error) {
-      debugPrint(
-        'Registration error: $error',
-      );
+      debugPrint('Registration error: $error');
 
       if (!mounted) return;
 
@@ -138,12 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SnackBar(
           behavior: SnackBarBehavior.floating,
           backgroundColor: AppColors.textPrimary,
-          margin: const EdgeInsets.fromLTRB(
-            18,
-            0,
-            18,
-            18,
-          ),
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -155,18 +139,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 height: 30,
                 decoration: BoxDecoration(
                   color: isError
-                      ? AppColors.error.withValues(
-                          alpha: 0.16,
-                        )
-                      : AppColors.success.withValues(
-                          alpha: 0.16,
-                        ),
+                      ? AppColors.error.withValues(alpha: 0.16)
+                      : AppColors.success.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(9),
                 ),
                 child: Icon(
-                  isError
-                      ? Icons.error_outline_rounded
-                      : Icons.check_rounded,
+                  isError ? Icons.error_outline_rounded : Icons.check_rounded,
                   size: 16,
                   color: Colors.white,
                 ),
@@ -208,15 +186,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             FocusScope.of(context).unfocus();
           },
           child: SingleChildScrollView(
-            keyboardDismissBehavior:
-                ScrollViewKeyboardDismissBehavior.onDrag,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(
-              20,
-              16,
-              20,
-              28,
-            ),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
             child: Form(
               key: _formKey,
               child: Column(
@@ -225,7 +197,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // =================================================
                   // TOP BAR
                   // =================================================
-
                   _buildTopBar(context),
 
                   const SizedBox(height: 34),
@@ -233,7 +204,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // =================================================
                   // HERO
                   // =================================================
-
                   _buildHero(),
 
                   const SizedBox(height: 26),
@@ -241,7 +211,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // =================================================
                   // FORM CARD
                   // =================================================
-
                   _buildRegistrationCard(),
 
                   const SizedBox(height: 18),
@@ -249,7 +218,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // =================================================
                   // EXISTING ACCOUNT
                   // =================================================
-
                   _buildSignInCard(context),
 
                   const SizedBox(height: 26),
@@ -257,7 +225,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // =================================================
                   // FOOTER
                   // =================================================
-
                   _buildFooter(),
                 ],
               ),
@@ -272,15 +239,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // TOP BAR
   // =============================================================
 
-  Widget _buildTopBar(
-    BuildContext context,
-  ) {
+  Widget _buildTopBar(BuildContext context) {
     return Row(
       children: [
         // =========================================================
         // BACK
         // =========================================================
-
         Material(
           color: Colors.transparent,
           child: InkWell(
@@ -297,9 +261,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(13),
                 border: Border.all(
-                  color: AppColors.border.withValues(
-                    alpha: 0.28,
-                  ),
+                  color: AppColors.border.withValues(alpha: 0.28),
                 ),
               ),
               child: const Icon(
@@ -316,7 +278,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // =========================================================
         // BRAND
         // =========================================================
-
         Container(
           width: 44,
           height: 44,
@@ -324,22 +285,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(13),
-            border: Border.all(
-              color: AppColors.border.withValues(
-                alpha: 0.28,
-              ),
-            ),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.28)),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(9),
             child: Image.asset(
               'assets/logoSmoothie.png',
               fit: BoxFit.contain,
-              errorBuilder: (
-                context,
-                error,
-                stackTrace,
-              ) {
+              errorBuilder: (context, error, stackTrace) {
                 return const Icon(
                   Icons.local_drink_outlined,
                   size: 21,
@@ -355,7 +308,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // =========================================================
         // BRAND NAME
         // =========================================================
-
         const Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,20 +342,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // =========================================================
         // SECURE BADGE
         // =========================================================
-
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 9,
-            vertical: 7,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(
-              color: AppColors.border.withValues(
-                alpha: 0.28,
-              ),
-            ),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.28)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -411,9 +355,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Icon(
                 Icons.lock_outline_rounded,
                 size: 11,
-                color: AppColors.textSecondary.withValues(
-                  alpha: 0.72,
-                ),
+                color: AppColors.textSecondary.withValues(alpha: 0.72),
               ),
 
               const SizedBox(width: 5),
@@ -445,16 +387,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // =========================================================
         // BADGE
         // =========================================================
-
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 9,
-            vertical: 6,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.textPrimary.withValues(
-              alpha: 0.055,
-            ),
+            color: AppColors.textPrimary.withValues(alpha: 0.055),
             borderRadius: BorderRadius.circular(30),
           ),
           child: const Row(
@@ -487,7 +423,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // =========================================================
         // TITLE
         // =========================================================
-
         const Text(
           'Your next favorite\nblend starts here.',
           style: TextStyle(
@@ -508,9 +443,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             fontSize: 12,
             height: 1.55,
             fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary.withValues(
-              alpha: 0.72,
-            ),
+            color: AppColors.textSecondary.withValues(alpha: 0.72),
           ),
         ),
 
@@ -519,15 +452,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // =========================================================
         // BENEFITS
         // =========================================================
-
         Wrap(
           spacing: 7,
           runSpacing: 7,
           children: const [
-            _BenefitChip(
-              icon: Icons.bolt_outlined,
-              label: 'Faster checkout',
-            ),
+            _BenefitChip(icon: Icons.bolt_outlined, label: 'Faster checkout'),
             _BenefitChip(
               icon: Icons.receipt_long_outlined,
               label: 'Order tracking',
@@ -553,16 +482,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.black.withValues(
-            alpha: 0.045,
-          ),
-        ),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.045)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: 0.035,
-            ),
+            color: Colors.black.withValues(alpha: 0.035),
             blurRadius: 26,
             offset: const Offset(0, 8),
           ),
@@ -574,7 +497,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // =======================================================
           // CARD HEADER
           // =======================================================
-
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -616,9 +538,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         fontSize: 10,
                         height: 1.35,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary.withValues(
-                          alpha: 0.62,
-                        ),
+                        color: AppColors.textSecondary.withValues(alpha: 0.62),
                       ),
                     ),
                   ],
@@ -632,7 +552,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // =======================================================
           // FULL NAME
           // =======================================================
-
           _buildFieldLabel(
             label: 'FULL NAME',
             icon: Icons.person_outline_rounded,
@@ -646,9 +565,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             enabled: !_isLoading,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
-            autofillHints: const [
-              AutofillHints.name,
-            ],
+            autofillHints: const [AutofillHints.name],
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -662,8 +579,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               icon: Icons.person_outline_rounded,
             ),
             validator: (value) {
-              if (value == null ||
-                  value.trim().isEmpty) {
+              if (value == null || value.trim().isEmpty) {
                 return 'Please enter your full name';
               }
 
@@ -680,7 +596,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // =======================================================
           // EMAIL
           // =======================================================
-
           _buildFieldLabel(
             label: 'EMAIL ADDRESS',
             icon: Icons.mail_outline_rounded,
@@ -694,9 +609,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             enabled: !_isLoading,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            autofillHints: const [
-              AutofillHints.email,
-            ],
+            autofillHints: const [AutofillHints.email],
             autocorrect: false,
             enableSuggestions: false,
             style: const TextStyle(
@@ -718,9 +631,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 return 'Please enter your email address';
               }
 
-              final emailPattern = RegExp(
-                r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-              );
+              final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
               if (!emailPattern.hasMatch(email)) {
                 return 'Enter a valid email address';
@@ -735,11 +646,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // =======================================================
           // PASSWORD
           // =======================================================
-
-          _buildFieldLabel(
-            label: 'PASSWORD',
-            icon: Icons.lock_outline_rounded,
-          ),
+          _buildFieldLabel(label: 'PASSWORD', icon: Icons.lock_outline_rounded),
 
           const SizedBox(height: 8),
 
@@ -749,9 +656,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             enabled: !_isLoading,
             obscureText: _obscurePassword,
             textInputAction: TextInputAction.next,
-            autofillHints: const [
-              AutofillHints.newPassword,
-            ],
+            autofillHints: const [AutofillHints.newPassword],
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -767,13 +672,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               hint: 'Create a password',
               icon: Icons.lock_outline_rounded,
               suffixIcon: IconButton(
-                tooltip: _obscurePassword
-                    ? 'Show password'
-                    : 'Hide password',
+                tooltip: _obscurePassword ? 'Show password' : 'Hide password',
                 onPressed: () {
                   setState(() {
-                    _obscurePassword =
-                        !_obscurePassword;
+                    _obscurePassword = !_obscurePassword;
                   });
                 },
                 icon: Icon(
@@ -781,15 +683,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
                   size: 18,
-                  color: AppColors.textSecondary.withValues(
-                    alpha: 0.72,
-                  ),
+                  color: AppColors.textSecondary.withValues(alpha: 0.72),
                 ),
               ),
             ),
             validator: (value) {
-              if (value == null ||
-                  value.isEmpty) {
+              if (value == null || value.isEmpty) {
                 return 'Please create a password';
               }
 
@@ -806,7 +705,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // =======================================================
           // PASSWORD REQUIREMENT
           // =======================================================
-
           _buildPasswordRequirement(),
 
           const SizedBox(height: 18),
@@ -814,7 +712,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // =======================================================
           // CONFIRM PASSWORD
           // =======================================================
-
           _buildFieldLabel(
             label: 'CONFIRM PASSWORD',
             icon: Icons.verified_user_outlined,
@@ -828,9 +725,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             enabled: !_isLoading,
             obscureText: _obscureConfirmPassword,
             textInputAction: TextInputAction.done,
-            autofillHints: const [
-              AutofillHints.newPassword,
-            ],
+            autofillHints: const [AutofillHints.newPassword],
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -850,8 +745,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     : 'Hide password',
                 onPressed: () {
                   setState(() {
-                    _obscureConfirmPassword =
-                        !_obscureConfirmPassword;
+                    _obscureConfirmPassword = !_obscureConfirmPassword;
                   });
                 },
                 icon: Icon(
@@ -859,20 +753,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
                   size: 18,
-                  color: AppColors.textSecondary.withValues(
-                    alpha: 0.72,
-                  ),
+                  color: AppColors.textSecondary.withValues(alpha: 0.72),
                 ),
               ),
             ),
             validator: (value) {
-              if (value == null ||
-                  value.isEmpty) {
+              if (value == null || value.isEmpty) {
                 return 'Please confirm your password';
               }
 
-              if (value !=
-                  _passwordController.text) {
+              if (value != _passwordController.text) {
                 return 'Passwords do not match';
               }
 
@@ -885,24 +775,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // =======================================================
           // CREATE ACCOUNT BUTTON
           // =======================================================
-
           SizedBox(
             width: double.infinity,
             height: 56,
             child: ElevatedButton(
-              onPressed:
-                  _isLoading ? null : _handleRegister,
+              onPressed: _isLoading ? null : _handleRegister,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.textPrimary,
-                disabledBackgroundColor:
-                    AppColors.textPrimary.withValues(
+                disabledBackgroundColor: AppColors.textPrimary.withValues(
                   alpha: 0.52,
                 ),
                 foregroundColor: Colors.white,
-                disabledForegroundColor:
-                    Colors.white.withValues(
-                  alpha: 0.75,
-                ),
+                disabledForegroundColor: Colors.white.withValues(alpha: 0.75),
                 elevation: 0,
                 shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
@@ -910,9 +794,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               child: AnimatedSwitcher(
-                duration: const Duration(
-                  milliseconds: 180,
-                ),
+                duration: const Duration(milliseconds: 180),
                 child: _isLoading
                     ? const SizedBox(
                         key: ValueKey('loading'),
@@ -925,8 +807,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       )
                     : const Row(
                         key: ValueKey('register'),
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.person_add_alt_1_rounded,
@@ -964,16 +845,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // =======================================================
           // SECURITY NOTE
           // =======================================================
-
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.shield_outlined,
                 size: 12,
-                color: AppColors.textSecondary.withValues(
-                  alpha: 0.50,
-                ),
+                color: AppColors.textSecondary.withValues(alpha: 0.50),
               ),
 
               const SizedBox(width: 5),
@@ -983,9 +861,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: TextStyle(
                   fontSize: 8.5,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary.withValues(
-                    alpha: 0.55,
-                  ),
+                  color: AppColors.textSecondary.withValues(alpha: 0.55),
                 ),
               ),
             ],
@@ -1002,32 +878,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildPasswordRequirement() {
     final password = _passwordController.text;
 
-    final bool hasMinimumLength =
-        password.length >= 6;
+    final bool hasMinimumLength = password.length >= 6;
 
     return AnimatedContainer(
-      duration: const Duration(
-        milliseconds: 200,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 11,
-        vertical: 9,
-      ),
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
       decoration: BoxDecoration(
         color: hasMinimumLength
-            ? AppColors.success.withValues(
-                alpha: 0.055,
-              )
+            ? AppColors.success.withValues(alpha: 0.055)
             : AppColors.background,
         borderRadius: BorderRadius.circular(11),
         border: Border.all(
           color: hasMinimumLength
-              ? AppColors.success.withValues(
-                  alpha: 0.14,
-                )
-              : AppColors.border.withValues(
-                  alpha: 0.22,
-                ),
+              ? AppColors.success.withValues(alpha: 0.14)
+              : AppColors.border.withValues(alpha: 0.22),
         ),
       ),
       child: Row(
@@ -1054,9 +918,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 fontWeight: FontWeight.w600,
                 color: hasMinimumLength
                     ? AppColors.success
-                    : AppColors.textSecondary.withValues(
-                        alpha: 0.70,
-                      ),
+                    : AppColors.textSecondary.withValues(alpha: 0.70),
               ),
             ),
           ),
@@ -1069,20 +931,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // SIGN IN CARD
   // =============================================================
 
-  Widget _buildSignInCard(
-    BuildContext context,
-  ) {
+  Widget _buildSignInCard(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.border.withValues(
-            alpha: 0.28,
-          ),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.28)),
       ),
       child: Row(
         children: [
@@ -1123,9 +979,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary.withValues(
-                      alpha: 0.62,
-                    ),
+                    color: AppColors.textSecondary.withValues(alpha: 0.62),
                   ),
                 ),
               ],
@@ -1195,9 +1049,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               fontSize: 7.5,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.4,
-              color: AppColors.textSecondary.withValues(
-                alpha: 0.42,
-              ),
+              color: AppColors.textSecondary.withValues(alpha: 0.42),
             ),
           ),
 
@@ -1208,9 +1060,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             style: TextStyle(
               fontSize: 8.5,
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary.withValues(
-                alpha: 0.45,
-              ),
+              color: AppColors.textSecondary.withValues(alpha: 0.45),
             ),
           ),
         ],
@@ -1228,18 +1078,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // FIELD LABEL
   // =============================================================
 
-  Widget _buildFieldLabel({
-    required String label,
-    required IconData icon,
-  }) {
+  Widget _buildFieldLabel({required String label, required IconData icon}) {
     return Row(
       children: [
         Icon(
           icon,
           size: 12,
-          color: AppColors.textSecondary.withValues(
-            alpha: 0.62,
-          ),
+          color: AppColors.textSecondary.withValues(alpha: 0.62),
         ),
 
         const SizedBox(width: 6),
@@ -1251,9 +1096,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             height: 1,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.9,
-            color: AppColors.textSecondary.withValues(
-              alpha: 0.65,
-            ),
+            color: AppColors.textSecondary.withValues(alpha: 0.65),
           ),
         ),
       ],
@@ -1269,8 +1112,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required IconData icon,
     Widget? suffixIcon,
   }) {
-    final borderRadius =
-        BorderRadius.circular(15);
+    final borderRadius = BorderRadius.circular(15);
 
     return InputDecoration(
       hintText: hint,
@@ -1278,112 +1120,67 @@ class _RegisterScreenState extends State<RegisterScreen> {
       hintStyle: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        color: AppColors.textSecondary.withValues(
-          alpha: 0.43,
-        ),
+        color: AppColors.textSecondary.withValues(alpha: 0.43),
       ),
 
       filled: true,
 
-      fillColor: AppColors.background.withValues(
-        alpha: 0.70,
-      ),
+      fillColor: AppColors.background.withValues(alpha: 0.70),
 
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 17,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 17),
 
       // ===========================================================
       // PREFIX ICON
       // ===========================================================
-
       prefixIcon: Padding(
-        padding: const EdgeInsets.only(
-          left: 9,
-          right: 7,
-        ),
+        padding: const EdgeInsets.only(left: 9, right: 7),
         child: Container(
           width: 38,
           height: 38,
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(11),
-            border: Border.all(
-              color: AppColors.border.withValues(
-                alpha: 0.25,
-              ),
-            ),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.25)),
           ),
-          child: Icon(
-            icon,
-            size: 17,
-            color: AppColors.textPrimary,
-          ),
+          child: Icon(icon, size: 17, color: AppColors.textPrimary),
         ),
       ),
 
-      prefixIconConstraints: const BoxConstraints(
-        minWidth: 57,
-        minHeight: 56,
-      ),
+      prefixIconConstraints: const BoxConstraints(minWidth: 57, minHeight: 56),
 
       suffixIcon: suffixIcon,
 
       // ===========================================================
       // BORDERS
       // ===========================================================
-
       border: OutlineInputBorder(
         borderRadius: borderRadius,
-        borderSide: BorderSide(
-          color: AppColors.border.withValues(
-            alpha: 0.32,
-          ),
-        ),
+        borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.32)),
       ),
 
       enabledBorder: OutlineInputBorder(
         borderRadius: borderRadius,
-        borderSide: BorderSide(
-          color: AppColors.border.withValues(
-            alpha: 0.32,
-          ),
-        ),
+        borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.32)),
       ),
 
       focusedBorder: OutlineInputBorder(
         borderRadius: borderRadius,
-        borderSide: const BorderSide(
-          color: AppColors.textPrimary,
-          width: 1.35,
-        ),
+        borderSide: const BorderSide(color: AppColors.textPrimary, width: 1.35),
       ),
 
       errorBorder: OutlineInputBorder(
         borderRadius: borderRadius,
-        borderSide: BorderSide(
-          color: AppColors.error.withValues(
-            alpha: 0.65,
-          ),
-        ),
+        borderSide: BorderSide(color: AppColors.error.withValues(alpha: 0.65)),
       ),
 
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: borderRadius,
-        borderSide: const BorderSide(
-          color: AppColors.error,
-          width: 1.35,
-        ),
+        borderSide: const BorderSide(color: AppColors.error, width: 1.35),
       ),
 
       disabledBorder: OutlineInputBorder(
         borderRadius: borderRadius,
-        borderSide: BorderSide(
-          color: AppColors.border.withValues(
-            alpha: 0.20,
-          ),
-        ),
+        borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.20)),
       ),
 
       errorStyle: const TextStyle(
@@ -1404,35 +1201,21 @@ class _BenefitChip extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _BenefitChip({
-    required this.icon,
-    required this.label,
-  });
+  const _BenefitChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 7,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: AppColors.border.withValues(
-            alpha: 0.26,
-          ),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.26)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 12,
-            color: AppColors.textPrimary,
-          ),
+          Icon(icon, size: 12, color: AppColors.textPrimary),
 
           const SizedBox(width: 6),
 

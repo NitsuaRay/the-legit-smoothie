@@ -6,10 +6,7 @@ import '../../../core/constants/app_constants.dart';
 class CatalogHomeHeader extends StatelessWidget {
   final bool isStoreOpen;
 
-  const CatalogHomeHeader({
-    super.key,
-    this.isStoreOpen = true,
-  });
+  const CatalogHomeHeader({super.key, required this.isStoreOpen});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +23,6 @@ class CatalogHomeHeader extends StatelessWidget {
           // =====================================================
           // BRAND
           // =====================================================
-
           Row(
             children: [
               Container(
@@ -37,19 +33,13 @@ class CatalogHomeHeader extends StatelessWidget {
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(13),
                   border: Border.all(
-                    color: AppColors.border.withValues(
-                      alpha: 0.30,
-                    ),
+                    color: AppColors.border.withValues(alpha: 0.30),
                   ),
                 ),
                 child: Image.asset(
                   'assets/logoSmoothie.png',
                   fit: BoxFit.contain,
-                  errorBuilder: (
-                    context,
-                    error,
-                    stackTrace,
-                  ) {
+                  errorBuilder: (context, error, stackTrace) {
                     return const Icon(
                       Icons.local_drink_outlined,
                       size: 20,
@@ -87,9 +77,7 @@ class CatalogHomeHeader extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 8.5,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary.withValues(
-                          alpha: 0.68,
-                        ),
+                        color: AppColors.textSecondary.withValues(alpha: 0.68),
                       ),
                     ),
                   ],
@@ -98,9 +86,7 @@ class CatalogHomeHeader extends StatelessWidget {
 
               const SizedBox(width: 10),
 
-              _StoreStatus(
-                isOpen: isStoreOpen,
-              ),
+              _StoreStatus(isOpen: isStoreOpen),
             ],
           ),
 
@@ -109,16 +95,13 @@ class CatalogHomeHeader extends StatelessWidget {
           // =====================================================
           // GREETING
           // =====================================================
-
           Text(
             _greeting.toUpperCase(),
             style: TextStyle(
               fontSize: 7,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.2,
-              color: AppColors.textSecondary.withValues(
-                alpha: 0.58,
-              ),
+              color: AppColors.textSecondary.withValues(alpha: 0.58),
             ),
           ),
 
@@ -144,9 +127,7 @@ class CatalogHomeHeader extends StatelessWidget {
               fontSize: 10,
               height: 1.5,
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary.withValues(
-                alpha: 0.72,
-              ),
+              color: AppColors.textSecondary.withValues(alpha: 0.72),
             ),
           ),
         ],
@@ -172,9 +153,7 @@ class CatalogHomeHeader extends StatelessWidget {
 class _StoreStatus extends StatelessWidget {
   final bool isOpen;
 
-  const _StoreStatus({
-    required this.isOpen,
-  });
+  const _StoreStatus({required this.isOpen});
 
   @override
   Widget build(BuildContext context) {
@@ -183,39 +162,32 @@ class _StoreStatus extends StatelessWidget {
         : Colors.red.shade600;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 7,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.border.withValues(
-            alpha: 0.30,
-          ),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.30)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 6,
-            height: 6,
+            width: 7,
+            height: 7,
             decoration: BoxDecoration(
               color: statusColor,
               shape: BoxShape.circle,
             ),
           ),
 
-          const SizedBox(width: 6),
+          const SizedBox(width: 7),
 
           Text(
             isOpen ? 'OPEN' : 'CLOSED',
             style: const TextStyle(
-              fontSize: 7,
+              fontSize: 9.5, // increased from 7
               fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
+              letterSpacing: 0.6,
               color: AppColors.textPrimary,
             ),
           ),

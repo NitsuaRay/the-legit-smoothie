@@ -19,9 +19,7 @@ class OrderHistoryHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.background,
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.22),
-          ),
+          bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.22)),
         ),
       ),
       child: Row(
@@ -30,23 +28,24 @@ class OrderHistoryHeader extends StatelessWidget {
             width: 43,
             height: 43,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.textPrimary,
+
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(
               Icons.receipt_long_outlined,
               size: 19,
-              color: AppColors.textPrimary,
+              color: Colors.white,
             ),
           ),
 
           const SizedBox(width: 12),
 
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'YOUR ORDERS',
                   style: TextStyle(
                     fontSize: 7,
@@ -55,8 +54,8 @@ class OrderHistoryHeader extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
+                const SizedBox(height: 4),
+                const Text(
                   'Order history',
                   style: TextStyle(
                     fontSize: 19,
@@ -64,6 +63,17 @@ class OrderHistoryHeader extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
                     color: AppColors.textPrimary,
+                  ),
+                ),
+
+                const SizedBox(height: 5),
+
+                Text(
+                  'Track your orders',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary.withValues(alpha: 0.65),
                   ),
                 ),
               ],

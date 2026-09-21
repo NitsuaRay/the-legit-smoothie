@@ -4,6 +4,10 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/helpers.dart';
 
 class SellerOrderPaymentCard extends StatelessWidget {
+  final double originalSubtotal;
+  final double discountAmount;
+  final String? promotionTitle;
+
   final double subtotal;
   final double deliveryFee;
   final double total;
@@ -11,11 +15,18 @@ class SellerOrderPaymentCard extends StatelessWidget {
 
   const SellerOrderPaymentCard({
     super.key,
+    required this.originalSubtotal,
+    required this.discountAmount,
+    this.promotionTitle,
     required this.subtotal,
     required this.deliveryFee,
     required this.total,
     required this.isDelivery,
   });
+
+  bool get _hasPromotion {
+    return discountAmount > 0;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,16 +35,10 @@ class SellerOrderPaymentCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.border.withValues(
-            alpha: 0.38,
-          ),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.38)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: 0.025,
-            ),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),
@@ -44,42 +49,38 @@ class SellerOrderPaymentCard extends StatelessWidget {
           // =====================================================
           // BREAKDOWN
           // =====================================================
-
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              17,
-              16,
-              16,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 17, 16, 16),
             child: Column(
               children: [
                 // =================================================
                 // SUBTOTAL
                 // =================================================
-
                 _PriceRow(
                   icon: Icons.receipt_long_outlined,
                   label: 'Subtotal',
-                  subtitle: 'Items total',
-                  amount: subtotal,
+                  subtitle: 'Original items total',
+                  amount: originalSubtotal,
                 ),
 
-                const SizedBox(height: 15),
+                if (_hasPromotion) ...[
+                  const SizedBox(height: 15),
 
-                // =================================================
-                // DELIVERY / PICKUP
-                // =================================================
+                  _DiscountRow(
+                    promotionTitle: promotionTitle?.trim().isNotEmpty == true
+                        ? promotionTitle!
+                        : 'Promotion Discount',
+                    discountAmount: discountAmount,
+                  ),
+                  const SizedBox(height: 15),
 
-                if (isDelivery)
                   _PriceRow(
-                    icon: Icons.delivery_dining_outlined,
-                    label: 'Delivery Fee',
-                    subtitle: 'Delivery charge',
-                    amount: deliveryFee,
-                  )
-                else
-                  const _PickupRow(),
+                    icon: Icons.savings_outlined,
+                    label: 'Discounted Subtotal',
+                    subtitle: 'After promotion',
+                    amount: subtotal,
+                  ),
+                ],
               ],
             ),
           ),
@@ -87,15 +88,9 @@ class SellerOrderPaymentCard extends StatelessWidget {
           // =====================================================
           // TOTAL
           // =====================================================
-
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              15,
-              16,
-              16,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
             decoration: BoxDecoration(
               color: AppColors.background,
               borderRadius: const BorderRadius.only(
@@ -104,24 +99,19 @@ class SellerOrderPaymentCard extends StatelessWidget {
               ),
               border: Border(
                 top: BorderSide(
-                  color: AppColors.border.withValues(
-                    alpha: 0.30,
-                  ),
+                  color: AppColors.border.withValues(alpha: 0.30),
                 ),
               ),
             ),
             child: Row(
-              crossAxisAlignment:
-                  CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // =================================================
                 // TOTAL LABEL
                 // =================================================
-
                 Expanded(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         'ORDER TOTAL',
@@ -137,14 +127,11 @@ class SellerOrderPaymentCard extends StatelessWidget {
                       const SizedBox(height: 6),
 
                       Text(
-                        isDelivery
-                            ? 'Amount to collect'
-                            : 'Pickup amount',
+                        isDelivery ? 'Amount to collect' : 'Pickup amount',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary
-                              .withValues(
+                          color: AppColors.textSecondary.withValues(
                             alpha: 0.72,
                           ),
                         ),
@@ -158,7 +145,6 @@ class SellerOrderPaymentCard extends StatelessWidget {
                 // =================================================
                 // TOTAL AMOUNT
                 // =================================================
-
                 Text(
                   AppHelpers.formatCurrency(total),
                   style: const TextStyle(
@@ -178,6 +164,93 @@ class SellerOrderPaymentCard extends StatelessWidget {
   }
 }
 
+class _DiscountRow extends StatelessWidget {
+  final String promotionTitle;
+  final double discountAmount;
+
+  const _DiscountRow({
+    required this.promotionTitle,
+    required this.discountAmount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final String displayTitle = promotionTitle.trim().isNotEmpty
+        ? promotionTitle.trim()
+        : 'Promotion Discount';
+
+    return Row(
+      children: [
+        // =========================================================
+        // PROMOTION ICON
+        // =========================================================
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.textPrimary,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(
+            Icons.local_offer_outlined,
+            size: 17,
+            color: Colors.white,
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // =========================================================
+        // PROMOTION TITLE
+        // =========================================================
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                displayTitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.15,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              Text(
+                'Promotion applied',
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary.withValues(alpha: 0.68),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // =========================================================
+        // DISCOUNT
+        // =========================================================
+        Text(
+          '-${AppHelpers.formatCurrency(discountAmount)}',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.15,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
 // ===================================================================
 // PRICE ROW
 // ===================================================================
@@ -202,24 +275,15 @@ class _PriceRow extends StatelessWidget {
         // =========================================================
         // ICON
         // =========================================================
-
         Container(
           width: 40,
           height: 40,
           decoration: BoxDecoration(
             color: AppColors.background,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.border.withValues(
-                alpha: 0.25,
-              ),
-            ),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.25)),
           ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: AppColors.textPrimary,
-          ),
+          child: Icon(icon, size: 18, color: AppColors.textPrimary),
         ),
 
         const SizedBox(width: 12),
@@ -227,11 +291,9 @@ class _PriceRow extends StatelessWidget {
         // =========================================================
         // LABEL
         // =========================================================
-
         Expanded(
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
@@ -251,10 +313,7 @@ class _PriceRow extends StatelessWidget {
                   fontSize: 9.5,
                   height: 1.2,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary
-                      .withValues(
-                    alpha: 0.68,
-                  ),
+                  color: AppColors.textSecondary.withValues(alpha: 0.68),
                 ),
               ),
             ],
@@ -266,7 +325,6 @@ class _PriceRow extends StatelessWidget {
         // =========================================================
         // AMOUNT
         // =========================================================
-
         Text(
           AppHelpers.formatCurrency(amount),
           style: const TextStyle(
@@ -274,113 +332,6 @@ class _PriceRow extends StatelessWidget {
             fontWeight: FontWeight.w900,
             letterSpacing: -0.15,
             color: AppColors.textPrimary,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ===================================================================
-// PICKUP ROW
-// ===================================================================
-
-class _PickupRow extends StatelessWidget {
-  const _PickupRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        // =========================================================
-        // ICON
-        // =========================================================
-
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.border.withValues(
-                alpha: 0.25,
-              ),
-            ),
-          ),
-          child: const Icon(
-            Icons.storefront_outlined,
-            size: 18,
-            color: AppColors.textPrimary,
-          ),
-        ),
-
-        const SizedBox(width: 12),
-
-        // =========================================================
-        // PICKUP INFO
-        // =========================================================
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Pickup',
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.1,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-
-              const SizedBox(height: 4),
-
-              Text(
-                'No delivery fee',
-                style: TextStyle(
-                  fontSize: 9.5,
-                  height: 1.2,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary
-                      .withValues(
-                    alpha: 0.68,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // =========================================================
-        // FREE BADGE
-        // =========================================================
-
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 6,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.border.withValues(
-                alpha: 0.30,
-              ),
-            ),
-          ),
-          child: const Text(
-            'FREE',
-            style: TextStyle(
-              fontSize: 8.5,
-              height: 1,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.45,
-              color: AppColors.textPrimary,
-            ),
           ),
         ),
       ],

@@ -17,7 +17,7 @@ class ReceiptPaymentCard extends StatelessWidget {
     required this.isDelivery,
     required this.subtotal,
     required this.deliveryFee,
-    required this.grandTotal,
+    required this.grandTotal, required double originalSubtotal, required double discountAmount, String? promotionTitle,
   });
 
   @override

@@ -17,9 +17,15 @@ class OrderReceiptScreen extends StatelessWidget {
   final String contactNumber;
   final String? deliveryAddress;
   final String? notes;
+
+  final double originalSubtotal;
+  final double discountAmount;
+  final String? promotionTitle;
+
   final double subtotal;
   final double deliveryFee;
   final double grandTotal;
+
   final List<Map<String, dynamic>> items;
   final DateTime orderDate;
 
@@ -30,33 +36,34 @@ class OrderReceiptScreen extends StatelessWidget {
     required this.contactNumber,
     this.deliveryAddress,
     this.notes,
+
+    required this.originalSubtotal,
+    required this.discountAmount,
+    this.promotionTitle,
+
     required this.subtotal,
     required this.deliveryFee,
     required this.grandTotal,
+
     required this.items,
     required this.orderDate,
   });
 
-  bool get _isDelivery =>
-      orderType.toLowerCase() == 'delivery';
+  bool get _isDelivery => orderType.toLowerCase() == 'delivery';
 
   int get _totalItemCount {
     return items.fold<int>(
       0,
-      (sum, item) =>
-          sum + ((item['quantity'] as num?)?.toInt() ?? 0),
+      (sum, item) => sum + ((item['quantity'] as num?)?.toInt() ?? 0),
     );
   }
 
   String get _shortOrderId {
     if (orderId.isEmpty) return 'ORDER';
 
-    final int length =
-        orderId.length > 8 ? 8 : orderId.length;
+    final int length = orderId.length > 8 ? 8 : orderId.length;
 
-    return orderId
-        .substring(0, length)
-        .toUpperCase();
+    return orderId.substring(0, length).toUpperCase();
   }
 
   @override
@@ -74,15 +81,9 @@ class OrderReceiptScreen extends StatelessWidget {
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
-                    18,
-                    20,
-                    18,
-                    30,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(18, 20, 18, 30),
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ReceiptSuccessHero(
                         orderNumber: _shortOrderId,
@@ -114,13 +115,10 @@ class OrderReceiptScreen extends StatelessWidget {
                         deliveryAddress: deliveryAddress,
                       ),
 
-                      if (notes != null &&
-                          notes!.trim().isNotEmpty) ...[
+                      if (notes != null && notes!.trim().isNotEmpty) ...[
                         const SizedBox(height: 14),
 
-                        ReceiptNotesCard(
-                          notes: notes!.trim(),
-                        ),
+                        ReceiptNotesCard(notes: notes!.trim()),
                       ],
 
                       const SizedBox(height: 28),
@@ -137,15 +135,16 @@ class OrderReceiptScreen extends StatelessWidget {
 
                       ReceiptItemsCard(
                         items: items,
+                        originalSubtotal: originalSubtotal,
+                        discountAmount: discountAmount,
+                        promotionTitle: promotionTitle,
                       ),
-
                       const SizedBox(height: 28),
 
                       const ReceiptSectionHeader(
                         eyebrow: 'PAYMENT',
                         title: 'Order summary',
-                        subtitle:
-                            'A complete breakdown of your order total.',
+                        subtitle: 'A complete breakdown of your order total.',
                         icon: Icons.payments_outlined,
                       ),
 
@@ -154,16 +153,18 @@ class OrderReceiptScreen extends StatelessWidget {
                       ReceiptPaymentCard(
                         itemCount: _totalItemCount,
                         isDelivery: _isDelivery,
+
+                        originalSubtotal: originalSubtotal,
+                        discountAmount: discountAmount,
+                        promotionTitle: promotionTitle,
+
                         subtotal: subtotal,
                         deliveryFee: deliveryFee,
                         grandTotal: grandTotal,
                       ),
-
                       const SizedBox(height: 16),
 
-                      ReceiptTrackingNotice(
-                        isDelivery: _isDelivery,
-                      ),
+                      ReceiptTrackingNotice(isDelivery: _isDelivery),
                     ],
                   ),
                 ),

@@ -17,19 +17,14 @@ import '../widgets/cart_item_card.dart';
 import '../widgets/cart_order_summary.dart';
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({
-    super.key,
-  });
+  const CartScreen({super.key});
 
   @override
-  State<CartScreen> createState() =>
-      _CartScreenState();
+  State<CartScreen> createState() => _CartScreenState();
 }
 
-class _CartScreenState
-    extends State<CartScreen> {
-  final CartService _cartService =
-      CartService();
+class _CartScreenState extends State<CartScreen> {
+  final CartService _cartService = CartService();
 
   // =============================================================
   // LIFECYCLE
@@ -39,16 +34,18 @@ class _CartScreenState
   void initState() {
     super.initState();
 
-    _cartService.addListener(
-      _onCartChanged,
-    );
+    _cartService.addListener(_onCartChanged);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_cartService.items.isNotEmpty) {
+        _cartService.calculatePromotion();
+      }
+    });
   }
 
   @override
   void dispose() {
-    _cartService.removeListener(
-      _onCartChanged,
-    );
+    _cartService.removeListener(_onCartChanged);
 
     super.dispose();
   }
@@ -65,9 +62,7 @@ class _CartScreenState
 
   Future<void> _confirmClearCart() async {
     final bool shouldClear =
-        await showCartClearDialog(
-      context,
-    );
+        await showCartClearDialog(context);
 
     if (!shouldClear) return;
 
@@ -78,12 +73,9 @@ class _CartScreenState
   // CHECKOUT
   // =============================================================
 
-  Future<void>
-      _showCheckoutConfirmation() async {
+  Future<void> _showCheckoutConfirmation() async {
     final bool shouldProceed =
-        await showCartCheckoutDialog(
-      context,
-    );
+        await showCartCheckoutDialog(context);
 
     if (!shouldProceed || !mounted) {
       return;
@@ -104,22 +96,19 @@ class _CartScreenState
           secondaryAnimation,
           child,
         ) {
-          final Animation<double>
-              curvedAnimation =
+          final Animation<double> curvedAnimation =
               CurvedAnimation(
             parent: animation,
             curve: Curves.easeOutCubic,
           );
 
-          final Animation<Offset>
-              slideAnimation =
+          final Animation<Offset> slideAnimation =
               Tween<Offset>(
             begin: const Offset(1, 0),
             end: Offset.zero,
           ).animate(curvedAnimation);
 
-          final Animation<double>
-              fadeAnimation =
+          final Animation<double> fadeAnimation =
               Tween<double>(
             begin: 0,
             end: 1,
@@ -134,9 +123,7 @@ class _CartScreenState
           );
         },
         transitionDuration:
-            const Duration(
-          milliseconds: 320,
-        ),
+            const Duration(milliseconds: 320),
       ),
     );
   }
@@ -146,8 +133,7 @@ class _CartScreenState
   // =============================================================
 
   void _exploreMenu() {
-    Navigator.of(context)
-        .pushAndRemoveUntil(
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) =>
             const MainNavigationScreen(),
@@ -162,22 +148,19 @@ class _CartScreenState
 
   @override
   Widget build(BuildContext context) {
-    final cartItems =
-        _cartService.items;
+    final cartItems = _cartService.items;
 
     final int totalCount =
         cartItems.fold<int>(
       0,
-      (sum, item) =>
-          sum + item.quantity,
+      (sum, item) => sum + item.quantity,
     );
 
     final bool hasItems =
         cartItems.isNotEmpty;
 
     return Scaffold(
-      backgroundColor:
-          AppColors.background,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -189,69 +172,85 @@ class _CartScreenState
             CartHeader(
               totalCount: totalCount,
               hasItems: hasItems,
-              onClear:
-                  _confirmClearCart,
+              onClear: _confirmClearCart,
             ),
 
             // =============================================
-            // CONTENT
+            // CART CONTENT
             // =============================================
 
             Expanded(
               child: hasItems
-                  ? ListView.separated(
-                      padding:
-                          const EdgeInsets
-                              .fromLTRB(
-                        AppConstants
-                            .defaultPadding,
-                        4,
-                        AppConstants
-                            .defaultPadding,
-                        24,
-                      ),
+                  ? ListView(
                       physics:
                           const BouncingScrollPhysics(),
-                      itemCount:
-                          cartItems.length,
-                      separatorBuilder:
-                          (_, _) =>
-                              const SizedBox(
-                        height: 11,
-                      ),
-                      itemBuilder:
-                          (context, index) {
-                        final item =
-                            cartItems[
-                                index];
+                      padding: EdgeInsets.zero,
+                      children: [
+                        // =================================
+                        // CART ITEMS
+                        // =================================
 
-                        return CartItemCard(
-                          item: item,
-                          cartService:
-                              _cartService,
-                        );
-                      },
+                        Padding(
+                          padding:
+                              const EdgeInsets.fromLTRB(
+                            AppConstants.defaultPadding,
+                            4,
+                            AppConstants.defaultPadding,
+                            24,
+                          ),
+                          child: Column(
+                            children: [
+                              for (
+                                int index = 0;
+                                index < cartItems.length;
+                                index++
+                              ) ...[
+                                CartItemCard(
+                                  item:
+                                      cartItems[index],
+                                  cartService:
+                                      _cartService,
+                                ),
+
+                                if (index !=
+                                    cartItems.length - 1)
+                                  const SizedBox(
+                                    height: 11,
+                                  ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        // =================================
+                        // ORDER SUMMARY
+                        // =================================
+
+                        CartOrderSummary(
+                          totalCount: totalCount,
+                          subtotal:
+                              _cartService.subtotal,
+                          promotion:
+                              _cartService
+                                  .appliedPromotion,
+                          isCalculatingPromotion:
+                              _cartService
+                                  .isCalculatingPromotion,
+                          onCheckout:
+                              _showCheckoutConfirmation,
+                        ),
+
+                        // =================================
+                        // BOTTOM SCROLL SPACE
+                        // =================================
+
+                        const SizedBox(height: 24),
+                      ],
                     )
                   : CartEmptyState(
-                      onExplore:
-                          _exploreMenu,
+                      onExplore: _exploreMenu,
                     ),
             ),
-
-            // =============================================
-            // ORDER SUMMARY
-            // =============================================
-
-            if (hasItems)
-              CartOrderSummary(
-                totalCount:
-                    totalCount,
-                subtotal:
-                    _cartService
-                        .subtotal,
-                onCheckout:
-                    _showCheckoutConfirmation,
-              ),
           ],
         ),
       ),
