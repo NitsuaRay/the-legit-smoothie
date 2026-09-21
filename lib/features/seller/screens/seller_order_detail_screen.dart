@@ -5,30 +5,25 @@ import '../../../core/constants/app_constants.dart';
 import '../../../main.dart';
 
 // Seller Order Widgets
-import '../widgets/seller_order_bottom_actions.dart';
-import '../widgets/seller_order_cancellation_card.dart';
-import '../widgets/seller_order_customer_card.dart';
-import '../widgets/seller_order_hero.dart';
-import '../widgets/seller_order_items_card.dart';
-import '../widgets/seller_order_payment_card.dart';
-import '../widgets/seller_order_section_header.dart';
-import '../widgets/seller_order_timeline.dart';
+import '../widgets/orderDetailScreen/seller_order_bottom_actions.dart';
+import '../widgets/orderDetailScreen/seller_order_cancellation_card.dart';
+import '../widgets/orderDetailScreen/seller_order_customer_card.dart';
+import '../widgets/orderDetailScreen/seller_order_hero.dart';
+import '../widgets/orderDetailScreen/seller_order_items_card.dart';
+import '../widgets/orderDetailScreen/seller_order_payment_card.dart';
+import '../widgets/orderDetailScreen/seller_order_section_header.dart';
 
 class SellerOrderDetailScreen extends StatefulWidget {
   final String orderId;
 
-  const SellerOrderDetailScreen({
-    super.key,
-    required this.orderId,
-  });
+  const SellerOrderDetailScreen({super.key, required this.orderId});
 
   @override
   State<SellerOrderDetailScreen> createState() =>
       _SellerOrderDetailScreenState();
 }
 
-class _SellerOrderDetailScreenState
-    extends State<SellerOrderDetailScreen> {
+class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
   // ============================================================
   // STATE
   // ============================================================
@@ -66,7 +61,6 @@ class _SellerOrderDetailScreenState
             user_id,
             status,
             order_type,
-            total_amount,
             delivery_address,
             contact_number,
             notes,
@@ -102,32 +96,24 @@ class _SellerOrderDetailScreenState
               created_at
             )
           ''')
-          .eq(
-            'id',
-            widget.orderId,
-          )
+          .eq('id', widget.orderId)
           .single();
 
       if (!mounted) return;
 
       setState(() {
-        _order = Map<String, dynamic>.from(
-          response,
-        );
+        _order = Map<String, dynamic>.from(response);
 
         _isLoading = false;
       });
     } catch (error) {
-      debugPrint(
-        'Seller order detail error: $error',
-      );
+      debugPrint('Seller order detail error: $error');
 
       if (!mounted) return;
 
       setState(() {
         _isLoading = false;
-        _errorMessage =
-            'Unable to load this order right now.';
+        _errorMessage = 'Unable to load this order right now.';
       });
     }
   }
@@ -137,17 +123,11 @@ class _SellerOrderDetailScreenState
   // ============================================================
 
   String get _status {
-    return _order?['status']
-            ?.toString()
-            .toLowerCase() ??
-        'pending';
+    return _order?['status']?.toString().toLowerCase() ?? 'pending';
   }
 
   String get _orderType {
-    return _order?['order_type']
-            ?.toString()
-            .toLowerCase() ??
-        '';
+    return _order?['order_type']?.toString().toLowerCase() ?? '';
   }
 
   bool get _isDelivery {
@@ -162,11 +142,7 @@ class _SellerOrderDetailScreenState
     final customer = _order?['customer'];
 
     if (customer is Map) {
-      final String name =
-          customer['full_name']
-                  ?.toString()
-                  .trim() ??
-              '';
+      final String name = customer['full_name']?.toString().trim() ?? '';
 
       if (name.isNotEmpty) {
         return name;
@@ -179,10 +155,7 @@ class _SellerOrderDetailScreenState
   String get _phoneNumber {
     // Prefer the number supplied during checkout.
     final String orderPhone =
-        _order?['contact_number']
-                ?.toString()
-                .trim() ??
-            '';
+        _order?['contact_number']?.toString().trim() ?? '';
 
     if (orderPhone.isNotEmpty) {
       return orderPhone;
@@ -192,10 +165,7 @@ class _SellerOrderDetailScreenState
     final customer = _order?['customer'];
 
     if (customer is Map) {
-      return customer['phone_number']
-              ?.toString()
-              .trim() ??
-          '';
+      return customer['phone_number']?.toString().trim() ?? '';
     }
 
     return '';
@@ -214,64 +184,8 @@ class _SellerOrderDetailScreenState
 
     return data
         .whereType<Map>()
-        .map(
-          (item) => Map<String, dynamic>.from(
-            item,
-          ),
-        )
+        .map((item) => Map<String, dynamic>.from(item))
         .toList();
-  }
-
-  // ============================================================
-  // ORDER HISTORY
-  // ============================================================
-
-  List<Map<String, dynamic>> get _history {
-    final data =
-        _order?['order_status_history'];
-
-    if (data is! List) {
-      return [];
-    }
-
-    final history = data
-        .whereType<Map>()
-        .map(
-          (item) => Map<String, dynamic>.from(
-            item,
-          ),
-        )
-        .toList();
-
-    history.sort(
-      (a, b) {
-        final DateTime? aDate =
-            DateTime.tryParse(
-          a['created_at']?.toString() ?? '',
-        );
-
-        final DateTime? bDate =
-            DateTime.tryParse(
-          b['created_at']?.toString() ?? '',
-        );
-
-        if (aDate == null && bDate == null) {
-          return 0;
-        }
-
-        if (aDate == null) {
-          return -1;
-        }
-
-        if (bDate == null) {
-          return 1;
-        }
-
-        return aDate.compareTo(bDate);
-      },
-    );
-
-    return history;
   }
 
   // ============================================================
@@ -279,33 +193,19 @@ class _SellerOrderDetailScreenState
   // ============================================================
 
   double get _subtotal {
-    return (_order?['subtotal'] as num?)
-            ?.toDouble() ??
+    return (_order?['subtotal'] as num?)?.toDouble() ??
         _calculateItemsSubtotal();
   }
 
   double get _deliveryFee {
-    return (_order?['delivery_fee'] as num?)
-            ?.toDouble() ??
-        0;
+    return (_order?['delivery_fee'] as num?)?.toDouble() ?? 0;
   }
 
   double get _total {
-    final double? total =
-        (_order?['total_price'] as num?)
-            ?.toDouble();
+    final double? total = (_order?['total_price'] as num?)?.toDouble();
 
     if (total != null) {
       return total;
-    }
-
-    // Compatibility with the older total_amount column.
-    final double? legacyTotal =
-        (_order?['total_amount'] as num?)
-            ?.toDouble();
-
-    if (legacyTotal != null) {
-      return legacyTotal;
     }
 
     return _subtotal + _deliveryFee;
@@ -315,25 +215,9 @@ class _SellerOrderDetailScreenState
     double total = 0;
 
     for (final item in _items) {
-      final double itemTotal =
-          (item['total_price'] as num?)
-                  ?.toDouble() ??
-              0;
+      final double itemTotal = (item['total_price'] as num?)?.toDouble() ?? 0;
 
       total += itemTotal;
-    }
-
-    return total;
-  }
-
-  int _totalQuantity() {
-    int total = 0;
-
-    for (final item in _items) {
-      total +=
-          (item['quantity'] as num?)
-                  ?.toInt() ??
-              0;
     }
 
     return total;
@@ -352,9 +236,7 @@ class _SellerOrderDetailScreenState
         return 'preparing';
 
       case 'preparing':
-        return _isDelivery
-            ? 'out_for_delivery'
-            : 'ready_for_pickup';
+        return _isDelivery ? 'out_for_delivery' : 'ready_for_pickup';
 
       case 'out_for_delivery':
       case 'ready_for_pickup':
@@ -374,9 +256,7 @@ class _SellerOrderDetailScreenState
         return 'Start Preparing';
 
       case 'preparing':
-        return _isDelivery
-            ? 'Out for Delivery'
-            : 'Ready for Pickup';
+        return _isDelivery ? 'Out for Delivery' : 'Ready for Pickup';
 
       case 'out_for_delivery':
         return 'Mark as Delivered';
@@ -411,13 +291,48 @@ class _SellerOrderDetailScreenState
     }
   }
 
+  DateTime? get _currentStatusChangedAt {
+    final history = _order?['order_status_history'];
+
+    if (history is! List || history.isEmpty) {
+      return null;
+    }
+
+    final currentStatus = _status.toLowerCase();
+
+    final matchingEntries = history
+        .whereType<Map>()
+        .where(
+          (entry) => entry['status']?.toString().toLowerCase() == currentStatus,
+        )
+        .toList();
+
+    if (matchingEntries.isEmpty) {
+      return null;
+    }
+
+    matchingEntries.sort((a, b) {
+      final aDate = DateTime.tryParse(a['created_at']?.toString() ?? '');
+
+      final bDate = DateTime.tryParse(b['created_at']?.toString() ?? '');
+
+      if (aDate == null && bDate == null) return 0;
+      if (aDate == null) return 1;
+      if (bDate == null) return -1;
+
+      return bDate.compareTo(aDate);
+    });
+
+    return DateTime.tryParse(
+      matchingEntries.first['created_at']?.toString() ?? '',
+    )?.toLocal();
+  }
+
   // ============================================================
   // UPDATE ORDER STATUS
   // ============================================================
 
-  Future<void> _updateStatus(
-    String newStatus,
-  ) async {
+  Future<void> _updateStatus(String newStatus) async {
     if (_isUpdatingStatus) {
       return;
     }
@@ -431,13 +346,9 @@ class _SellerOrderDetailScreenState
           .from('orders')
           .update({
             'status': newStatus,
-            'updated_at':
-                DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
           })
-          .eq(
-            'id',
-            widget.orderId,
-          );
+          .eq('id', widget.orderId);
 
       // order_status_history is NOT inserted here.
       // The PostgreSQL trigger handles that automatically.
@@ -463,9 +374,7 @@ class _SellerOrderDetailScreenState
                 Expanded(
                   child: Text(
                     'Order updated to ${_formatStatus(newStatus)}.',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -473,16 +382,12 @@ class _SellerOrderDetailScreenState
             backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                14,
-              ),
+              borderRadius: BorderRadius.circular(14),
             ),
           ),
         );
     } catch (error) {
-      debugPrint(
-        'Update order status error: $error',
-      );
+      debugPrint('Update order status error: $error');
 
       if (!mounted) return;
 
@@ -490,15 +395,11 @@ class _SellerOrderDetailScreenState
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: const Text(
-              'Unable to update the order status.',
-            ),
+            content: const Text('Unable to update the order status.'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                14,
-              ),
+              borderRadius: BorderRadius.circular(14),
             ),
           ),
         );
@@ -516,49 +417,23 @@ class _SellerOrderDetailScreenState
   // ============================================================
 
   Future<void> _showCancelDialog() async {
-    final TextEditingController controller =
-        TextEditingController();
+    final TextEditingController controller = TextEditingController();
 
-    final bool? confirmed =
-        await showDialog<bool>(
+    final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppColors.surface,
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              22,
-            ),
+            borderRadius: BorderRadius.circular(22),
           ),
-          titlePadding:
-              const EdgeInsets.fromLTRB(
-            22,
-            22,
-            22,
-            0,
-          ),
-          contentPadding:
-              const EdgeInsets.fromLTRB(
-            22,
-            14,
-            22,
-            8,
-          ),
-          actionsPadding:
-              const EdgeInsets.fromLTRB(
-            14,
-            6,
-            14,
-            14,
-          ),
+          titlePadding: const EdgeInsets.fromLTRB(22, 22, 22, 0),
+          contentPadding: const EdgeInsets.fromLTRB(22, 14, 22, 8),
+          actionsPadding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
           title: const Row(
             children: [
-              Icon(
-                Icons.cancel_outlined,
-                size: 21,
-                color: AppColors.error,
-              ),
+              Icon(Icons.cancel_outlined, size: 21, color: AppColors.error),
               SizedBox(width: 9),
               Text(
                 'Cancel Order?',
@@ -572,8 +447,7 @@ class _SellerOrderDetailScreenState
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
                 'This will mark the order as cancelled. You can optionally provide a reason for the customer.',
@@ -589,44 +463,30 @@ class _SellerOrderDetailScreenState
               TextField(
                 controller: controller,
                 maxLines: 3,
-                textCapitalization:
-                    TextCapitalization.sentences,
+                textCapitalization: TextCapitalization.sentences,
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
-                  hintText:
-                      'Reason for cancellation...',
+                  hintText: 'Reason for cancellation...',
                   hintStyle: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textSecondary
-                        .withValues(
-                      alpha: 0.65,
-                    ),
+                    color: AppColors.textSecondary.withValues(alpha: 0.65),
                   ),
                   filled: true,
                   fillColor: AppColors.background,
-                  contentPadding:
-                      const EdgeInsets.all(14),
-                  enabledBorder:
-                      OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(14),
+                  contentPadding: const EdgeInsets.all(14),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide(
-                      color: AppColors.border
-                          .withValues(
-                        alpha: 0.5,
-                      ),
+                      color: AppColors.border.withValues(alpha: 0.5),
                     ),
                   ),
-                  focusedBorder:
-                      OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(14),
-                    borderSide:
-                        const BorderSide(
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(
                       color: AppColors.primary,
                       width: 1.2,
                     ),
@@ -638,39 +498,29 @@ class _SellerOrderDetailScreenState
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(
-                  dialogContext,
-                ).pop(false);
+                Navigator.of(dialogContext).pop(false);
               },
               child: const Text(
                 'Keep Order',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
 
             FilledButton(
               onPressed: () {
-                Navigator.of(
-                  dialogContext,
-                ).pop(true);
+                Navigator.of(dialogContext).pop(true);
               },
               style: FilledButton.styleFrom(
                 elevation: 0,
-                backgroundColor:
-                    AppColors.error,
+                backgroundColor: AppColors.error,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: const Text(
                 'Cancel Order',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
           ],
@@ -683,8 +533,7 @@ class _SellerOrderDetailScreenState
       return;
     }
 
-    final String reason =
-        controller.text.trim();
+    final String reason = controller.text.trim();
 
     controller.dispose();
 
@@ -699,15 +548,10 @@ class _SellerOrderDetailScreenState
           .from('orders')
           .update({
             'status': 'cancelled',
-            'cancel_reason':
-                reason.isEmpty ? null : reason,
-            'updated_at':
-                DateTime.now().toIso8601String(),
+            'cancel_reason': reason.isEmpty ? null : reason,
+            'updated_at': DateTime.now().toIso8601String(),
           })
-          .eq(
-            'id',
-            widget.orderId,
-          );
+          .eq('id', widget.orderId);
 
       // Again, order_status_history is handled
       // automatically by the database trigger.
@@ -722,30 +566,20 @@ class _SellerOrderDetailScreenState
           SnackBar(
             content: const Row(
               children: [
-                Icon(
-                  Icons.cancel_outlined,
-                  size: 19,
-                  color: Colors.white,
-                ),
+                Icon(Icons.cancel_outlined, size: 19, color: Colors.white),
                 SizedBox(width: 9),
                 Text(
                   'Order cancelled.',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
-            backgroundColor:
-                AppColors.textPrimary,
-            behavior:
-                SnackBarBehavior.floating,
+            backgroundColor: AppColors.textPrimary,
+            behavior: SnackBarBehavior.floating,
           ),
         );
     } catch (error) {
-      debugPrint(
-        'Cancel order error: $error',
-      );
+      debugPrint('Cancel order error: $error');
 
       if (!mounted) return;
 
@@ -753,9 +587,7 @@ class _SellerOrderDetailScreenState
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: const Text(
-              'Unable to cancel order.',
-            ),
+            content: const Text('Unable to cancel order.'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
@@ -788,9 +620,7 @@ class _SellerOrderDetailScreenState
         surfaceTintColor: Colors.transparent,
 
         leading: Padding(
-          padding: const EdgeInsets.only(
-            left: 12,
-          ),
+          padding: const EdgeInsets.only(left: 12),
           child: IconButton(
             tooltip: 'Back',
             onPressed: () {
@@ -807,8 +637,7 @@ class _SellerOrderDetailScreenState
         titleSpacing: 8,
 
         title: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
@@ -829,10 +658,7 @@ class _SellerOrderDetailScreenState
                 style: TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary
-                      .withValues(
-                    alpha: 0.75,
-                  ),
+                  color: AppColors.textSecondary.withValues(alpha: 0.75),
                 ),
               ),
             ],
@@ -851,38 +677,28 @@ class _SellerOrderDetailScreenState
               ),
             )
           : _errorMessage != null
-              ? _buildError()
-              : _buildContent(),
+          ? _buildError()
+          : _buildContent(),
 
       // ========================================================
       // BOTTOM ORDER ACTION
       // ========================================================
       bottomNavigationBar:
-          !_isLoading &&
-                  _errorMessage == null &&
-                  _order != null
-              ? SellerOrderBottomActions(
-                  status: _status,
-                  primaryActionLabel:
-                      _primaryActionLabel,
-                  primaryActionIcon:
-                      _primaryActionIcon,
-                  isUpdating:
-                      _isUpdatingStatus,
-                  canUpdate:
-                      _nextStatus != null,
-                  onCancelPressed:
-                      _showCancelDialog,
-                  onPrimaryPressed:
-                      _nextStatus == null
-                          ? null
-                          : () {
-                              _updateStatus(
-                                _nextStatus!,
-                              );
-                            },
-                )
-              : null,
+          !_isLoading && _errorMessage == null && _order != null
+          ? SellerOrderBottomActions(
+              status: _status,
+              primaryActionLabel: _primaryActionLabel,
+              primaryActionIcon: _primaryActionIcon,
+              isUpdating: _isUpdatingStatus,
+              canUpdate: _nextStatus != null,
+              onCancelPressed: _showCancelDialog,
+              onPrimaryPressed: _nextStatus == null
+                  ? null
+                  : () {
+                      _updateStatus(_nextStatus!);
+                    },
+            )
+          : null,
     );
   }
 
@@ -891,20 +707,11 @@ class _SellerOrderDetailScreenState
   // ============================================================
 
   Widget _buildContent() {
-    final String address =
-        _order?['delivery_address']
-                ?.toString()
-                .trim() ??
-            '';
+    final String address = _order?['delivery_address']?.toString().trim() ?? '';
 
-    final String notes =
-        _order?['notes']
-                ?.toString()
-                .trim() ??
-            '';
+    final String notes = _order?['notes']?.toString().trim() ?? '';
 
-    final DateTime? createdAt =
-        DateTime.tryParse(
+    final DateTime? createdAt = DateTime.tryParse(
       _order?['created_at']?.toString() ?? '',
     )?.toLocal();
 
@@ -912,8 +719,7 @@ class _SellerOrderDetailScreenState
       color: AppColors.primary,
       onRefresh: _loadOrder,
       child: ListView(
-        physics:
-            const AlwaysScrollableScrollPhysics(
+        physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
         padding: const EdgeInsets.fromLTRB(
@@ -927,18 +733,11 @@ class _SellerOrderDetailScreenState
           // ORDER SUMMARY
           // ==================================================
           SellerOrderHero(
-            orderId:
-                _order?['id']?.toString() ??
-                widget.orderId,
+            orderId: _order?['id']?.toString() ?? widget.orderId,
             status: _status,
-            orderType: _orderType,
             createdAt: createdAt,
-            totalQuantity:
-                _totalQuantity(),
-            total: _total,
-            isDelivery: _isDelivery,
+            statusChangedAt: _currentStatusChangedAt,
           ),
-
           const SizedBox(height: 24),
 
           // ==================================================
@@ -946,17 +745,14 @@ class _SellerOrderDetailScreenState
           // ==================================================
           const SellerOrderSectionHeader(
             title: 'Customer',
-            subtitle:
-                'Customer and fulfillment details.',
+            subtitle: 'Customer and fulfillment details.',
           ),
 
           const SizedBox(height: 11),
-
           SellerOrderCustomerCard(
             customerName: _customerName,
             phoneNumber: _phoneNumber,
-            orderType:
-                _formatOrderType(_orderType),
+            orderType: _orderType,
             address: address,
             notes: notes,
             isDelivery: _isDelivery,
@@ -977,9 +773,7 @@ class _SellerOrderDetailScreenState
 
           const SizedBox(height: 11),
 
-          SellerOrderItemsCard(
-            items: _items,
-          ),
+          SellerOrderItemsCard(items: _items),
 
           const SizedBox(height: 24),
 
@@ -988,8 +782,7 @@ class _SellerOrderDetailScreenState
           // ==================================================
           const SellerOrderSectionHeader(
             title: 'Payment Summary',
-            subtitle:
-                'Order total breakdown.',
+            subtitle: 'Order total breakdown.',
           ),
 
           const SizedBox(height: 11),
@@ -998,25 +791,10 @@ class _SellerOrderDetailScreenState
             subtotal: _subtotal,
             deliveryFee: _deliveryFee,
             total: _total,
+            isDelivery: _isDelivery,
           ),
 
           const SizedBox(height: 24),
-
-          // ==================================================
-          // ORDER PROGRESS
-          // ==================================================
-          const SellerOrderSectionHeader(
-            title: 'Order Progress',
-            subtitle:
-                'Status updates for this order.',
-          ),
-
-          const SizedBox(height: 11),
-
-          SellerOrderTimeline(
-            history: _history,
-            currentStatus: _status,
-          ),
 
           // ==================================================
           // CANCELLATION INFO
@@ -1025,11 +803,7 @@ class _SellerOrderDetailScreenState
             const SizedBox(height: 16),
 
             SellerOrderCancellationCard(
-              reason:
-                  _order?['cancel_reason']
-                          ?.toString()
-                          .trim() ??
-                      '',
+              reason: _order?['cancel_reason']?.toString().trim() ?? '',
             ),
           ],
 
@@ -1049,24 +823,17 @@ class _SellerOrderDetailScreenState
       color: AppColors.primary,
       onRefresh: _loadOrder,
       child: ListView(
-        physics:
-            const AlwaysScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(30),
         children: [
-          SizedBox(
-            height:
-                MediaQuery.sizeOf(context).height *
-                    0.18,
-          ),
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
 
           Center(
             child: Container(
               width: 66,
               height: 66,
               decoration: BoxDecoration(
-                color: AppColors.error.withValues(
-                  alpha: 0.07,
-                ),
+                color: AppColors.error.withValues(alpha: 0.07),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -1093,8 +860,7 @@ class _SellerOrderDetailScreenState
           const SizedBox(height: 6),
 
           Text(
-            _errorMessage ??
-                'Something went wrong.',
+            _errorMessage ?? 'Something went wrong.',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 10.5,
@@ -1108,30 +874,19 @@ class _SellerOrderDetailScreenState
           Center(
             child: OutlinedButton.icon(
               onPressed: _loadOrder,
-              icon: const Icon(
-                Icons.refresh_rounded,
-                size: 17,
-              ),
-              label: const Text(
-                'Try Again',
-              ),
+              icon: const Icon(Icons.refresh_rounded, size: 17),
+              label: const Text('Try Again'),
               style: OutlinedButton.styleFrom(
-                foregroundColor:
-                    AppColors.textPrimary,
-                padding:
-                    const EdgeInsets.symmetric(
+                foregroundColor: AppColors.textPrimary,
+                padding: const EdgeInsets.symmetric(
                   horizontal: 18,
                   vertical: 12,
                 ),
                 side: BorderSide(
-                  color: AppColors.border
-                      .withValues(
-                    alpha: 0.7,
-                  ),
+                  color: AppColors.border.withValues(alpha: 0.7),
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
             ),
@@ -1146,46 +901,18 @@ class _SellerOrderDetailScreenState
   // ============================================================
 
   String _shortOrderId() {
-    final String id =
-        _order?['id']?.toString() ??
-            widget.orderId;
+    final String id = _order?['id']?.toString() ?? widget.orderId;
 
-    final String shortId =
-        id.length >= 6
-            ? id.substring(0, 6)
-            : id;
+    final String shortId = id.length >= 6 ? id.substring(0, 6) : id;
 
     return '#${shortId.toUpperCase()}';
   }
 
-  String _formatOrderType(
-    String type,
-  ) {
-    switch (type.toLowerCase()) {
-      case 'delivery':
-        return 'Delivery';
-
-      case 'pickup':
-        return 'Pickup';
-
-      default:
-        if (type.trim().isEmpty) {
-          return 'Order';
-        }
-
-        return _formatStatus(type);
-    }
-  }
-
-  String _formatStatus(
-    String status,
-  ) {
+  String _formatStatus(String status) {
     return status
         .replaceAll('_', ' ')
         .split(' ')
-        .where(
-          (word) => word.isNotEmpty,
-        )
+        .where((word) => word.isNotEmpty)
         .map(
           (word) =>
               '${word[0].toUpperCase()}'

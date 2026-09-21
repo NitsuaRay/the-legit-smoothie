@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/features/catalog/screens/product_detail_modal.dart';
 import 'package:the_legit_smoothie/features/checkout/screens/checkout_screen.dart';
-import 'package:the_legit_smoothie/shared/widgets/custom_app_bar.dart';
-import 'package:the_legit_smoothie/shared/widgets/main_navigation_screen.dart';
+import 'package:the_legit_smoothie/widgets/custom_app_bar.dart';
+import 'package:the_legit_smoothie/widgets/main_navigation_screen.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';

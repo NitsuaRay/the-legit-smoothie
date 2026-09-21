@@ -3,7 +3,7 @@ import 'package:the_legit_smoothie/core/utils/helpers.dart';
 import 'package:the_legit_smoothie/features/orders/widgets/order_search_filter_bar.dart';
 import 'package:the_legit_smoothie/features/orders/widgets/order_widgets.dart';
 import 'package:the_legit_smoothie/main.dart';
-import 'package:the_legit_smoothie/shared/widgets/custom_app_bar.dart';
+import 'package:the_legit_smoothie/widgets/custom_app_bar.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import 'order_tracking_screen.dart';

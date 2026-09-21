@@ -1,15 +1,18 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:philippines_rpcmb/philippines_rpcmb.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:the_legit_smoothie/shared/widgets/custom_app_bar.dart';
+import 'package:the_legit_smoothie/features/auth/screens/login_screen.dart';
+import 'package:the_legit_smoothie/features/profile/widgets/customer_profile_header.dart';
+import 'package:the_legit_smoothie/features/profile/widgets/customer_profile_identity_card.dart';
+import 'package:the_legit_smoothie/features/profile/widgets/customer_profile_info_card.dart';
+import 'package:the_legit_smoothie/features/profile/widgets/customer_profile_sections.dart';
+import 'package:the_legit_smoothie/features/profile/widgets/philippine_address_picker.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../features/auth/screens/login_screen.dart';
-import '../../../main.dart';
-import '../widgets/profile_header.dart';
-import '../widgets/user_information_section.dart';
-import '../widgets/delivery_information_section.dart';
 
 class ProfileScreen extends StatefulWidget {
   final bool showBackButton;
@@ -21,1540 +24,1742 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _fullNameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  final ImagePicker _imagePicker = ImagePicker();
+
+  static const String _avatarBucket = 'avatars';
 
   bool _isLoading = true;
+  bool _isRefreshing = false;
+  bool _isLoggingOut = false;
+  bool _isUpdatingAvatar = false;
+
+  Map<String, dynamic>? _profile;
+
+  // =============================================================
+  // LIFECYCLE
+  // =============================================================
 
   @override
   void initState() {
     super.initState();
-    _loadProfileData();
+
+    _loadProfile();
   }
 
-  @override
-  void dispose() {
-    _fullNameController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    super.dispose();
-  }
+  // =============================================================
+  // LOAD PROFILE
+  // =============================================================
 
-  Future<void> _loadProfileData() async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
+  Future<void> _loadProfile({bool refresh = false}) async {
+    final User? user = _supabase.auth.currentUser;
 
-    _fullNameController.text = user.userMetadata?['full_name'] ?? '';
+    if (user == null) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _isRefreshing = false;
+      });
+
+      return;
+    }
+
+    if (refresh && mounted) {
+      setState(() {
+        _isRefreshing = true;
+      });
+    }
 
     try {
-      final data = await supabase
+      final Map<String, dynamic> response = await _supabase
           .from('profiles')
-          .select('phone_number, default_address, full_name')
+          .select('''
+                id,
+                full_name,
+                phone_number,
+                default_address,
+                role,
+                avatar_url,
+                created_at,
+                updated_at
+              ''')
           .eq('id', user.id)
-          .maybeSingle();
+          .single();
 
-      if (data != null) {
-        if (data['full_name'] != null &&
-            (data['full_name'] as String).isNotEmpty) {
-          _fullNameController.text = data['full_name'];
-        }
-        _phoneController.text = data['phone_number'] ?? '';
-        _addressController.text = data['default_address'] ?? '';
-      }
-    } catch (e) {
-      debugPrint('Error fetching profile: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  // --- Helper to persist changes to Supabase ---
-  Future<void> _saveField({
-    required String fieldName,
-    required Future<void> Function() onSave,
-  }) async {
-    try {
-      await onSave();
       if (!mounted) return;
-      setState(() {});
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$fieldName updated successfully!'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    } catch (e) {
+
+      setState(() {
+        _profile = response;
+        _isLoading = false;
+        _isRefreshing = false;
+      });
+    } on PostgrestException catch (error) {
+      debugPrint('CUSTOMER PROFILE POSTGREST ERROR');
+      debugPrint('Code: ${error.code}');
+      debugPrint('Message: ${error.message}');
+      debugPrint('Details: ${error.details}');
+      debugPrint('Hint: ${error.hint}');
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+
+      setState(() {
+        _isLoading = false;
+        _isRefreshing = false;
+      });
+
+      _showMessage('Unable to load profile: ${error.message}', isError: true);
+    } catch (error) {
+      debugPrint('CUSTOMER PROFILE ERROR: $error');
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _isRefreshing = false;
+      });
+
+      _showMessage('Unable to load your profile.', isError: true);
+    }
+  }
+
+  // =============================================================
+  // MESSAGE
+  // =============================================================
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
         SnackBar(
-          content: Text('Failed to update $fieldName: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
-  // --- 1. Edit Full Name Dialog ---
-  void _showNameDialog() {
-    final formKey = GlobalKey<FormState>();
-    final tempController = TextEditingController(
-      text: _fullNameController.text,
-    );
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        bool isSaving = false;
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Dialog(
-              backgroundColor: AppColors.surface,
-              elevation: 12,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.4),
-                  width: 1,
-                ),
-              ),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 420),
-                padding: const EdgeInsets.all(24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header Row with Icon & Title
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.person_outline_rounded,
-                              color: AppColors.primary,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Edit Full Name',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                    letterSpacing: -0.3,
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  'Enter your primary full name',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: isSaving
-                                ? null
-                                : () => Navigator.pop(dialogContext),
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              size: 20,
-                              color: AppColors.textSecondary,
-                            ),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Input Form Field
-                      Form(
-                        key: formKey,
-                        child: TextFormField(
-                          controller: tempController,
-                          autofocus: true,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textPrimary,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: 'Full Name',
-                            labelStyle: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.badge_outlined,
-                              size: 20,
-                              color: AppColors.textSecondary,
-                            ),
-                            filled: true,
-                            fillColor: AppColors.background.withValues(
-                              alpha: 0.5,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: AppColors.border.withValues(alpha: 0.6),
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: AppColors.border.withValues(alpha: 0.6),
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: AppColors.primary,
-                                width: 1.5,
-                              ),
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: AppColors.error,
-                              ),
-                            ),
-                          ),
-                          validator: (val) => val == null || val.trim().isEmpty
-                              ? 'Name cannot be empty'
-                              : null,
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Actions Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                side: BorderSide(
-                                  color: AppColors.border.withValues(
-                                    alpha: 0.8,
-                                  ),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: isSaving
-                                  ? null
-                                  : () => Navigator.pop(dialogContext),
-                              child: const Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: isSaving
-                                  ? null
-                                  : () async {
-                                      if (formKey.currentState!.validate()) {
-                                        setDialogState(() => isSaving = true);
-                                        final newName = tempController.text
-                                            .trim();
-                                        final user = supabase.auth.currentUser;
-
-                                        if (user != null) {
-                                          await _saveField(
-                                            fieldName: 'Full Name',
-                                            onSave: () async {
-                                              await supabase.auth.updateUser(
-                                                UserAttributes(
-                                                  data: {'full_name': newName},
-                                                ),
-                                              );
-                                              await supabase
-                                                  .from('profiles')
-                                                  .upsert({
-                                                    'id': user.id,
-                                                    'full_name': newName,
-                                                    'updated_at': DateTime.now()
-                                                        .toIso8601String(),
-                                                  });
-                                              _fullNameController.text =
-                                                  newName;
-                                            },
-                                          );
-                                        }
-
-                                        if (dialogContext.mounted) {
-                                          Navigator.pop(dialogContext);
-                                        }
-                                      }
-                                    },
-                              child: isSaving
-                                  ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Save Name',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // --- 2. Edit Phone Dialog (intl_phone_number_input) ---
-  void _showPhoneDialog() {
-    final formKey = GlobalKey<FormState>();
-    PhoneNumber phoneNumber = PhoneNumber(
-      isoCode: 'PH',
-      phoneNumber: _phoneController.text,
-    );
-    String rawPhone = _phoneController.text;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        bool isSaving = false;
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Dialog(
-              backgroundColor: AppColors.surface,
-              elevation: 12,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.4),
-                  width: 1,
-                ),
-              ),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 420),
-                padding: const EdgeInsets.all(24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header Row with Icon & Title
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.phone_iphone_rounded,
-                              color: AppColors.primary,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Update Phone Number',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                    letterSpacing: -0.3,
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  'Enter your primary mobile number',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: isSaving
-                                ? null
-                                : () => Navigator.pop(dialogContext),
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              size: 20,
-                              color: AppColors.textSecondary,
-                            ),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Input Form Field
-                      Form(
-                        key: formKey,
-                        child: Theme(
-                          data: Theme.of(context).copyWith(
-                            textTheme: Theme.of(context).textTheme.copyWith(
-                              bodyMedium: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                          child: InternationalPhoneNumberInput(
-                            onInputChanged: (phone) {
-                              rawPhone = phone.phoneNumber ?? '';
-                            },
-                            initialValue: phoneNumber,
-                            selectorConfig: const SelectorConfig(
-                              selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
-                              useEmoji: true,
-                              setSelectorButtonAsPrefixIcon: true,
-                              leadingPadding: 12,
-                            ),
-                            countries: const ['PH'],
-                            formatInput: true,
-                            keyboardType: TextInputType.phone,
-                            textStyle: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                            inputDecoration: InputDecoration(
-                              labelText: 'Mobile Number',
-                              labelStyle: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textSecondary,
-                              ),
-                              filled: true,
-                              fillColor: AppColors.background.withValues(
-                                alpha: 0.5,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: AppColors.border.withValues(
-                                    alpha: 0.6,
-                                  ),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: AppColors.border.withValues(
-                                    alpha: 0.6,
-                                  ),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: AppColors.primary,
-                                  width: 1.5,
-                                ),
-                              ),
-                              errorBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: AppColors.error,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Actions Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                side: BorderSide(
-                                  color: AppColors.border.withValues(
-                                    alpha: 0.8,
-                                  ),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: isSaving
-                                  ? null
-                                  : () => Navigator.pop(dialogContext),
-                              child: const Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: isSaving
-                                  ? null
-                                  : () async {
-                                      if (formKey.currentState!.validate()) {
-                                        setDialogState(() => isSaving = true);
-                                        final user = supabase.auth.currentUser;
-
-                                        if (user != null) {
-                                          await _saveField(
-                                            fieldName: 'Phone Number',
-                                            onSave: () async {
-                                              await supabase
-                                                  .from('profiles')
-                                                  .upsert({
-                                                    'id': user.id,
-                                                    'phone_number': rawPhone,
-                                                    'updated_at': DateTime.now()
-                                                        .toIso8601String(),
-                                                  });
-                                              _phoneController.text = rawPhone;
-                                            },
-                                          );
-                                        }
-
-                                        if (dialogContext.mounted) {
-                                          Navigator.pop(dialogContext);
-                                        }
-                                      }
-                                    },
-                              child: isSaving
-                                  ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Save Phone',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showAddressDialog() {
-    final formKey = GlobalKey<FormState>();
-    final streetController = TextEditingController();
-
-    // philippines_rpcmb uses the global philippineRegions list.
-    final List<Region> regions = philippineRegions;
-
-    // Default to NCR.
-    Region selectedRegion = regions.firstWhere(
-      (r) => r.regionName.toLowerCase() == 'ncr',
-      orElse: () => regions.first,
-    );
-
-    // Find the NCR province/district containing Quezon City.
-    List<Province> provinces = selectedRegion.provinces;
-
-    Province? selectedProvince;
-
-    for (final province in provinces) {
-      final hasQuezonCity = province.municipalities.any(
-        (municipality) =>
-            municipality.name.toLowerCase().contains('quezon city'),
-      );
-
-      if (hasQuezonCity) {
-        selectedProvince = province;
-        break;
-      }
-    }
-
-    // Fallback to first province.
-    selectedProvince ??= provinces.isNotEmpty ? provinces.first : null;
-
-    // Get municipalities from selected province.
-    List<Municipality> municipalities = selectedProvince?.municipalities ?? [];
-
-    // Default to Quezon City.
-    Municipality? selectedMunicipality;
-
-    for (final municipality in municipalities) {
-      if (municipality.name.toLowerCase().contains('quezon city')) {
-        selectedMunicipality = municipality;
-        break;
-      }
-    }
-
-    // Fallback to first municipality.
-    selectedMunicipality ??= municipalities.isNotEmpty
-        ? municipalities.first
-        : null;
-
-    // philippines_rpcmb uses String for barangays.
-    List<String> barangays = selectedMunicipality?.barangays ?? [];
-
-    String? selectedBarangay = barangays.isNotEmpty ? barangays.first : null;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        bool isSaving = false;
-
-        // Premium Input Field Decoration Helper
-        InputDecoration buildInputDecoration({
-          required String labelText,
-          required IconData prefixIcon,
-        }) {
-          return InputDecoration(
-            labelText: labelText,
-            labelStyle: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
-            ),
-            prefixIcon: Icon(
-              prefixIcon,
-              size: 20,
-              color: AppColors.textSecondary,
-            ),
-            filled: true,
-            fillColor: AppColors.background.withValues(alpha: 0.5),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: AppColors.border.withValues(alpha: 0.6),
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: AppColors.border.withValues(alpha: 0.6),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.5,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
-          );
-        }
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Dialog(
-              backgroundColor: AppColors.surface,
-              elevation: 12,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.4),
-                  width: 1,
-                ),
-              ),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 440),
-                padding: const EdgeInsets.all(24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header Row with Icon & Title
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.location_on_rounded,
-                              color: AppColors.primary,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Update Address',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                    letterSpacing: -0.3,
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  'Select your location details below',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: isSaving
-                                ? null
-                                : () => Navigator.pop(dialogContext),
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              size: 20,
-                              color: AppColors.textSecondary,
-                            ),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Form Fields Section
-                      Form(
-                        key: formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // --- Region ---
-                            DropdownButtonFormField<Region>(
-                              initialValue: selectedRegion,
-                              isExpanded: true,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              decoration: buildInputDecoration(
-                                labelText: 'Region',
-                                prefixIcon: Icons.map_outlined,
-                              ),
-                              items: regions.map((region) {
-                                return DropdownMenuItem<Region>(
-                                  value: region,
-                                  child: Text(
-                                    region.regionName,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                if (value == null) return;
-                                setDialogState(() {
-                                  selectedRegion = value;
-                                  provinces = selectedRegion.provinces;
-                                  selectedProvince = null;
-
-                                  for (final province in provinces) {
-                                    final hasQuezonCity = province
-                                        .municipalities
-                                        .any(
-                                          (m) => m.name.toLowerCase().contains(
-                                            'quezon city',
-                                          ),
-                                        );
-                                    if (hasQuezonCity) {
-                                      selectedProvince = province;
-                                      break;
-                                    }
-                                  }
-
-                                  selectedProvince ??= provinces.isNotEmpty
-                                      ? provinces.first
-                                      : null;
-                                  municipalities =
-                                      selectedProvince?.municipalities ?? [];
-                                  selectedMunicipality = null;
-
-                                  for (final municipality in municipalities) {
-                                    if (municipality.name
-                                        .toLowerCase()
-                                        .contains('quezon city')) {
-                                      selectedMunicipality = municipality;
-                                      break;
-                                    }
-                                  }
-
-                                  selectedMunicipality ??=
-                                      municipalities.isNotEmpty
-                                      ? municipalities.first
-                                      : null;
-                                  barangays =
-                                      selectedMunicipality?.barangays ?? [];
-                                  selectedBarangay = barangays.isNotEmpty
-                                      ? barangays.first
-                                      : null;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 12),
-
-                            // --- Province / District ---
-                            if (provinces.isNotEmpty) ...[
-                              DropdownButtonFormField<Province>(
-                                initialValue: selectedProvince,
-                                isExpanded: true,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                decoration: buildInputDecoration(
-                                  labelText: 'Province / District',
-                                  prefixIcon: Icons.explore_outlined,
-                                ),
-                                items: provinces.map((province) {
-                                  return DropdownMenuItem<Province>(
-                                    value: province,
-                                    child: Text(
-                                      province.name,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  if (value == null) return;
-                                  setDialogState(() {
-                                    selectedProvince = value;
-                                    municipalities =
-                                        selectedProvince!.municipalities;
-                                    selectedMunicipality =
-                                        municipalities.isNotEmpty
-                                        ? municipalities.first
-                                        : null;
-                                    barangays =
-                                        selectedMunicipality?.barangays ?? [];
-                                    selectedBarangay = barangays.isNotEmpty
-                                        ? barangays.first
-                                        : null;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-
-                            // --- City / Municipality ---
-                            if (municipalities.isNotEmpty) ...[
-                              DropdownButtonFormField<Municipality>(
-                                initialValue: selectedMunicipality,
-                                isExpanded: true,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                decoration: buildInputDecoration(
-                                  labelText: 'City / Municipality',
-                                  prefixIcon: Icons.location_city_outlined,
-                                ),
-                                items: municipalities.map((municipality) {
-                                  return DropdownMenuItem<Municipality>(
-                                    value: municipality,
-                                    child: Text(
-                                      municipality.name,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  if (value == null) return;
-                                  setDialogState(() {
-                                    selectedMunicipality = value;
-                                    barangays = selectedMunicipality!.barangays;
-                                    selectedBarangay = barangays.isNotEmpty
-                                        ? barangays.first
-                                        : null;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-
-                            // --- Barangay ---
-                            if (barangays.isNotEmpty) ...[
-                              DropdownButtonFormField<String>(
-                                initialValue: selectedBarangay,
-                                isExpanded: true,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                decoration: buildInputDecoration(
-                                  labelText: 'Barangay',
-                                  prefixIcon: Icons.holiday_village_outlined,
-                                ),
-                                items: barangays.map((barangay) {
-                                  return DropdownMenuItem<String>(
-                                    value: barangay,
-                                    child: Text(
-                                      barangay,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  if (value == null) return;
-                                  setDialogState(() {
-                                    selectedBarangay = value;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-
-                            // --- Street / House Details ---
-                            TextFormField(
-                              controller: streetController,
-                              maxLines: 2,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              decoration: buildInputDecoration(
-                                labelText: 'House No., Street Name, Building',
-                                prefixIcon: Icons.home_outlined,
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter street details';
-                                }
-                                return null;
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Actions Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                side: BorderSide(
-                                  color: AppColors.border.withValues(
-                                    alpha: 0.8,
-                                  ),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: isSaving
-                                  ? null
-                                  : () => Navigator.pop(dialogContext),
-                              child: const Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: isSaving
-                                  ? null
-                                  : () async {
-                                      if (!formKey.currentState!.validate()) {
-                                        return;
-                                      }
-
-                                      setDialogState(() => isSaving = true);
-
-                                      final formattedParts = <String>[
-                                        streetController.text.trim(),
-                                        if (selectedBarangay != null)
-                                          'Brgy. $selectedBarangay',
-                                        if (selectedMunicipality != null)
-                                          selectedMunicipality!.name,
-                                        if (selectedProvince != null)
-                                          selectedProvince!.name,
-                                        selectedRegion.regionName,
-                                      ];
-
-                                      final fullAddress = formattedParts
-                                          .where((part) => part.isNotEmpty)
-                                          .join(', ');
-
-                                      final user = supabase.auth.currentUser;
-
-                                      if (user != null) {
-                                        await _saveField(
-                                          fieldName: 'Address',
-                                          onSave: () async {
-                                            await supabase
-                                                .from('profiles')
-                                                .upsert({
-                                                  'id': user.id,
-                                                  'default_address':
-                                                      fullAddress,
-                                                  'updated_at': DateTime.now()
-                                                      .toIso8601String(),
-                                                });
-
-                                            _addressController.text =
-                                                fullAddress;
-                                          },
-                                        );
-                                      }
-
-                                      if (dialogContext.mounted) {
-                                        Navigator.pop(dialogContext);
-                                      }
-                                    },
-                              child: isSaving
-                                  ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Save Address',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _handleSignOut() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return Dialog(
-          backgroundColor: AppColors.surface,
-          elevation: 12,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(
-              color: AppColors.border.withValues(alpha: 0.4),
-              width: 1,
-            ),
+          content: Text(
+            message,
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
+          backgroundColor: isError
+              ? Colors.red.shade700
+              : AppColors.textPrimary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+  }
+
+  // =============================================================
+  // AVATAR OPTIONS
+  // =============================================================
+
+  Future<void> _showAvatarOptions() async {
+    if (_isUpdatingAvatar) return;
+
+    final String currentAvatar =
+        _profile?['avatar_url']?.toString().trim() ?? '';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.38),
+      builder: (BuildContext sheetContext) {
+        return SafeArea(
+          top: false,
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 400),
-            padding: const EdgeInsets.all(24),
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.40),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.10),
+                  blurRadius: 30,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Row with Destructive Accent Icon
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.textPrimary,
+                        borderRadius: BorderRadius.circular(15),
                       ),
                       child: const Icon(
-                        Icons.logout_rounded,
-                        color: AppColors.error,
-                        size: 22,
+                        Icons.photo_camera_outlined,
+                        size: 21,
+                        color: Colors.white,
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    const Expanded(
+
+                    const SizedBox(width: 13),
+
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Log Out',
+                            'PROFILE PHOTO',
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                              letterSpacing: -0.3,
+                              fontSize: 7,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.1,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.62,
+                              ),
                             ),
                           ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Confirm session termination',
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Edit avatar',
                             style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            'Take a new photo or choose one from your gallery.',
+                            style: TextStyle(
+                              fontSize: 9,
+                              height: 1.4,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.72,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    IconButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(false),
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        size: 20,
-                        color: AppColors.textSecondary,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
 
-                // Confirmation Prompt Body
-                const Text(
-                  'Are you sure you want to log out? You will need to sign back in to access your profile and saved data.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.4,
-                    color: AppColors.textSecondary,
+                const SizedBox(height: 22),
+
+                _AvatarOption(
+                  icon: Icons.photo_camera_outlined,
+                  title: 'Take a picture',
+                  subtitle: 'Use your camera to take a new profile photo.',
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+
+                    _pickAndUploadAvatar(ImageSource.camera);
+                  },
+                ),
+
+                const SizedBox(height: 8),
+
+                _AvatarOption(
+                  icon: Icons.photo_library_outlined,
+                  title: 'Choose from gallery',
+                  subtitle: 'Select an existing photo from your device.',
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+
+                    _pickAndUploadAvatar(ImageSource.gallery);
+                  },
+                ),
+
+                if (currentAvatar.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+
+                  _AvatarOption(
+                    icon: Icons.delete_outline_rounded,
+                    title: 'Remove photo',
+                    subtitle: 'Return to the default profile avatar.',
+                    destructive: true,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+
+                      _removeAvatar();
+                    },
                   ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Action Buttons Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(
-                            color: AppColors.border.withValues(alpha: 0.8),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () => Navigator.of(dialogContext).pop(false),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () => Navigator.of(dialogContext).pop(true),
-                        child: const Text(
-                          'Log Out',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ],
             ),
           ),
         );
       },
     );
+  }
 
-    if (confirm != true) return;
+  // =============================================================
+  // PICK + UPLOAD AVATAR
+  //
+  // IMPORTANT:
+  // Uses the SAME approach as the previously working customer
+  // avatar implementation:
+  //
+  // avatars/<user-id>/avatar_<timestamp>.jpg
+  // upload()
+  // upsert: false
+  // =============================================================
+
+  Future<void> _pickAndUploadAvatar(ImageSource source) async {
+    if (_isUpdatingAvatar) return;
 
     try {
-      await supabase.auth.signOut();
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
+      final XFile? pickedImage = await _imagePicker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        preferredCameraDevice: CameraDevice.front,
       );
-    } catch (e) {
+
+      if (pickedImage == null) {
+        return;
+      }
+
+      final User? user = _supabase.auth.currentUser;
+
+      if (user == null) {
+        _showMessage('You are not signed in.', isError: true);
+
+        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _isUpdatingAvatar = true;
+        });
+      }
+
+      final File file = File(pickedImage.path);
+
+      final String extension = pickedImage.path.split('.').last.toLowerCase();
+
+      final String safeExtension =
+          ['jpg', 'jpeg', 'png', 'webp'].contains(extension)
+          ? extension
+          : 'jpg';
+
+      final int timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      final String storagePath = '${user.id}/avatar_$timestamp.$safeExtension';
+
+      final String? previousAvatarUrl = _profile?['avatar_url']
+          ?.toString()
+          .trim();
+
+      await _supabase.storage
+          .from(_avatarBucket)
+          .upload(
+            storagePath,
+            file,
+            fileOptions: FileOptions(
+              cacheControl: '3600',
+              upsert: false,
+              contentType: _getAvatarContentType(safeExtension),
+            ),
+          );
+
+      final String publicUrl = _supabase.storage
+          .from(_avatarBucket)
+          .getPublicUrl(storagePath);
+
+      await _supabase
+          .from('profiles')
+          .update({
+            'avatar_url': publicUrl,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', user.id);
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error signing out: $e'),
-          backgroundColor: AppColors.error,
-        ),
+
+      setState(() {
+        if (_profile != null) {
+          _profile!['avatar_url'] = publicUrl;
+
+          _profile!['updated_at'] = DateTime.now().toUtc().toIso8601String();
+        }
+      });
+
+      _showMessage(
+        source == ImageSource.camera
+            ? 'Profile photo captured successfully.'
+            : 'Profile photo updated successfully.',
       );
+
+      if (previousAvatarUrl != null &&
+          previousAvatarUrl.isNotEmpty &&
+          previousAvatarUrl != publicUrl) {
+        await _deleteAvatarObject(previousAvatarUrl);
+      }
+    } on StorageException catch (error) {
+      debugPrint('CUSTOMER AVATAR STORAGE ERROR');
+      debugPrint('Message: ${error.message}');
+      debugPrint('Status: ${error.statusCode}');
+
+      if (!mounted) return;
+
+      _showMessage(
+        'Unable to upload profile photo: ${error.message}',
+        isError: true,
+      );
+    } on PostgrestException catch (error) {
+      debugPrint('CUSTOMER AVATAR PROFILE ERROR: ${error.message}');
+
+      if (!mounted) return;
+
+      _showMessage(
+        'Photo uploaded, but your profile could not be updated.',
+        isError: true,
+      );
+    } catch (error) {
+      debugPrint('CUSTOMER AVATAR ERROR: $error');
+
+      if (!mounted) return;
+
+      _showMessage('Unable to update profile photo.', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingAvatar = false;
+        });
+      }
     }
   }
 
+  String _getAvatarContentType(String extension) {
+    switch (extension) {
+      case 'png':
+        return 'image/png';
+
+      case 'webp':
+        return 'image/webp';
+
+      case 'jpeg':
+      case 'jpg':
+      default:
+        return 'image/jpeg';
+    }
+  }
+
+  // =============================================================
+  // DELETE AVATAR OBJECT
+  // =============================================================
+
+  Future<void> _deleteAvatarObject(String avatarUrl) async {
+    try {
+      final User? user = _supabase.auth.currentUser;
+
+      if (user == null) return;
+
+      final Uri uri = Uri.parse(avatarUrl);
+
+      if (uri.pathSegments.isEmpty) {
+        return;
+      }
+
+      final String fileName = uri.pathSegments.last;
+
+      final String storagePath = '${user.id}/$fileName';
+
+      await _supabase.storage.from(_avatarBucket).remove([storagePath]);
+    } catch (error) {
+      debugPrint('CUSTOMER OLD AVATAR CLEANUP ERROR: $error');
+    }
+  }
+
+  // =============================================================
+  // REMOVE AVATAR
+  // =============================================================
+
+  Future<void> _removeAvatar() async {
+    if (_isUpdatingAvatar) return;
+
+    final User? user = _supabase.auth.currentUser;
+
+    if (user == null) return;
+
+    final String? currentAvatar = _profile?['avatar_url']?.toString().trim();
+
+    if (mounted) {
+      setState(() {
+        _isUpdatingAvatar = true;
+      });
+    }
+
+    try {
+      await _supabase
+          .from('profiles')
+          .update({
+            'avatar_url': null,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', user.id);
+
+      if (currentAvatar != null && currentAvatar.isNotEmpty) {
+        await _deleteAvatarObject(currentAvatar);
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        if (_profile != null) {
+          _profile!['avatar_url'] = null;
+        }
+      });
+
+      _showMessage('Profile photo removed.');
+    } on PostgrestException catch (error) {
+      if (!mounted) return;
+
+      _showMessage(
+        'Unable to remove profile photo: ${error.message}',
+        isError: true,
+      );
+    } catch (error) {
+      debugPrint('REMOVE CUSTOMER AVATAR ERROR: $error');
+
+      if (!mounted) return;
+
+      _showMessage('Unable to remove profile photo.', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingAvatar = false;
+        });
+      }
+    }
+  }
+
+  // =============================================================
+  // EDIT PROFILE
+  // =============================================================
+
+  Future<void> _showEditProfileSheet() async {
+    final Map<String, dynamic>? profile = _profile;
+
+    if (profile == null) return;
+
+    final String initialName = profile['full_name']?.toString().trim() ?? '';
+
+    final String initialPhone =
+        profile['phone_number']?.toString().trim() ?? '';
+
+    final String initialAddress =
+        profile['default_address']?.toString().trim() ?? '';
+
+    final _CustomerProfileEditResult? result =
+        await showModalBottomSheet<_CustomerProfileEditResult>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          barrierColor: Colors.black.withValues(alpha: 0.40),
+          builder: (BuildContext context) {
+            return _CustomerEditProfileSheet(
+              initialName: initialName,
+              initialPhone: initialPhone,
+              initialAddress: initialAddress,
+
+              // This is your existing Philippine hierarchy.
+              regions: philippineRegions,
+            );
+          },
+        );
+
+    if (result == null) return;
+
+    await _saveProfileChanges(
+      fullName: result.fullName,
+      phone: result.phone,
+      address: result.address,
+    );
+  }
+
+  // =============================================================
+  // SAVE PROFILE
+  // =============================================================
+
+  Future<void> _saveProfileChanges({
+    required String fullName,
+    required String phone,
+    required String address,
+  }) async {
+    final User? user = _supabase.auth.currentUser;
+
+    if (user == null) {
+      _showMessage('You are not signed in.', isError: true);
+
+      return;
+    }
+
+    try {
+      await _supabase
+          .from('profiles')
+          .update({
+            'full_name': fullName.trim(),
+            'phone_number': phone.trim().isEmpty ? null : phone.trim(),
+            'default_address': address.trim().isEmpty ? null : address.trim(),
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', user.id);
+
+      await _loadProfile(refresh: true);
+
+      if (!mounted) return;
+
+      _showMessage('Profile updated successfully.');
+    } on PostgrestException catch (error) {
+      debugPrint('UPDATE CUSTOMER PROFILE ERROR: ${error.message}');
+
+      if (!mounted) return;
+
+      _showMessage('Unable to update profile: ${error.message}', isError: true);
+    } catch (error) {
+      debugPrint('UPDATE CUSTOMER PROFILE ERROR: $error');
+
+      if (!mounted) return;
+
+      _showMessage('Unable to update profile.', isError: true);
+    }
+  }
+
+  // =============================================================
+  // LOGOUT CONFIRMATION
+  // =============================================================
+
+  Future<void> _confirmLogout() async {
+    if (_isLoggingOut) return;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.42),
+      builder: (BuildContext dialogContext) {
+        return const _CustomerLogoutDialog();
+      },
+    );
+
+    if (confirmed == true) {
+      await _logout();
+    }
+  }
+
+  // =============================================================
+  // LOGOUT
+  // =============================================================
+
+  Future<void> _logout() async {
+  if (_isLoggingOut) return;
+
+  setState(() {
+    _isLoggingOut = true;
+  });
+
+  try {
+    // Sign out locally first.
+    await _supabase.auth.signOut(
+      scope: SignOutScope.local,
+    );
+
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+      (Route<dynamic> route) => false,
+    );
+  } catch (error) {
+    debugPrint('Customer LOGOUT ERROR: $error');
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoggingOut = false;
+    });
+
+    _showMessage(
+      'Unable to log out. Please try again.',
+      isError: true,
+    );
+  }
+}
+
+  // =============================================================
+  // BUILD
+  // =============================================================
+
   @override
   Widget build(BuildContext context) {
-    final user = supabase.auth.currentUser;
+    final User? user = _supabase.auth.currentUser;
 
-    final fullName = _fullNameController.text.isNotEmpty
-        ? _fullNameController.text
-        : (user?.userMetadata?['full_name'] ?? 'Smoothie Lover');
+    final String rawName = _profile?['full_name']?.toString().trim() ?? '';
 
-    final email = user?.email ?? '';
+    final String name = rawName.isEmpty ? 'Customer' : rawName;
 
-    // ----------------------------------------
-    // Display-only phone formatting
-    // ----------------------------------------
-    String formatPhoneNumber(String phone) {
-      final value = phone.trim();
+    final String phone = _profile?['phone_number']?.toString().trim() ?? '';
 
-      if (value.isEmpty) return 'Not set';
+    final String address =
+        _profile?['default_address']?.toString().trim() ?? '';
 
-      // +639562972161 -> +63 956 297 2161
-      if (value.startsWith('+63') && value.length == 13) {
-        return '${value.substring(0, 3)} '
-            '${value.substring(3, 6)} '
-            '${value.substring(6, 9)} '
-            '${value.substring(9)}';
-      }
+    final String rawAvatar = _profile?['avatar_url']?.toString().trim() ?? '';
 
-      // 09562972161 -> 0956 297 2161
-      if (value.startsWith('09') && value.length == 11) {
-        return '${value.substring(0, 4)} '
-            '${value.substring(4, 7)} '
-            '${value.substring(7)}';
-      }
+    final String? avatarUrl = rawAvatar.isEmpty ? null : rawAvatar;
 
-      return value;
-    }
+    final String email = user?.email?.trim() ?? '';
 
-    // ----------------------------------------
-    // Display-only address formatting
-    // ----------------------------------------
-    String formatDeliveryAddress(String address) {
-      final value = address.trim();
-
-      if (value.isEmpty) return 'Not set';
-
-      String formatted = value;
-
-      // Make capitalization more user-friendly.
-      formatted = formatted.replaceAll(
-        'NATIONAL CAPITAL REGION - SECOND DISTRICT',
-        'Metro Manila',
-      );
-
-      formatted = formatted.replaceAll(', NCR', '');
-
-      // Clean up possible duplicate commas/spaces.
-      formatted = formatted
-          .replaceAll(RegExp(r',\s*,+'), ',')
-          .replaceAll(RegExp(r'\s+'), ' ')
-          .trim();
-
-      return formatted;
-    }
-
-    final displayPhone = formatPhoneNumber(_phoneController.text);
-
-    final displayAddress = formatDeliveryAddress(_addressController.text);
+    final DateTime? customerSince = DateTime.tryParse(
+      _profile?['created_at']?.toString() ?? '',
+    )?.toLocal();
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        bottom: false,
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.textPrimary),
+              )
+            : RefreshIndicator(
+                color: AppColors.textPrimary,
+                onRefresh: () {
+                  return _loadProfile(refresh: true);
+                },
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    // =========================================
+                    // HEADER
+                    // =========================================
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppConstants.defaultPadding,
+                          22,
+                          AppConstants.defaultPadding,
+                          0,
+                        ),
+                        child: CustomerProfileHeader(
+                          isRefreshing: _isRefreshing,
+                          onRefresh: () {
+                            _loadProfile(refresh: true);
+                          },
+                        ),
+                      ),
+                    ),
 
-      appBar: MainAppBar(
-        showLogo: false,
-        showBackButton: widget.showBackButton,
-        titleWidget: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.15),
-                    AppColors.primary.withValues(alpha: 0.05),
+                    // =========================================
+                    // IDENTITY
+                    // =========================================
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppConstants.defaultPadding,
+                          20,
+                          AppConstants.defaultPadding,
+                          0,
+                        ),
+                        child: CustomerProfileIdentityCard(
+                          name: name,
+                          email: email,
+                          avatarUrl: avatarUrl,
+                          onEditAvatar: _showAvatarOptions,
+                        ),
+                      ),
+                    ),
+
+                    // =========================================
+                    // CONTACT
+                    // =========================================
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppConstants.defaultPadding,
+                          14,
+                          AppConstants.defaultPadding,
+                          0,
+                        ),
+                        child: CustomerProfileInfoCard(
+                          items: [
+                            CustomerProfileInfoItem(
+                              icon: Icons.phone_outlined,
+                              label: 'Phone number',
+                              value: phone,
+                            ),
+                            CustomerProfileInfoItem(
+                              icon: Icons.location_on_outlined,
+                              label: 'Delivery address',
+                              value: address,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // =========================================
+                    // SETTINGS + SECURITY + FOOTER
+                    // =========================================
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppConstants.defaultPadding,
+                          14,
+                          AppConstants.defaultPadding,
+                          0,
+                        ),
+                        child: CustomerProfileSections(
+                          onEditProfile: _showEditProfileSheet,
+                          onLogout: _confirmLogout,
+                          isLoggingOut: _isLoggingOut,
+                          customerSince: customerSince,
+                        ),
+                      ),
+                    ),
+
+                    const SliverToBoxAdapter(child: SizedBox(height: 36)),
                   ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                  width: 1,
                 ),
               ),
-              child: const Icon(
-                Icons.person_rounded,
-                size: 18,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(width: 10),
+      ),
+    );
+  }
+}
 
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [AppColors.textPrimary, AppColors.primary],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ).createShader(bounds),
-                    child: const Text(
-                      'Account Profile',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                        color: AppColors.surface,
+// ============================================================================
+// EDIT RESULT
+// ============================================================================
+
+class _CustomerProfileEditResult {
+  final String fullName;
+  final String phone;
+  final String address;
+
+  const _CustomerProfileEditResult({
+    required this.fullName,
+    required this.phone,
+    required this.address,
+  });
+}
+
+// ============================================================================
+// PREMIUM EDIT PROFILE SHEET
+// ============================================================================
+
+class _CustomerEditProfileSheet extends StatefulWidget {
+  final String initialName;
+  final String initialPhone;
+  final String initialAddress;
+
+  final List<dynamic> regions;
+
+  const _CustomerEditProfileSheet({
+    required this.initialName,
+    required this.initialPhone,
+    required this.initialAddress,
+    required this.regions,
+  });
+
+  @override
+  State<_CustomerEditProfileSheet> createState() =>
+      _CustomerEditProfileSheetState();
+}
+
+class _CustomerEditProfileSheetState extends State<_CustomerEditProfileSheet> {
+  late final TextEditingController _nameController;
+
+  late final TextEditingController _phoneController;
+
+  late final TextEditingController _detailedAddressController;
+
+  String _addressPreview = '';
+
+  dynamic _selectedRegion;
+  dynamic _selectedProvince;
+  dynamic _selectedMunicipality;
+  dynamic _selectedBarangay;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _nameController = TextEditingController(text: widget.initialName);
+
+    _phoneController = TextEditingController(text: widget.initialPhone);
+
+    _detailedAddressController = TextEditingController();
+
+    _addressPreview = widget.initialAddress;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _detailedAddressController.dispose();
+
+    super.dispose();
+  }
+
+  // =============================================================
+  // ADDRESS
+  // =============================================================
+  Future<void> _openAddressPicker() async {
+    final PhilippineAddressResult? selection =
+        await showPhilippineAddressPicker(
+          context: context,
+          regions: widget.regions,
+          initialRegion: _selectedRegion,
+          initialProvince: _selectedProvince,
+          initialMunicipality: _selectedMunicipality,
+          initialBarangay: _selectedBarangay,
+          initialDetailedAddress: _detailedAddressController.text,
+        );
+
+    if (selection == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedRegion = selection.region;
+
+      _selectedProvince = selection.province;
+
+      _selectedMunicipality = selection.municipality;
+
+      _selectedBarangay = selection.barangay;
+
+      _detailedAddressController.text = selection.detailedAddress;
+
+      _addressPreview = selection.fullAddress;
+    });
+  }
+
+  // =============================================================
+  // SAVE
+  // =============================================================
+
+  void _save() {
+    final String fullName = _nameController.text.trim();
+
+    final String phone = _phoneController.text.trim();
+
+    if (fullName.isEmpty) {
+      _showValidation('Please enter your full name.');
+
+      return;
+    }
+
+    if (phone.isNotEmpty) {
+      final String digits = phone.replaceAll(RegExp(r'[^0-9+]'), '');
+
+      if (digits.length < 10) {
+        _showValidation('Please enter a valid phone number.');
+
+        return;
+      }
+    }
+
+    Navigator.of(context).pop(
+      _CustomerProfileEditResult(
+        fullName: fullName,
+        phone: phone,
+        address: _addressPreview.trim(),
+      ),
+    );
+  }
+
+  void _showValidation(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.textPrimary,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
+  // =============================================================
+  // BUILD
+  // =============================================================
+
+  @override
+  Widget build(BuildContext context) {
+    final double keyboard = MediaQuery.of(context).viewInsets.bottom;
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          border: Border(
+            top: BorderSide(color: AppColors.border.withValues(alpha: 0.30)),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppConstants.defaultPadding,
+              10,
+              AppConstants.defaultPadding,
+              24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                // ===============================================
+                // HEADER
+                // ===============================================
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.textPrimary,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.10),
+                            blurRadius: 14,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.manage_accounts_outlined,
+                        size: 21,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(width: 13),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ACCOUNT DETAILS',
+                            style: TextStyle(
+                              fontSize: 7,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.1,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.65,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          const Text(
+                            'Edit profile',
+                            style: TextStyle(
+                              fontSize: 21,
+                              height: 1,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 7),
+                          Text(
+                            'Update your personal and delivery information.',
+                            style: TextStyle(
+                              fontSize: 9,
+                              height: 1.4,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.72,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                        customBorder: const CircleBorder(),
+                        child: Ink(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.border.withValues(alpha: 0.25),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // ===============================================
+                // PERSONAL INFORMATION
+                // ===============================================
+                _PremiumSectionLabel(
+                  eyebrow: 'Personal',
+                  title: 'Personal information',
+                ),
+
+                const SizedBox(height: 11),
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.28),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _PremiumTextField(
+                        controller: _nameController,
+                        label: 'FULL NAME',
+                        hint: 'Enter your full name',
+                        icon: Icons.person_outline_rounded,
+                        textCapitalization: TextCapitalization.words,
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      _PremiumTextField(
+                        controller: _phoneController,
+                        label: 'PHONE NUMBER',
+                        hint: '09XX XXX XXXX',
+                        icon: Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ===============================================
+                // DELIVERY ADDRESS
+                // ===============================================
+                _PremiumSectionLabel(
+                  eyebrow: 'Delivery',
+                  title: 'Delivery address',
+                ),
+
+                const SizedBox(height: 11),
+
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _openAddressPicker,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Ink(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.border.withValues(alpha: 0.28),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.location_on_outlined,
+                              size: 18,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'DELIVERY ADDRESS',
+                                  style: TextStyle(
+                                    fontSize: 6.5,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.9,
+                                    color: AppColors.textSecondary.withValues(
+                                      alpha: 0.60,
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 5),
+
+                                Text(
+                                  _addressPreview.trim().isEmpty
+                                      ? 'Set your delivery address'
+                                      : _addressPreview,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    height: 1.4,
+                                    fontWeight: FontWeight.w700,
+                                    color: _addressPreview.trim().isEmpty
+                                        ? AppColors.textSecondary
+                                        : AppColors.textPrimary,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 5),
+
+                                Text(
+                                  'Region, province, city / municipality and barangay',
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    height: 1.3,
+                                    color: AppColors.textSecondary.withValues(
+                                      alpha: 0.62,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 20,
+                            color: AppColors.textSecondary,
+                          ),
+                        ],
                       ),
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 2),
+                const SizedBox(height: 14),
 
-                  Text(
-                    'Manage your account details and preferences',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
-                      color: AppColors.textSecondary.withValues(alpha: 0.8),
+                Container(
+                  padding: const EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.22),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.info_outline_rounded,
+                          size: 15,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Your email and profile photo are managed separately.',
+                          style: TextStyle(
+                            fontSize: 8.5,
+                            height: 1.4,
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.72,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ===============================================
+                // SAVE
+                // ===============================================
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: FilledButton(
+                    onPressed: _save,
+                    style: FilledButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: AppColors.textPrimary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(17),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_rounded, size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'Save changes',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+// ============================================================================
+// PREMIUM SECTION LABEL
+// ============================================================================
+
+class _PremiumSectionLabel extends StatelessWidget {
+  final String eyebrow;
+  final String title;
+
+  const _PremiumSectionLabel({required this.eyebrow, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          eyebrow.toUpperCase(),
+          style: TextStyle(
+            fontSize: 7,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.05,
+            color: AppColors.textSecondary.withValues(alpha: 0.58),
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.3,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ============================================================================
+// PREMIUM TEXT FIELD
+// ============================================================================
+
+class _PremiumTextField extends StatelessWidget {
+  final TextEditingController controller;
+
+  final String label;
+  final String hint;
+  final IconData icon;
+
+  final TextInputType? keyboardType;
+
+  final TextCapitalization textCapitalization;
+
+  const _PremiumTextField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.keyboardType,
+    this.textCapitalization = TextCapitalization.none,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 2),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 6.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.9,
+              color: AppColors.textSecondary.withValues(alpha: 0.60),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 7),
+
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          textCapitalization: textCapitalization,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              fontSize: 10,
+              color: AppColors.textSecondary.withValues(alpha: 0.45),
+            ),
+            prefixIcon: Icon(icon, size: 18, color: AppColors.textSecondary),
+            filled: true,
+            fillColor: AppColors.surface,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 15,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: AppColors.border.withValues(alpha: 0.30),
               ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: AppColors.border.withValues(alpha: 0.30),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(
+                color: AppColors.textPrimary,
+                width: 1.2,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ============================================================================
+// AVATAR OPTION
+// ============================================================================
+
+class _AvatarOption extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  final VoidCallback onTap;
+
+  final bool destructive;
+
+  const _AvatarOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color foreground = destructive
+        ? Colors.red.shade700
+        : AppColors.textPrimary;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: destructive
+                  ? Colors.red.withValues(alpha: 0.12)
+                  : AppColors.border.withValues(alpha: 0.25),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: destructive
+                      ? Colors.red.withValues(alpha: 0.06)
+                      : AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 18, color: foreground),
+              ),
+
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: foreground,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 8.5,
+                        height: 1.35,
+                        color: AppColors.textSecondary.withValues(alpha: 0.68),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 19,
+                color: AppColors.textSecondary.withValues(alpha: 0.45),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// PREMIUM LOGOUT DIALOG
+// ============================================================================
+
+class _CustomerLogoutDialog extends StatelessWidget {
+  const _CustomerLogoutDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 26),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.30)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 30,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.07),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.red.withValues(alpha: 0.10)),
+              ),
+              child: Icon(
+                Icons.logout_rounded,
+                size: 25,
+                color: Colors.red.shade700,
+              ),
+            ),
+
+            const SizedBox(height: 17),
+
+            const Text(
+              'End your session?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.4,
+                color: AppColors.textPrimary,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'You’ll be signed out of your customer account on this device. You can sign back in anytime.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 9.5,
+                height: 1.5,
+                color: AppColors.textSecondary.withValues(alpha: 0.75),
+              ),
+            ),
+
+            const SizedBox(height: 22),
+
+            Divider(height: 1, color: AppColors.border.withValues(alpha: 0.20)),
+
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(false);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        side: BorderSide(
+                          color: AppColors.border.withValues(alpha: 0.40),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: const Text(
+                        'Stay signed in',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(true);
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.textPrimary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.logout_rounded, size: 16),
+                          SizedBox(width: 6),
+                          Text(
+                            'Log out',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
-
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Column(
-                children: [
-                  // ==========================================
-                  // PROFILE HEADER
-                  // ==========================================
-                  ProfileHeader(fullName: fullName, email: email),
-
-                  const SizedBox(height: 20),
-
-                  // ==========================================
-                  // USER INFORMATION
-                  // ==========================================
-                  UserInformationSection(
-                    fullName: _fullNameController.text,
-                    email: email,
-                    onEditName: _showNameDialog,
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // ==========================================
-                  // DELIVERY INFORMATION
-                  // ==========================================
-                  DeliveryInformationSection(
-                    phone: displayPhone,
-                    address: displayAddress,
-                    onEditPhone: _showPhoneDialog,
-                    onEditAddress: _showAddressDialog,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ==========================================
-                  // LOGOUT
-                  // ==========================================
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton.icon(
-                      onPressed: _handleSignOut,
-                      icon: const Icon(
-                        Icons.logout_rounded,
-                        color: AppColors.error,
-                        size: 20,
-                      ),
-                      label: const Text(
-                        'Log Out',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.error,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: AppColors.error.withValues(
-                          alpha: 0.08,
-                        ),
-                        foregroundColor: AppColors.error,
-                        elevation: 0,
-                        side: BorderSide(
-                          color: AppColors.error.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
     );
   }
 }

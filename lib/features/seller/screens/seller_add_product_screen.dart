@@ -19,6 +19,8 @@ class _SellerAddProductScreenState extends State<SellerAddProductScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
+  bool _descriptionWasManuallyEdited = false;
+  bool _isAutoUpdatingDescription = false;
 
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -38,11 +40,19 @@ class _SellerAddProductScreenState extends State<SellerAddProductScreen> {
   void initState() {
     super.initState();
 
+    _nameController.addListener(_handleProductNameChanged);
+
+    _descriptionController.addListener(_handleDescriptionChanged);
+
     _loadCategories();
   }
 
   @override
   void dispose() {
+    _nameController.removeListener(_handleProductNameChanged);
+
+    _descriptionController.removeListener(_handleDescriptionChanged);
+
     _nameController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
@@ -113,6 +123,104 @@ class _SellerAddProductScreenState extends State<SellerAddProductScreen> {
     return _normalizedCategory == 'pancit canton';
   }
 
+  // ============================================================
+  // AUTO PRODUCT DESCRIPTION
+  // ============================================================
+
+  String _generateProductDescription() {
+    final String productName = _nameController.text.trim();
+
+    if (productName.isEmpty || _selectedCategoryName == null) {
+      return '';
+    }
+
+    if (_isSmoothie) {
+      return 'A refreshing $productName smoothie, '
+          'blended smooth and served fresh for a creamy '
+          'and satisfying drink.';
+    }
+
+    if (_isMilkTea) {
+      return 'A refreshing $productName milk tea with a '
+          'smooth and creamy taste, perfect for any time '
+          'of the day.';
+    }
+
+    if (_isFruitJuices) {
+      return 'A refreshing $productName fruit drink with '
+          'a bright and fruity flavor, served fresh for '
+          'a delicious and cooling treat.';
+    }
+
+    if (_isSiomai) {
+      return 'Delicious $productName siomai, served hot '
+          'and packed with savory flavor for a satisfying '
+          'snack or meal.';
+    }
+
+    if (_isPancitCanton) {
+      return 'A satisfying $productName Pancit Canton '
+          'with savory noodles and bold flavor, prepared '
+          'fresh and served hot.';
+    }
+
+    return 'Freshly prepared $productName from '
+        'The Legit Smoothie.';
+  }
+
+  void _autoFillDescription({bool force = false}) {
+    final String name = _nameController.text.trim();
+
+    if (name.isEmpty || _selectedCategoryId == null) {
+      return;
+    }
+
+    if (_descriptionWasManuallyEdited && !force) {
+      return;
+    }
+
+    final String generated = _generateProductDescription();
+
+    if (generated.isEmpty) {
+      return;
+    }
+
+    _isAutoUpdatingDescription = true;
+
+    _descriptionController.text = generated;
+
+    _descriptionController.selection = TextSelection.collapsed(
+      offset: generated.length,
+    );
+
+    _isAutoUpdatingDescription = false;
+
+    if (force) {
+      _descriptionWasManuallyEdited = false;
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _handleProductNameChanged() {
+    if (_descriptionWasManuallyEdited) {
+      return;
+    }
+
+    _autoFillDescription();
+  }
+
+  void _handleDescriptionChanged() {
+    if (_isAutoUpdatingDescription) {
+      return;
+    }
+
+    _descriptionWasManuallyEdited = _descriptionController.text
+        .trim()
+        .isNotEmpty;
+  }
   // ============================================================
   // PRODUCT IMAGE
   // ============================================================
@@ -727,15 +835,95 @@ class _SellerAddProductScreenState extends State<SellerAddProductScreen> {
                   // ========================================================
                   // DESCRIPTION
                   // ========================================================
-                  _buildFieldLabel(label: 'Description', helper: 'Optional'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildFieldLabel(
+                          label: 'Description',
+                          helper: 'Auto-generated',
+                        ),
+                      ),
+
+                      if (_nameController.text.trim().isNotEmpty &&
+                          _selectedCategoryId != null)
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              _descriptionWasManuallyEdited = false;
+
+                              _autoFillDescription(force: true);
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 5,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.auto_awesome_outlined,
+                                    size: 13,
+                                    color: AppColors.primary,
+                                  ),
+
+                                  const SizedBox(width: 4),
+
+                                  const Text(
+                                    'Regenerate',
+                                    style: TextStyle(
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
 
                   const SizedBox(height: 7),
 
                   _buildTextField(
                     controller: _descriptionController,
-                    hint: 'Describe the product, flavor, or ingredients...',
+                    hint: _selectedCategoryId == null
+                        ? 'Select a category and enter a product name...'
+                        : 'Description will be generated automatically...',
                     icon: Icons.notes_rounded,
                     maxLines: 4,
+                  ),
+
+                  const SizedBox(height: 7),
+
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.auto_awesome_outlined,
+                        size: 12,
+                        color: AppColors.textSecondary.withValues(alpha: 0.60),
+                      ),
+
+                      const SizedBox(width: 5),
+
+                      Expanded(
+                        child: Text(
+                          'Generated from the product name and category. You can edit it anytime.',
+                          style: TextStyle(
+                            fontSize: 8.5,
+                            height: 1.3,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.62,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 18),
@@ -1373,7 +1561,9 @@ class _SellerAddProductScreenState extends State<SellerAddProductScreen> {
       }).toList(),
 
       onChanged: (value) {
-        if (value == null) return;
+        if (value == null) {
+          return;
+        }
 
         final category = _categories.firstWhere(
           (item) => item['id'].toString() == value,
@@ -1383,6 +1573,8 @@ class _SellerAddProductScreenState extends State<SellerAddProductScreen> {
           _selectedCategoryId = value;
           _selectedCategoryName = category['name'].toString();
         });
+
+        _autoFillDescription();
       },
 
       validator: (value) {

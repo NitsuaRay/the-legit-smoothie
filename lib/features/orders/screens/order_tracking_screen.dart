@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:the_legit_smoothie/features/orders/widgets/order_widgets.dart';
-import 'package:the_legit_smoothie/shared/widgets/custom_app_bar.dart';
+import 'package:the_legit_smoothie/widgets/custom_app_bar.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';

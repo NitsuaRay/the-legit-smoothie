@@ -4,8 +4,8 @@ import 'core/constants/app_colors.dart';
 import 'core/constants/app_constants.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/services/auth_service.dart';
-import 'shared/widgets/main_navigation_screen.dart';
-import 'shared/widgets/seller_main_navigation_screen.dart';
+import 'widgets/main_navigation_screen.dart';
+import 'widgets/seller_main_navigation_screen.dart';
 import 'main.dart';
 
 class SplashScreen extends StatefulWidget {

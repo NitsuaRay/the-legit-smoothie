@@ -4,7 +4,7 @@ import 'package:the_legit_smoothie/features/seller/screens/seller_edit_product_s
 
 import '../../../core/constants/app_colors.dart';
 import '../../../main.dart';
-import '../widgets/seller_product_card.dart';
+import '../widgets/productScreen/seller_product_card.dart';
 
 class SellerProductsScreen extends StatefulWidget {
   const SellerProductsScreen({super.key});
@@ -370,81 +370,123 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Logo
+        // =========================================================
+        // PRODUCTS ICON
+        // =========================================================
         Container(
-          width: 48,
-          height: 48,
-          padding: const EdgeInsets.all(4),
+          width: 50,
+          height: 50,
+          padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.border.withValues(alpha: 0.55)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.45)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.035),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
               ),
             ],
           ),
-          child: ClipOval(
-            child: Image.asset(
-              'assets/logoSmoothie.png',
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(
-                  Icons.local_drink_rounded,
-                  color: AppColors.primary,
-                );
-              },
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.20),
+              ),
             ),
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              size: 21,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 13),
+
+        // =========================================================
+        // TITLE
+        // =========================================================
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'CATALOG',
+                style: TextStyle(
+                  fontSize: 7.5,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.15,
+                  color: AppColors.textSecondary.withValues(alpha: 0.55),
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              const Text(
+                'Products',
+                style: TextStyle(
+                  fontSize: 23,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.65,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+
+              const SizedBox(height: 5),
+
+              Text(
+                'Manage your store catalog',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  height: 1.2,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary.withValues(alpha: 0.72),
+                ),
+              ),
+            ],
           ),
         ),
 
         const SizedBox(width: 12),
 
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Products',
-                style: TextStyle(
-                  fontSize: 23,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.6,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-
-              SizedBox(height: 3),
-
-              Text(
-                'Manage your store catalog',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        Container(
-          width: 43,
-          height: 43,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
+        // =========================================================
+        // REFRESH
+        // =========================================================
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _loadData,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border.withValues(alpha: 0.55)),
-          ),
-          child: IconButton(
-            tooltip: 'Refresh',
-            onPressed: _loadData,
-            icon: const Icon(
-              Icons.refresh_rounded,
-              size: 20,
-              color: AppColors.textPrimary,
+            child: Ink(
+              width: 43,
+              height: 43,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppColors.border.withValues(alpha: 0.45),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.025),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.refresh_rounded,
+                  size: 19,
+                  color: AppColors.textSecondary.withValues(alpha: 0.85),
+                ),
+              ),
             ),
           ),
         ),
@@ -498,12 +540,17 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
 
   Widget _buildCategoryFilters() {
     return SizedBox(
-      height: 37,
+      height: 42,
       child: ListView(
         scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 20),
         children: [
-          _categoryChip(label: 'All', categoryId: null),
+          _categoryChip(
+            label: 'All',
+            categoryId: null,
+            icon: Icons.grid_view_rounded,
+          ),
 
           const SizedBox(width: 8),
 
@@ -521,33 +568,118 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
     );
   }
 
-  Widget _categoryChip({required String label, required String? categoryId}) {
+  // ============================================================
+  // CATEGORY CHIP
+  // ============================================================
+
+  Widget _categoryChip({
+    required String label,
+    required String? categoryId,
+    IconData? icon,
+  }) {
     final bool selected = _selectedCategoryId == categoryId;
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedCategoryId = categoryId;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: selected
-                ? AppColors.primary
-                : AppColors.border.withValues(alpha: 0.55),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          if (selected) {
+            return;
+          }
+
+          setState(() {
+            _selectedCategoryId = categoryId;
+          });
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.symmetric(
+            horizontal: selected ? 14 : 13,
+            vertical: 9,
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 10.5,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecondary,
+          decoration: BoxDecoration(
+            color: selected ? AppColors.textPrimary : AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected
+                  ? AppColors.textPrimary
+                  : AppColors.border.withValues(alpha: 0.42),
+            ),
+            boxShadow: [
+              if (selected)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.10),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+              else
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.018),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // =================================================
+              // OPTIONAL ICON
+              // =================================================
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 13,
+                  color: selected ? Colors.white : AppColors.textSecondary,
+                ),
+
+                const SizedBox(width: 6),
+              ],
+
+              // =================================================
+              // LABEL
+              // =================================================
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  letterSpacing: selected ? 0.05 : 0,
+                  color: selected ? Colors.white : AppColors.textSecondary,
+                ),
+              ),
+
+              // =================================================
+              // SELECTED INDICATOR
+              // =================================================
+              AnimatedSize(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                child: selected
+                    ? Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: Container(
+                          width: 15,
+                          height: 15,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.14),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check_rounded,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
           ),
         ),
       ),

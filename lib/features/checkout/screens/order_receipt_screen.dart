@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:the_legit_smoothie/shared/widgets/main_navigation_screen.dart';
+import 'package:the_legit_smoothie/widgets/main_navigation_screen.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/helpers.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
+import '../../../widgets/custom_app_bar.dart';
 
 class OrderReceiptScreen extends StatelessWidget {
   final String orderId;
