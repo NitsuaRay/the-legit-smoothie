@@ -1,52 +1,67 @@
 import 'package:flutter/material.dart';
-import 'package:the_legit_smoothie/features/orders/widgets/order_widgets.dart';
-import 'package:the_legit_smoothie/widgets/custom_app_bar.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../main.dart';
-import '../widgets/live_order_status.dart';
-import '../widgets/order_summary.dart';
-import '../widgets/order_tracking_header.dart';
+
+import '../widgets/orderTracking/cancel_order_dialog.dart';
+import '../widgets/orderTracking/live_order_status.dart';
+import '../widgets/orderTracking/order_cancel_button.dart';
+import '../widgets/orderTracking/order_tracking_app_header.dart';
+import '../widgets/orderTracking/order_tracking_cancelled_card.dart';
+import '../widgets/orderTracking/order_tracking_overview.dart';
+import '../widgets/orderTracking/order_tracking_summary.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   final String orderId;
 
-  const OrderTrackingScreen({super.key, required this.orderId});
+  const OrderTrackingScreen({
+    super.key,
+    required this.orderId,
+  });
 
   @override
-  State<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
+  State<OrderTrackingScreen> createState() =>
+      _OrderTrackingScreenState();
 }
 
-class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
+class _OrderTrackingScreenState
+    extends State<OrderTrackingScreen> {
   late final Stream<List<Map<String, dynamic>>> _orderStream;
 
   late final Future<List<Map<String, dynamic>>> _itemsFuture;
 
   bool _isCancelling = false;
 
+  // ==============================================================
+  // INIT
+  // ==============================================================
+
   @override
   void initState() {
     super.initState();
 
-    // Current order - realtime
     _orderStream = supabase
         .from('orders')
         .stream(primaryKey: ['id'])
         .eq('id', widget.orderId);
 
-    // Order items
     _itemsFuture = supabase
         .from('order_items')
         .select()
         .eq('order_id', widget.orderId);
   }
 
+  // ==============================================================
+  // CANCEL DIALOG
+  // ==============================================================
+
   Future<void> _showCancelDialog() async {
-    final String? reason = await showDialog<String>(
+    final String? reason =
+        await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const CancelOrderDialog(),
+      builder: (_) =>
+          const CancelOrderDialog(),
     );
 
     if (!mounted || reason == null) {
@@ -56,7 +71,17 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     await _cancelOrder(reason);
   }
 
-  Future<void> _cancelOrder(String reason) async {
+  // ==============================================================
+  // CANCEL ORDER
+  // ==============================================================
+
+  Future<void> _cancelOrder(
+    String reason,
+  ) async {
+    if (_isCancelling) {
+      return;
+    }
+
     setState(() {
       _isCancelling = true;
     });
@@ -67,31 +92,93 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           .update({
             'status': 'cancelled',
             'cancel_reason': reason,
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now()
+                .toUtc()
+                .toIso8601String(),
           })
-          .eq('id', widget.orderId);
+          .eq(
+            'id',
+            widget.orderId,
+          );
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Order has been successfully cancelled.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } catch (e) {
-      debugPrint('Failed to cancel order: $e');
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Unable to cancel the order right now. Please try again.',
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            backgroundColor:
+                AppColors.textPrimary,
+            shape: RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(14),
+            ),
+            content: const Row(
+              children: [
+                Icon(
+                  Icons.check_circle_outline_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    'Order cancelled successfully.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight:
+                          FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          backgroundColor: AppColors.error,
-        ),
+        );
+    } catch (e) {
+      debugPrint(
+        'Failed to cancel order: $e',
       );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            backgroundColor: AppColors.error,
+            shape: RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(14),
+            ),
+            content: const Row(
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    'Unable to cancel the order right now. Please try again.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight:
+                          FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
     } finally {
       if (mounted) {
         setState(() {
@@ -101,222 +188,478 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     }
   }
 
-  DateTime? _parseCreatedAt(dynamic value) {
-    if (value == null) return null;
+  // ==============================================================
+  // CREATED DATE
+  // ==============================================================
+
+  DateTime? _parseCreatedAt(
+    dynamic value,
+  ) {
+    if (value == null) {
+      return null;
+    }
 
     if (value is DateTime) {
-      return value;
+      return value.toLocal();
     }
 
     try {
-      return DateTime.parse(value.toString());
+      return DateTime.parse(
+        value.toString(),
+      ).toLocal();
     } catch (_) {
       return null;
     }
   }
 
+  // ==============================================================
+  // BUILD
+  // ==============================================================
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor:
+          AppColors.background,
 
-      appBar: MainAppBar(
-        showLogo: false,
-        showBackButton: true,
-        titleWidget: Row(
+      body: SafeArea(
+        bottom: false,
+        child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.15),
-                    AppColors.primary.withValues(alpha: 0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-              ),
-              child: const Icon(
-                Icons.local_shipping_rounded,
-                size: 18,
-                color: AppColors.primary,
-              ),
-            ),
+            // ======================================================
+            // PAGE HEADER
+            // ======================================================
 
-            const SizedBox(width: 10),
+            const OrderTrackingAppHeader(),
+
+            // ======================================================
+            // REALTIME ORDER
+            // ======================================================
 
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [AppColors.textPrimary, AppColors.primary],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ).createShader(bounds),
-                    child: const Text(
-                      'Order Tracking',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                        color: AppColors.surface,
-                      ),
-                    ),
-                  ),
+              child: StreamBuilder<
+                  List<Map<String, dynamic>>>(
+                stream: _orderStream,
+                builder: (
+                  context,
+                  snapshot,
+                ) {
+                  // =================================================
+                  // LOADING
+                  // =================================================
 
-                  const SizedBox(height: 2),
+                  if (snapshot.connectionState ==
+                          ConnectionState.waiting &&
+                      !snapshot.hasData) {
+                    return const _TrackingLoadingState();
+                  }
 
-                  Text(
-                    'Track your order status in real time',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
-                      color: AppColors.textSecondary.withValues(alpha: 0.8),
+                  // =================================================
+                  // ERROR / NOT FOUND
+                  // =================================================
+
+                  if (snapshot.hasError ||
+                      !snapshot.hasData ||
+                      snapshot.data!.isEmpty) {
+                    return _TrackingErrorState(
+                      onBack: () =>
+                          Navigator.of(context)
+                              .maybePop(),
+                    );
+                  }
+
+                  // =================================================
+                  // ORDER DATA
+                  // =================================================
+
+                  final Map<String, dynamic>
+                      orderData =
+                      snapshot.data!.first;
+
+                  final String status =
+                      (orderData['status'] ??
+                              'pending')
+                          .toString()
+                          .trim()
+                          .toLowerCase();
+
+                  final String orderType =
+                      (orderData[
+                                  'order_type'] ??
+                              'delivery')
+                          .toString()
+                          .trim()
+                          .toLowerCase();
+
+                  final double totalPrice =
+                      _toDouble(
+                    orderData['total_price'],
+                  );
+
+                  final String? address =
+                      _nullableString(
+                    orderData[
+                        'delivery_address'],
+                  );
+
+                  final String? notes =
+                      _nullableString(
+                    orderData['notes'],
+                  );
+
+                  final String? cancelReason =
+                      _nullableString(
+                    orderData[
+                        'cancel_reason'],
+                  );
+
+                  final DateTime? createdAt =
+                      _parseCreatedAt(
+                    orderData['created_at'],
+                  );
+
+                  // =================================================
+                  // PAGE
+                  // =================================================
+
+                  return SingleChildScrollView(
+                    physics:
+                        const BouncingScrollPhysics(
+                      parent:
+                          AlwaysScrollableScrollPhysics(),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                    padding:
+                        const EdgeInsets.fromLTRB(
+                      18,
+                      7,
+                      18,
+                      32,
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        // ===========================================
+                        // ORDER OVERVIEW
+                        // ===========================================
+
+                        OrderTrackingOverview(
+                          orderId:
+                              widget.orderId,
+                          status: status,
+                          orderType:
+                              orderType,
+                          totalPrice:
+                              totalPrice,
+                          address: address,
+                          notes: notes,
+                          createdAt:
+                              createdAt,
+                        ),
+
+                        const SizedBox(
+                          height: 23,
+                        ),
+
+                        // ===========================================
+                        // LIVE TRACKING / CANCELLED
+                        // ===========================================
+
+                        if (status ==
+                            'cancelled')
+                          OrderTrackingCancelledCard(
+                            cancelReason:
+                                cancelReason,
+                          )
+                        else
+                          LiveOrderStatus(
+                            status: status,
+                            orderType:
+                                orderType,
+                            orderId:
+                                widget.orderId,
+                          ),
+
+                        const SizedBox(
+                          height: 23,
+                        ),
+
+                        // ===========================================
+                        // SUMMARY
+                        // ===========================================
+
+                        OrderTrackingSummary(
+                          itemsFuture:
+                              _itemsFuture,
+                          orderType:
+                              orderType,
+                          totalPrice:
+                              totalPrice,
+                        ),
+
+                        // ===========================================
+                        // CANCELLATION
+                        //
+                        // Customer cancellation is only available
+                        // while the order is pending.
+                        // ===========================================
+
+                        if (status ==
+                            'pending') ...[
+                          const SizedBox(
+                            height: 23,
+                          ),
+
+                          OrderCancelButton(
+                            isLoading:
+                                _isCancelling,
+                            onPressed:
+                                _showCancelDialog,
+                          ),
+                        ],
+
+                        const SizedBox(
+                          height: 10,
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
-      body: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: _orderStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            );
-          }
+    );
+  }
 
-          if (snapshot.hasError ||
-              !snapshot.hasData ||
-              snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text(
-                'Unable to load order status.',
-                style: TextStyle(color: AppColors.textSecondary),
+  // ==============================================================
+  // HELPERS
+  // ==============================================================
+
+  double _toDouble(
+    dynamic value,
+  ) {
+    if (value == null) {
+      return 0;
+    }
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(
+          value.toString(),
+        ) ??
+        0;
+  }
+
+  String? _nullableString(
+    dynamic value,
+  ) {
+    if (value == null) {
+      return null;
+    }
+
+    final String text =
+        value.toString().trim();
+
+    if (text.isEmpty) {
+      return null;
+    }
+
+    return text;
+  }
+}
+
+// =================================================================
+// LOADING STATE
+// =================================================================
+
+class _TrackingLoadingState
+    extends StatelessWidget {
+  const _TrackingLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize:
+            MainAxisSize.min,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius:
+                  BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.border
+                    .withValues(
+                  alpha: 0.28,
+                ),
               ),
-            );
-          }
-
-          final orderData = snapshot.data!.first;
-
-          final String status = (orderData['status'] ?? 'pending')
-              .toString()
-              .toLowerCase();
-
-          final String orderType = (orderData['order_type'] ?? 'delivery')
-              .toString()
-              .toLowerCase();
-
-          final double totalPrice = ((orderData['total_price'] ?? 0) as num)
-              .toDouble();
-
-          final String? address = orderData['delivery_address']?.toString();
-
-          final String? cancelReason = orderData['cancel_reason']?.toString();
-
-          final String? notes = orderData['notes']?.toString();
-
-          final DateTime? createdAt = _parseCreatedAt(orderData['created_at']);
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                OrderTrackingHeader(
-                  orderId: widget.orderId,
-                  status: status,
-                  orderType: orderType,
-                  totalPrice: totalPrice,
-                  address: address,
-                  notes: notes,
-                  createdAt: createdAt,
-                ),
-
-                const SizedBox(height: 24),
-
-                if (status == 'cancelled') ...[
-                  CancelledOrderCard(cancelReason: cancelReason),
-                ] else ...[
-                  LiveOrderStatus(
-                    status: status,
-                    orderType: orderType,
-                    orderId: widget.orderId,
-                  ),
-                ],
-
-                const SizedBox(height: 24),
-
-                OrderSummary(
-                  itemsFuture: _itemsFuture,
-                  orderType: orderType,
-                  totalPrice: totalPrice,
-                ),
-
-                if (status == 'pending') ...[
-                  const SizedBox(height: 32),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.defaultBorderRadius,
-                          ),
-                        ),
-                        elevation: 0,
-                      ),
-                      onPressed: _isCancelling ? null : _showCancelDialog,
-                      icon: _isCancelling
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.remove_shopping_cart_rounded,
-                              color: Colors.white,
-                            ),
-                      label: Text(
-                        _isCancelling ? 'Cancelling...' : 'Cancel Order',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 20),
-              ],
             ),
-          );
-        },
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child:
+                    CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color:
+                      AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 13),
+
+          const Text(
+            'Loading your order',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight:
+                  FontWeight.w800,
+              color:
+                  AppColors.textPrimary,
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          Text(
+            'Getting the latest status...',
+            style: TextStyle(
+              fontSize: 9,
+              color: AppColors
+                  .textSecondary
+                  .withValues(
+                alpha: 0.68,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =================================================================
+// ERROR STATE
+// =================================================================
+
+class _TrackingErrorState
+    extends StatelessWidget {
+  final VoidCallback onBack;
+
+  const _TrackingErrorState({
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding:
+            const EdgeInsets.all(30),
+        child: Column(
+          mainAxisSize:
+              MainAxisSize.min,
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius:
+                    BorderRadius.circular(18),
+                border: Border.all(
+                  color: AppColors.border
+                      .withValues(
+                    alpha: 0.28,
+                  ),
+                ),
+              ),
+              child: const Icon(
+                Icons
+                    .receipt_long_outlined,
+                size: 25,
+                color:
+                    AppColors.textPrimary,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            const Text(
+              'Order unavailable',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight:
+                    FontWeight.w900,
+                letterSpacing: -0.3,
+                color:
+                    AppColors.textPrimary,
+              ),
+            ),
+
+            const SizedBox(height: 7),
+
+            Text(
+              'We couldn’t load the latest information for this order.',
+              textAlign:
+                  TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                height: 1.45,
+                color: AppColors
+                    .textSecondary
+                    .withValues(
+                  alpha: 0.72,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 17),
+
+            OutlinedButton.icon(
+              onPressed: onBack,
+              icon: const Icon(
+                Icons.arrow_back_rounded,
+                size: 15,
+              ),
+              label: const Text(
+                'Go back',
+              ),
+              style:
+                  OutlinedButton.styleFrom(
+                foregroundColor:
+                    AppColors.textPrimary,
+                side: BorderSide(
+                  color: AppColors.border
+                      .withValues(
+                    alpha: 0.50,
+                  ),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                shape:
+                    RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(
+                    13,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

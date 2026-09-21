@@ -5,11 +5,15 @@ import '../../../../core/constants/app_colors.dart';
 class CustomerProfileHeader extends StatelessWidget {
   final VoidCallback? onRefresh;
   final bool isRefreshing;
+  final bool showBackButton;
+  final VoidCallback? onBack;
 
   const CustomerProfileHeader({
     super.key,
     this.onRefresh,
     this.isRefreshing = false,
+    this.showBackButton = false,
+    this.onBack,
   });
 
   @override
@@ -17,15 +21,40 @@ class CustomerProfileHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        if (showBackButton) ...[
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onBack ?? () => Navigator.of(context).maybePop(),
+              borderRadius: BorderRadius.circular(14),
+              child: Ink(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.32),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_rounded,
+                  size: 19,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+        ],
         Container(
           width: 44,
           height: 44,
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(13),
-            border: Border.all(
-              color: AppColors.border.withValues(alpha: 0.35),
-            ),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.025),

@@ -673,41 +673,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // =============================================================
 
   Future<void> _logout() async {
-  if (_isLoggingOut) return;
-
-  setState(() {
-    _isLoggingOut = true;
-  });
-
-  try {
-    // Sign out locally first.
-    await _supabase.auth.signOut(
-      scope: SignOutScope.local,
-    );
-
-    if (!mounted) return;
-
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
-      ),
-      (Route<dynamic> route) => false,
-    );
-  } catch (error) {
-    debugPrint('Customer LOGOUT ERROR: $error');
-
-    if (!mounted) return;
+    if (_isLoggingOut) return;
 
     setState(() {
-      _isLoggingOut = false;
+      _isLoggingOut = true;
     });
 
-    _showMessage(
-      'Unable to log out. Please try again.',
-      isError: true,
-    );
+    try {
+      // Sign out locally first.
+      await _supabase.auth.signOut(scope: SignOutScope.local);
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (Route<dynamic> route) => false,
+      );
+    } catch (error) {
+      debugPrint('Customer LOGOUT ERROR: $error');
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoggingOut = false;
+      });
+
+      _showMessage('Unable to log out. Please try again.', isError: true);
+    }
   }
-}
 
   // =============================================================
   // BUILD
@@ -764,6 +757,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           0,
                         ),
                         child: CustomerProfileHeader(
+                          showBackButton: widget.showBackButton,
+                          onBack: () {
+                            Navigator.of(context).pop();
+                          },
                           isRefreshing: _isRefreshing,
                           onRefresh: () {
                             _loadProfile(refresh: true);
