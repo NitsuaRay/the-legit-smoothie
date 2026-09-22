@@ -78,9 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _isStoreOpen = data?['is_open'] == true;
       });
 
-      debugPrint('Store status: ${_isStoreOpen ? 'OPEN' : 'CLOSED'}');
     } catch (e) {
-      debugPrint('Error loading store status: $e');
 
       if (!mounted) return;
 
@@ -114,10 +112,6 @@ class _HomeScreenState extends State<HomeScreen> {
               _isStoreOpen = newStatus;
             });
 
-            debugPrint(
-              'Store status changed: '
-              '${newStatus ? 'OPEN' : 'CLOSED'}',
-            );
           },
         )
         .subscribe();
@@ -156,7 +150,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _filterProducts();
       });
     } catch (error) {
-      debugPrint('HOME CATALOG ERROR: $error');
 
       if (!mounted) return;
 

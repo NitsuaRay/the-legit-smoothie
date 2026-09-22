@@ -607,11 +607,6 @@ class _OrderHistoryScreenState
         // =========================================================
 
         if (snapshot.hasError) {
-          debugPrint(
-            'Orders stream error: '
-            '${snapshot.error}',
-          );
-
           return RefreshIndicator(
             color:
                 AppColors.textPrimary,

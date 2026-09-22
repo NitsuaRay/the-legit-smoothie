@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:the_legit_smoothie/core/models/app_notification.dart';
+import 'package:the_legit_smoothie/core/services/notification_service.dart';
+import 'package:the_legit_smoothie/features/notifications/screens/notifications_screen.dart';
 
 import 'package:the_legit_smoothie/features/seller/widgets/homeScreen/seller_dashboard_header.dart';
 import 'package:the_legit_smoothie/features/seller/widgets/homeScreen/seller_quick_action.dart';
@@ -21,6 +26,12 @@ class SellerHomeScreen extends StatefulWidget {
 
 class _SellerHomeScreenState extends State<SellerHomeScreen> {
   final SupabaseClient _supabase = Supabase.instance.client;
+
+  final NotificationService _notificationService = NotificationService.instance;
+
+  StreamSubscription<AppNotification>? _notificationSubscription;
+
+  int _unreadNotificationCount = 0;
 
   // =============================================================
   // STORE STATUS
@@ -58,8 +69,64 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
     super.initState();
 
     _loadDashboard();
+
+    _loadUnreadNotificationCount();
+    _listenForNotifications();
   }
 
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+
+    super.dispose();
+  }
+  // =============================================================
+  // NOTIFICATIONS
+  // =============================================================
+
+  Future<void> _loadUnreadNotificationCount() async {
+    try {
+      final count = await _notificationService.getUnreadCount();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _unreadNotificationCount = count;
+      });
+    } catch (error) {
+      debugPrint('Seller notification count error: $error');
+    }
+  }
+
+  void _listenForNotifications() {
+    _notificationSubscription = _notificationService
+        .watchNewNotifications()
+        .listen(
+          (_) {
+            _loadUnreadNotificationCount();
+          },
+          onError: (Object error) {
+            debugPrint('Seller notification realtime error: $error');
+          },
+        );
+  }
+
+  Future<void> _openNotifications() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            const NotificationsScreen(viewer: NotificationViewer.seller),
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    await _loadUnreadNotificationCount();
+  }
   // =============================================================
   // LOAD DASHBOARD
   // =============================================================
@@ -178,8 +245,10 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
       int completedOrdersToday = 0;
 
       for (final order in orders) {
-        final String currentStatus =
-            (order['status'] ?? '').toString().toLowerCase().trim();
+        final String currentStatus = (order['status'] ?? '')
+            .toString()
+            .toLowerCase()
+            .trim();
 
         // Only orders that are currently completed count as sales.
         if (currentStatus != 'completed') {
@@ -643,7 +712,10 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
       return;
     }
 
-    await _loadDashboard(refresh: true);
+    await Future.wait([
+      _loadDashboard(refresh: true),
+      _loadUnreadNotificationCount(),
+    ]);
   }
 
   // =============================================================
@@ -851,8 +923,8 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
                           children: [
                             SellerDashboardHeader(
                               sellerName: _sellerName,
-                              notificationCount: _pendingOrders,
-                              onNotificationTap: _openOrders,
+                              notificationCount: _unreadNotificationCount,
+                              onNotificationTap: _openNotifications,
                             ),
 
                             const SizedBox(height: 18),

@@ -58,7 +58,6 @@ class AppUpdateService {
         deviceAbi = await OtaUpdate().getAbi();
         deviceAbi = deviceAbi?.trim();
 
-        debugPrint('App update device ABI: $deviceAbi');
       }
 
       // ========================================================
@@ -71,12 +70,6 @@ class AppUpdateService {
               deviceAbi: deviceAbi,
             )
           : rawBuildNumber;
-
-      debugPrint(
-        'App update build number: '
-        'raw=$rawBuildNumber, '
-        'normalized=$currentBuildNumber',
-      );
 
       // ========================================================
       // GET SERVER CONFIGURATION
@@ -101,10 +94,6 @@ class AppUpdateService {
           .maybeSingle();
 
       if (data == null) {
-        debugPrint(
-          'App update: no configuration found for $platform.',
-        );
-
         return null;
       }
 
@@ -161,9 +150,6 @@ class AppUpdateService {
             break;
 
           default:
-            debugPrint(
-              'App update: unsupported ABI: $deviceAbi',
-            );
         }
       }
 
@@ -173,9 +159,6 @@ class AppUpdateService {
 
       if (latestBuildNumber <= 0 ||
           minimumBuildNumber <= 0) {
-        debugPrint(
-          'App update: invalid build numbers.',
-        );
 
         return null;
       }
@@ -199,25 +182,12 @@ class AppUpdateService {
         updateEnabled: updateEnabled,
       );
 
-      debugPrint(
-        'App update check: $result',
-      );
-
       if (result.hasUpdate &&
           !result.hasUpdateUrl) {
-        debugPrint(
-          'WARNING: Update exists but '
-          'no compatible APK URL was found '
-          'for ABI $deviceAbi.',
-        );
       }
 
       return result;
-    } on PostgrestException catch (error) {
-      debugPrint(
-        'App update Supabase error: '
-        '${error.message}',
-      );
+    } on PostgrestException {
 
       return null;
     } catch (error) {
@@ -244,11 +214,6 @@ class AppUpdateService {
         'for ${updateInfo.deviceAbi}.',
       );
     }
-
-    debugPrint(
-      'Starting OTA update for ABI: '
-      '${updateInfo.deviceAbi}',
-    );
 
     return OtaUpdate().execute(
       url.trim(),

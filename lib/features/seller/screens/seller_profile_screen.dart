@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:the_legit_smoothie/core/services/push_notification_service.dart';
 import 'package:the_legit_smoothie/features/auth/screens/login_screen.dart';
 import 'package:the_legit_smoothie/widgets/change_password_dialog.dart';
 import 'package:the_legit_smoothie/features/seller/widgets/profileScreen/seller_profile_header.dart';
@@ -696,10 +697,23 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
     });
 
     try {
-      // Sign out locally first.
+      // =========================================================
+      // REMOVE THIS DEVICE FROM PUSH NOTIFICATIONS
+      // =========================================================
+
+      await PushNotificationService.instance.removeCurrentDeviceToken();
+
+      // =========================================================
+      // SIGN OUT
+      // =========================================================
+
       await _supabase.auth.signOut(scope: SignOutScope.local);
 
       if (!mounted) return;
+
+      // =========================================================
+      // RETURN TO LOGIN
+      // =========================================================
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginScreen()),

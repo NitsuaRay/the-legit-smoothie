@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:the_legit_smoothie/core/services/push_notification_service.dart';
 import 'package:the_legit_smoothie/widgets/main_navigation_screen.dart';
 
 import '../../../core/constants/app_colors.dart';
@@ -75,6 +76,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+
+      // ==========================================================
+      // REGISTER DEVICE FOR PUSH NOTIFICATIONS
+      // New public registrations are customer accounts.
+      // ==========================================================
+
+      if (_authService.currentUser != null) {
+        await PushNotificationService.instance.registerCurrentDeviceToken();
+      }
 
       if (!mounted) return;
 

@@ -355,11 +355,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       final String? promotionTitle = result['promotion_title']?.toString();
 
-      final bool submittedWhileClosed =
-          result['submitted_while_closed'] == true;
-
-      final bool alreadyProcessed = result['already_processed'] == true;
-
       // ===========================================================
       // RECEIPT ITEMS
       // ===========================================================
@@ -398,47 +393,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
       }
 
-      debugPrint('Checkout successful: $orderId');
-
-      debugPrint('Checkout request: $requestId');
-
-      debugPrint(
-        'Already processed: '
-        '$alreadyProcessed',
-      );
-
-      debugPrint(
-        'Submitted while closed: '
-        '$submittedWhileClosed',
-      );
-
-      // ===========================================================
-      // CLEAR CART
-      // ===========================================================
-      //
-      // Only clear AFTER the database confirms success.
-      // ===========================================================
-
       _cartService.clearCart();
 
       if (!mounted) {
         return;
       }
 
-      // ===========================================================
-      // RESET REQUEST ID
-      // ===========================================================
-      //
-      // This checkout is complete.
-      //
-      // A future checkout needs a new UUID.
-      // ===========================================================
-
       _checkoutRequestId = null;
-
-      // ===========================================================
-      // RECEIPT
-      // ===========================================================
 
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -472,23 +433,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       );
     } on PostgrestException catch (error) {
-      debugPrint(
-        'Checkout RPC error: '
-        '${error.message}',
-      );
 
       if (!mounted) {
         return;
       }
 
-      // DO NOT reset _checkoutRequestId here.
-      //
-      // If the server created the order but the response was lost,
-      // retrying must use the SAME request ID.
 
       _showMessage(error.message, isError: true);
     } catch (error) {
-      debugPrint('Checkout error: $error');
 
       if (!mounted) {
         return;

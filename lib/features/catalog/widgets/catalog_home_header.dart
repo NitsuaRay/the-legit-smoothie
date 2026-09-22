@@ -1,12 +1,96 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:the_legit_smoothie/core/models/app_notification.dart';
+import 'package:the_legit_smoothie/core/services/notification_service.dart';
+import 'package:the_legit_smoothie/features/notifications/screens/notifications_screen.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 
-class CatalogHomeHeader extends StatelessWidget {
+class CatalogHomeHeader extends StatefulWidget {
   final bool isStoreOpen;
 
   const CatalogHomeHeader({super.key, required this.isStoreOpen});
+
+  @override
+  State<CatalogHomeHeader> createState() => _CatalogHomeHeaderState();
+}
+
+class _CatalogHomeHeaderState extends State<CatalogHomeHeader> {
+  final NotificationService _notificationService = NotificationService.instance;
+
+  StreamSubscription<AppNotification>? _notificationSubscription;
+
+  int _unreadCount = 0;
+
+  // =============================================================
+  // LIFECYCLE
+  // =============================================================
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadUnreadCount();
+    _listenForNotifications();
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+
+    super.dispose();
+  }
+
+  // =============================================================
+  // NOTIFICATIONS
+  // =============================================================
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final count = await _notificationService.getUnreadCount();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _unreadCount = count;
+      });
+    } catch (error) {
+      debugPrint('Customer notification count error: $error');
+    }
+  }
+
+  void _listenForNotifications() {
+    _notificationSubscription = _notificationService
+        .watchNewNotifications()
+        .listen(
+          (_) {
+            _loadUnreadCount();
+          },
+          onError: (Object error) {
+          },
+        );
+  }
+
+  Future<void> _openNotifications() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            const NotificationsScreen(viewer: NotificationViewer.customer),
+      ),
+    );
+
+    // A notification may have been marked as read,
+    // so refresh the badge when returning.
+    await _loadUnreadCount();
+  }
+
+  // =============================================================
+  // BUILD
+  // =============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +104,6 @@ class CatalogHomeHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // =====================================================
-          // BRAND
-          // =====================================================
           Row(
             children: [
               Container(
@@ -84,17 +165,21 @@ class CatalogHomeHeader extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
 
-              _StoreStatus(isOpen: isStoreOpen),
+              _StoreStatus(isOpen: widget.isStoreOpen),
+
+              const SizedBox(width: 7),
+
+              _CustomerNotificationButton(
+                count: _unreadCount,
+                onTap: _openNotifications,
+              ),
             ],
           ),
 
           const SizedBox(height: 26),
 
-          // =====================================================
-          // GREETING
-          // =====================================================
           Text(
             _greeting.toUpperCase(),
             style: TextStyle(
@@ -136,7 +221,7 @@ class CatalogHomeHeader extends StatelessWidget {
   }
 
   String get _greeting {
-    final int hour = DateTime.now().hour;
+    final hour = DateTime.now().hour;
 
     if (hour < 12) {
       return 'Good morning';
@@ -147,6 +232,88 @@ class CatalogHomeHeader extends StatelessWidget {
     }
 
     return 'Good evening';
+  }
+}
+
+// =================================================================
+// CUSTOMER NOTIFICATION BUTTON
+// =================================================================
+
+class _CustomerNotificationButton extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
+
+  const _CustomerNotificationButton({required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasNotifications = count > 0;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(13),
+        child: Ink(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: hasNotifications ? AppColors.textPrimary : AppColors.surface,
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(
+              color: hasNotifications
+                  ? AppColors.textPrimary
+                  : AppColors.border.withValues(alpha: 0.30),
+            ),
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Center(
+                child: Icon(
+                  hasNotifications
+                      ? Icons.notifications_rounded
+                      : Icons.notifications_none_rounded,
+                  size: 19,
+                  color: hasNotifications
+                      ? Colors.white
+                      : AppColors.textPrimary,
+                ),
+              ),
+
+              if (hasNotifications)
+                Positioned(
+                  right: -5,
+                  top: -6,
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.textPrimary,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.surface, width: 2),
+                    ),
+                    child: Center(
+                      child: Text(
+                        count > 99 ? '99+' : '$count',
+                        style: const TextStyle(
+                          fontSize: 7,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

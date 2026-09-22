@@ -124,14 +124,12 @@ class _PromotionsScreenState extends State<PromotionsScreen> {
       setState(() {
         _promotions = loaded;
       });
-    } on PostgrestException catch (error) {
-      debugPrint('Failed to load promotions: ${error.message}');
+    } on PostgrestException {
 
       if (!mounted) return;
 
       _showMessage('Unable to load promotions right now.', error: true);
     } catch (error) {
-      debugPrint('Failed to load promotions: $error');
 
       if (!mounted) return;
 

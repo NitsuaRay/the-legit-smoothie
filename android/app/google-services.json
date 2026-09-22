@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "303245997281",
+    "project_id": "the-legit-smoothie-15d6e",
+    "storage_bucket": "the-legit-smoothie-15d6e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:303245997281:android:1eb575b02adf72397b33a0",
+        "android_client_info": {
+          "package_name": "com.thelegitsmoothie.the_legit_smoothie"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCvLTPLeoyiIYCfiwg7Egy-hZerS-N1COA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -155,9 +155,6 @@ class _ProductDetailModalState
         _isLoading = false;
       });
     } catch (error) {
-      debugPrint(
-        'Product options error: $error',
-      );
 
       if (!mounted) return;
 

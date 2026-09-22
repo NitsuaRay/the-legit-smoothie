@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:the_legit_smoothie/core/services/push_notification_service.dart';
 import 'package:the_legit_smoothie/widgets/main_navigation_screen.dart';
 import 'package:the_legit_smoothie/widgets/seller_main_navigation_screen.dart';
 
@@ -78,7 +79,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final String? role = await _authService.getCurrentUserRole();
 
-      debugPrint('Logged in user role: $role');
+      // ==========================================================
+      // REGISTER DEVICE FOR PUSH NOTIFICATIONS
+      // Only register users with a valid application role.
+      // ==========================================================
+
+      if (role == 'seller' || role == 'customer') {
+        await PushNotificationService.instance.registerCurrentDeviceToken();
+      }
 
       if (!mounted) return;
 
@@ -514,7 +522,7 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: _emailController,
             focusNode: _emailFocusNode,
             enabled: !_isLoading,
-            keyboardType:  TextInputType.emailAddress,
+            keyboardType: TextInputType.emailAddress,
             textCapitalization: TextCapitalization.none,
             textInputAction: TextInputAction.next,
             autofillHints: const [AutofillHints.email, AutofillHints.username],

@@ -17,6 +17,9 @@ android/key.properties
 android/app/*.jks
 android/app/*.keystore
 
+# Firebase server credentials
+supabase/firebase-secrets.env
+
 # IntelliJ related
 *.iml
 *.ipr

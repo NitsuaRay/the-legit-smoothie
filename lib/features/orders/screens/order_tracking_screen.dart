@@ -122,8 +122,6 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ),
         );
     } catch (e) {
-      debugPrint('Failed to cancel order: $e');
-
       if (!mounted) return;
 
       ScaffoldMessenger.of(context)

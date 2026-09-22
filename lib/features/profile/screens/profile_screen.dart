@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:philippines_rpcmb/philippines_rpcmb.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:the_legit_smoothie/core/services/push_notification_service.dart';
 import 'package:the_legit_smoothie/features/auth/screens/login_screen.dart';
 import 'package:the_legit_smoothie/widgets/change_password_dialog.dart';
 import 'package:the_legit_smoothie/features/profile/widgets/customer_profile_header.dart';
@@ -702,17 +703,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      // Sign out locally first.
+      // =========================================================
+      // REMOVE THIS DEVICE FROM PUSH NOTIFICATIONS
+      // =========================================================
+
+      await PushNotificationService.instance.removeCurrentDeviceToken();
+
+      // =========================================================
+      // SIGN OUT
+      // =========================================================
+
       await _supabase.auth.signOut(scope: SignOutScope.local);
 
       if (!mounted) return;
+
+      // =========================================================
+      // RETURN TO LOGIN
+      // =========================================================
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginScreen()),
         (Route<dynamic> route) => false,
       );
     } catch (error) {
-      debugPrint('Customer LOGOUT ERROR: $error');
+      debugPrint('CUSTOMER LOGOUT ERROR: $error');
 
       if (!mounted) return;
 
@@ -723,7 +737,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _showMessage('Unable to log out. Please try again.', isError: true);
     }
   }
-
   // =============================================================
   // BUILD
   // =============================================================
