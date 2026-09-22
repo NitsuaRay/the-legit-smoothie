@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:ota_update/ota_update.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -9,10 +10,8 @@ import '../models/app_update_info.dart';
 class AppUpdateService {
   final SupabaseClient _supabase;
 
-  AppUpdateService({
-    SupabaseClient? supabase,
-  }) : _supabase =
-            supabase ?? Supabase.instance.client;
+  AppUpdateService({SupabaseClient? supabase})
+      : _supabase = supabase ?? Supabase.instance.client;
 
   // ============================================================
   // CHECK FOR UPDATE
@@ -20,13 +19,13 @@ class AppUpdateService {
 
   Future<AppUpdateInfo?> checkForUpdate() async {
     try {
-      // ----------------------------------------------------------
-      // PLATFORM
-      // ----------------------------------------------------------
-
       if (kIsWeb) {
         return null;
       }
+
+      // ========================================================
+      // PLATFORM
+      // ========================================================
 
       String platform;
 
@@ -38,140 +37,180 @@ class AppUpdateService {
         return null;
       }
 
-      // ----------------------------------------------------------
-      // CURRENT INSTALLED APP
-      // ----------------------------------------------------------
+      // ========================================================
+      // INSTALLED APP VERSION
+      // ========================================================
 
-      final PackageInfo packageInfo =
-          await PackageInfo.fromPlatform();
+      final PackageInfo packageInfo = await PackageInfo.fromPlatform();
 
-      final String currentVersion =
-          packageInfo.version.trim();
+      final String currentVersion = packageInfo.version.trim();
 
-      final int currentBuildNumber =
-          int.tryParse(
-                packageInfo.buildNumber.trim(),
-              ) ??
-              0;
+      final int rawBuildNumber =
+          int.tryParse(packageInfo.buildNumber.trim()) ?? 0;
 
-      // ----------------------------------------------------------
-      // SERVER VERSION
-      // ----------------------------------------------------------
+      // ========================================================
+      // DETECT DEVICE ABI
+      // ========================================================
 
-      final Map<String, dynamic>? data =
-          await _supabase
-              .from('app_versions')
-              .select(
-                'platform, '
-                'latest_version, '
-                'latest_build_number, '
-                'minimum_version, '
-                'minimum_build_number, '
-                'update_title, '
-                'update_message, '
-                'update_url, '
-                'is_update_enabled',
-              )
-              .eq('platform', platform)
-              .maybeSingle();
+      String? deviceAbi;
+
+      if (Platform.isAndroid) {
+        deviceAbi = await OtaUpdate().getAbi();
+        deviceAbi = deviceAbi?.trim();
+
+        debugPrint('App update device ABI: $deviceAbi');
+      }
+
+      // ========================================================
+      // NORMALIZE BUILD NUMBER
+      // ========================================================
+
+      final int currentBuildNumber = Platform.isAndroid
+          ? _normalizeAndroidBuildNumber(
+              rawBuildNumber: rawBuildNumber,
+              deviceAbi: deviceAbi,
+            )
+          : rawBuildNumber;
+
+      debugPrint(
+        'App update build number: '
+        'raw=$rawBuildNumber, '
+        'normalized=$currentBuildNumber',
+      );
+
+      // ========================================================
+      // GET SERVER CONFIGURATION
+      // ========================================================
+
+      final Map<String, dynamic>? data = await _supabase
+          .from('app_versions')
+          .select(
+            'platform, '
+            'latest_version, '
+            'latest_build_number, '
+            'minimum_version, '
+            'minimum_build_number, '
+            'update_title, '
+            'update_message, '
+            'is_update_enabled, '
+            'arm64_url, '
+            'armeabi_v7a_url, '
+            'x86_64_url',
+          )
+          .eq('platform', platform)
+          .maybeSingle();
 
       if (data == null) {
         debugPrint(
-          'App update: no version configuration '
-          'found for $platform.',
+          'App update: no configuration found for $platform.',
         );
 
         return null;
       }
 
-      // ----------------------------------------------------------
-      // SERVER VALUES
-      // ----------------------------------------------------------
+      // ========================================================
+      // SERVER VERSION VALUES
+      // ========================================================
 
       final String latestVersion =
-          (data['latest_version'] ?? '')
-              .toString()
-              .trim();
+          (data['latest_version'] ?? '').toString().trim();
 
       final int latestBuildNumber =
-          _toInt(
-        data['latest_build_number'],
-      );
+          _toInt(data['latest_build_number']);
 
       final String minimumVersion =
-          (data['minimum_version'] ?? '')
-              .toString()
-              .trim();
+          (data['minimum_version'] ?? '').toString().trim();
 
       final int minimumBuildNumber =
-          _toInt(
-        data['minimum_build_number'],
-      );
+          _toInt(data['minimum_build_number']);
 
       final String updateTitle =
-          (data['update_title'] ??
-                  'Update available')
+          (data['update_title'] ?? 'Update available')
               .toString()
               .trim();
 
       final String updateMessage =
-          (data['update_message'] ??
-                  'A new version is available.')
+          (data['update_message'] ?? 'A new version is available.')
               .toString()
               .trim();
-
-      final String? updateUrl =
-          _nullableString(
-        data['update_url'],
-      );
 
       final bool updateEnabled =
           data['is_update_enabled'] == true;
 
-      // ----------------------------------------------------------
-      // VALIDATE CONFIGURATION
-      // ----------------------------------------------------------
+      // ========================================================
+      // SELECT CORRECT APK FOR DEVICE ABI
+      // ========================================================
+
+      String? selectedUpdateUrl;
+
+      if (Platform.isAndroid) {
+        switch (deviceAbi) {
+          case 'arm64-v8a':
+            selectedUpdateUrl =
+                _nullableString(data['arm64_url']);
+            break;
+
+          case 'armeabi-v7a':
+            selectedUpdateUrl =
+                _nullableString(data['armeabi_v7a_url']);
+            break;
+
+          case 'x86_64':
+            selectedUpdateUrl =
+                _nullableString(data['x86_64_url']);
+            break;
+
+          default:
+            debugPrint(
+              'App update: unsupported ABI: $deviceAbi',
+            );
+        }
+      }
+
+      // ========================================================
+      // VALIDATE SERVER CONFIGURATION
+      // ========================================================
 
       if (latestBuildNumber <= 0 ||
           minimumBuildNumber <= 0) {
         debugPrint(
-          'App update: invalid build numbers '
-          'received from Supabase.',
+          'App update: invalid build numbers.',
         );
 
         return null;
       }
 
-      // ----------------------------------------------------------
+      // ========================================================
       // RESULT
-      // ----------------------------------------------------------
+      // ========================================================
 
-      final AppUpdateInfo result =
-          AppUpdateInfo(
+      final AppUpdateInfo result = AppUpdateInfo(
         platform: platform,
-
         currentVersion: currentVersion,
-        currentBuildNumber:
-            currentBuildNumber,
-
+        currentBuildNumber: currentBuildNumber,
         latestVersion: latestVersion,
-        latestBuildNumber:
-            latestBuildNumber,
-
+        latestBuildNumber: latestBuildNumber,
         minimumVersion: minimumVersion,
-        minimumBuildNumber:
-            minimumBuildNumber,
-
+        minimumBuildNumber: minimumBuildNumber,
         updateTitle: updateTitle,
         updateMessage: updateMessage,
-        updateUrl: updateUrl,
-
+        updateUrl: selectedUpdateUrl,
+        deviceAbi: deviceAbi,
         updateEnabled: updateEnabled,
       );
 
       debugPrint(
         'App update check: $result',
       );
+
+      if (result.hasUpdate &&
+          !result.hasUpdateUrl) {
+        debugPrint(
+          'WARNING: Update exists but '
+          'no compatible APK URL was found '
+          'for ABI $deviceAbi.',
+        );
+      }
 
       return result;
     } on PostgrestException catch (error) {
@@ -191,12 +230,100 @@ class AppUpdateService {
   }
 
   // ============================================================
+  // DOWNLOAD AND INSTALL UPDATE
+  // ============================================================
+
+  Stream<OtaEvent> installUpdate(
+    AppUpdateInfo updateInfo,
+  ) {
+    final String? url = updateInfo.updateUrl;
+
+    if (url == null || url.trim().isEmpty) {
+      throw StateError(
+        'No compatible APK URL is available '
+        'for ${updateInfo.deviceAbi}.',
+      );
+    }
+
+    debugPrint(
+      'Starting OTA update for ABI: '
+      '${updateInfo.deviceAbi}',
+    );
+
+    return OtaUpdate().execute(
+      url.trim(),
+      destinationFilename:
+          'the-legit-smoothie-update.apk',
+    );
+  }
+
+  // ============================================================
+  // NORMALIZE ANDROID SPLIT APK BUILD NUMBER
+  // ============================================================
+
+  int _normalizeAndroidBuildNumber({
+    required int rawBuildNumber,
+    required String? deviceAbi,
+  }) {
+    if (rawBuildNumber <= 0) {
+      return rawBuildNumber;
+    }
+
+    // When running normally with `flutter run`,
+    // PackageInfo may already return the original Flutter
+    // build number, for example:
+    //
+    //   2
+    //
+    // In that case there is nothing to normalize.
+    if (rawBuildNumber < 1000) {
+      return rawBuildNumber;
+    }
+
+    // Flutter --split-per-abi produced the following
+    // versionCode prefixes in this project:
+    //
+    // armeabi-v7a:
+    //   build 2 -> 1002
+    //
+    // arm64-v8a:
+    //   build 2 -> 2002
+    //
+    // x86_64:
+    //   build 2 -> 4002
+    //
+    // Remove the ABI prefix so Supabase only needs
+    // to store the normal Flutter build number.
+
+    switch (deviceAbi) {
+      case 'armeabi-v7a':
+        if (rawBuildNumber >= 1000) {
+          return rawBuildNumber - 1000;
+        }
+        break;
+
+      case 'arm64-v8a':
+        if (rawBuildNumber >= 2000) {
+          return rawBuildNumber - 2000;
+        }
+        break;
+
+      case 'x86_64':
+        if (rawBuildNumber >= 4000) {
+          return rawBuildNumber - 4000;
+        }
+        break;
+    }
+
+    // If the ABI is unknown, do not guess.
+    return rawBuildNumber;
+  }
+
+  // ============================================================
   // INT
   // ============================================================
 
-  int _toInt(
-    dynamic value,
-  ) {
+  int _toInt(dynamic value) {
     if (value == null) {
       return 0;
     }

@@ -12,7 +12,17 @@ class AppUpdateInfo {
 
   final String updateTitle;
   final String updateMessage;
+
+  /// APK URL selected for this specific device architecture.
   final String? updateUrl;
+
+  /// Android ABI detected on this device.
+  ///
+  /// Examples:
+  /// arm64-v8a
+  /// armeabi-v7a
+  /// x86_64
+  final String? deviceAbi;
 
   final bool updateEnabled;
 
@@ -27,6 +37,7 @@ class AppUpdateInfo {
     required this.updateTitle,
     required this.updateMessage,
     required this.updateUrl,
+    required this.deviceAbi,
     required this.updateEnabled,
   });
 
@@ -76,8 +87,10 @@ class AppUpdateInfo {
         'latestBuildNumber: $latestBuildNumber, '
         'minimumVersion: $minimumVersion, '
         'minimumBuildNumber: $minimumBuildNumber, '
+        'deviceAbi: $deviceAbi, '
         'hasUpdate: $hasUpdate, '
-        'isRequired: $isRequired'
+        'isRequired: $isRequired, '
+        'hasUpdateUrl: $hasUpdateUrl'
         ')';
   }
 }

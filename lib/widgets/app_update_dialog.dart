@@ -15,12 +15,15 @@ class AppUpdateDialog extends StatelessWidget {
   /// True while we are opening/downloading the update.
   final bool isUpdating;
 
+  final double? downloadProgress;
+
   const AppUpdateDialog({
     super.key,
     required this.updateInfo,
     required this.onUpdate,
     this.onLater,
     this.isUpdating = false,
+    this.downloadProgress,
   });
 
   // ============================================================
@@ -32,27 +35,21 @@ class AppUpdateDialog extends StatelessWidget {
   }
 
   String get _eyebrow {
-    return _isRequired
-        ? 'UPDATE REQUIRED'
-        : 'UPDATE AVAILABLE';
+    return _isRequired ? 'UPDATE REQUIRED' : 'UPDATE AVAILABLE';
   }
 
   String get _title {
-    final String customTitle =
-        updateInfo.updateTitle.trim();
+    final String customTitle = updateInfo.updateTitle.trim();
 
     if (customTitle.isNotEmpty) {
       return customTitle;
     }
 
-    return _isRequired
-        ? 'Update required'
-        : 'A new version is ready';
+    return _isRequired ? 'Update required' : 'A new version is ready';
   }
 
   String get _message {
-    final String customMessage =
-        updateInfo.updateMessage.trim();
+    final String customMessage = updateInfo.updateMessage.trim();
 
     if (customMessage.isNotEmpty) {
       return customMessage;
@@ -79,30 +76,19 @@ class AppUpdateDialog extends StatelessWidget {
 
       child: Dialog(
         elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(
-          horizontal: 22,
-          vertical: 24,
-        ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
         backgroundColor: Colors.transparent,
 
         child: Container(
           width: double.infinity,
-          constraints: const BoxConstraints(
-            maxWidth: 430,
-          ),
+          constraints: const BoxConstraints(maxWidth: 430),
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(
-              color: AppColors.border.withValues(
-                alpha: 0.32,
-              ),
-            ),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.32)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: 0.10,
-                ),
+                color: Colors.black.withValues(alpha: 0.10),
                 blurRadius: 34,
                 offset: const Offset(0, 16),
               ),
@@ -118,21 +104,14 @@ class AppUpdateDialog extends StatelessWidget {
                 // ==================================================
                 // TOP AREA
                 // ==================================================
-
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    22,
-                    22,
-                    22,
-                    0,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 0),
 
                   child: Column(
                     children: [
                       // ==============================================
                       // OPTIONAL CLOSE BUTTON
                       // ==============================================
-
                       if (!_isRequired)
                         Align(
                           alignment: Alignment.centerRight,
@@ -152,29 +131,24 @@ class AppUpdateDialog extends StatelessWidget {
                           ),
                         )
                       else
-                        const SizedBox(
-                          height: 34,
-                        ),
+                        const SizedBox(height: 34),
 
                       const SizedBox(height: 6),
 
                       // ==============================================
                       // ICON
                       // ==============================================
-
                       Container(
                         width: 68,
                         height: 68,
                         decoration: BoxDecoration(
                           color: AppColors.textPrimary,
-                          borderRadius:
-                              BorderRadius.circular(21),
+                          borderRadius: BorderRadius.circular(21),
                         ),
                         child: Icon(
                           _isRequired
                               ? Icons.system_update_alt_rounded
-                              : Icons
-                                  .new_releases_outlined,
+                              : Icons.new_releases_outlined,
                           size: 29,
                           color: Colors.white,
                         ),
@@ -185,7 +159,6 @@ class AppUpdateDialog extends StatelessWidget {
                       // ==============================================
                       // EYEBROW
                       // ==============================================
-
                       Text(
                         _eyebrow,
                         textAlign: TextAlign.center,
@@ -193,8 +166,7 @@ class AppUpdateDialog extends StatelessWidget {
                           fontSize: 7.5,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.25,
-                          color: AppColors.textSecondary
-                              .withValues(
+                          color: AppColors.textSecondary.withValues(
                             alpha: 0.58,
                           ),
                         ),
@@ -205,7 +177,6 @@ class AppUpdateDialog extends StatelessWidget {
                       // ==============================================
                       // TITLE
                       // ==============================================
-
                       Text(
                         _title,
                         textAlign: TextAlign.center,
@@ -223,7 +194,6 @@ class AppUpdateDialog extends StatelessWidget {
                       // ==============================================
                       // VERSION
                       // ==============================================
-
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 11,
@@ -231,13 +201,9 @@ class AppUpdateDialog extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.background,
-                          borderRadius:
-                              BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: AppColors.border
-                                .withValues(
-                              alpha: 0.28,
-                            ),
+                            color: AppColors.border.withValues(alpha: 0.28),
                           ),
                         ),
                         child: Text(
@@ -256,7 +222,6 @@ class AppUpdateDialog extends StatelessWidget {
                       // ==============================================
                       // MESSAGE
                       // ==============================================
-
                       Text(
                         _message,
                         textAlign: TextAlign.center,
@@ -264,8 +229,7 @@ class AppUpdateDialog extends StatelessWidget {
                           fontSize: 10.5,
                           height: 1.55,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary
-                              .withValues(
+                          color: AppColors.textSecondary.withValues(
                             alpha: 0.78,
                           ),
                         ),
@@ -276,12 +240,9 @@ class AppUpdateDialog extends StatelessWidget {
                       // ==============================================
                       // VERSION INFORMATION
                       // ==============================================
-
                       _VersionInformation(
-                        currentVersion:
-                            updateInfo.currentVersion,
-                        latestVersion:
-                            updateInfo.latestVersion,
+                        currentVersion: updateInfo.currentVersion,
+                        latestVersion: updateInfo.latestVersion,
                         requiredUpdate: _isRequired,
                       ),
                     ],
@@ -293,124 +254,85 @@ class AppUpdateDialog extends StatelessWidget {
                 // ==================================================
                 // BOTTOM ACTION AREA
                 // ==================================================
-
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(
-                    22,
-                    18,
-                    22,
-                    22,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
                   decoration: BoxDecoration(
-                    color: AppColors.background
-                        .withValues(
-                      alpha: 0.72,
-                    ),
+                    color: AppColors.background.withValues(alpha: 0.72),
                     border: Border(
                       top: BorderSide(
-                        color: AppColors.border
-                            .withValues(
-                          alpha: 0.25,
-                        ),
+                        color: AppColors.border.withValues(alpha: 0.25),
                       ),
                     ),
                   ),
                   child: Column(
                     children: [
+                      if (isUpdating) ...[
+                        _DownloadProgress(progress: downloadProgress),
+
+                        const SizedBox(height: 14),
+                      ],
                       // ==============================================
                       // UPDATE BUTTON
                       // ==============================================
-
                       SizedBox(
                         width: double.infinity,
                         height: 52,
                         child: FilledButton(
-                          onPressed:
-                              isUpdating ? null : onUpdate,
+                          onPressed: isUpdating ? null : onUpdate,
                           style: FilledButton.styleFrom(
-                            backgroundColor:
-                                AppColors.textPrimary,
-                            disabledBackgroundColor:
-                                AppColors.textPrimary
-                                    .withValues(
-                              alpha: 0.70,
-                            ),
-                            foregroundColor:
-                                Colors.white,
+                            backgroundColor: AppColors.textPrimary,
+                            disabledBackgroundColor: AppColors.textPrimary
+                                .withValues(alpha: 0.70),
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(
-                                16,
-                              ),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 0,
                           ),
                           child: AnimatedSwitcher(
-                            duration: const Duration(
-                              milliseconds: 180,
-                            ),
+                            duration: const Duration(milliseconds: 180),
                             child: isUpdating
                                 ? const Row(
-                                    key: ValueKey(
-                                      'updating',
-                                    ),
-                                    mainAxisAlignment:
-                                        MainAxisAlignment
-                                            .center,
+                                    key: ValueKey('updating'),
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       SizedBox(
                                         width: 17,
                                         height: 17,
-                                        child:
-                                            CircularProgressIndicator(
+                                        child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color:
-                                              Colors.white,
+                                          color: Colors.white,
                                         ),
                                       ),
                                       SizedBox(width: 10),
                                       Text(
-                                        'OPENING UPDATE...',
+                                        'DOWNLOADING ...',
                                         style: TextStyle(
                                           fontSize: 9,
-                                          fontWeight:
-                                              FontWeight
-                                                  .w900,
-                                          letterSpacing:
-                                              0.8,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.8,
                                         ),
                                       ),
                                     ],
                                   )
                                 : Row(
-                                    key: const ValueKey(
-                                      'update',
-                                    ),
-                                    mainAxisAlignment:
-                                        MainAxisAlignment
-                                            .center,
+                                    key: const ValueKey('update'),
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       const Icon(
-                                        Icons
-                                            .system_update_alt_rounded,
+                                        Icons.system_update_alt_rounded,
                                         size: 17,
                                       ),
-                                      const SizedBox(
-                                        width: 9,
-                                      ),
+                                      const SizedBox(width: 9),
                                       Text(
                                         _isRequired
                                             ? 'UPDATE APP'
                                             : 'UPDATE NOW',
-                                        style:
-                                            const TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 9,
-                                          fontWeight:
-                                              FontWeight
-                                                  .w900,
-                                          letterSpacing:
-                                              0.9,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.9,
                                         ),
                                       ),
                                     ],
@@ -422,7 +344,6 @@ class AppUpdateDialog extends StatelessWidget {
                       // ==============================================
                       // MAYBE LATER
                       // ==============================================
-
                       if (!_isRequired) ...[
                         const SizedBox(height: 10),
 
@@ -433,15 +354,12 @@ class AppUpdateDialog extends StatelessWidget {
                                   if (onLater != null) {
                                     onLater!();
                                   } else {
-                                    Navigator.of(context)
-                                        .pop();
+                                    Navigator.of(context).pop();
                                   }
                                 },
                           style: TextButton.styleFrom(
-                            foregroundColor:
-                                AppColors.textSecondary,
-                            padding:
-                                const EdgeInsets.symmetric(
+                            foregroundColor: AppColors.textSecondary,
+                            padding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 9,
                             ),
@@ -459,20 +377,16 @@ class AppUpdateDialog extends StatelessWidget {
                       // ==============================================
                       // REQUIRED NOTICE
                       // ==============================================
-
                       if (_isRequired) ...[
                         const SizedBox(height: 12),
 
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.lock_outline_rounded,
                               size: 12,
-                              color: AppColors
-                                  .textSecondary
-                                  .withValues(
+                              color: AppColors.textSecondary.withValues(
                                 alpha: 0.55,
                               ),
                             ),
@@ -482,15 +396,11 @@ class AppUpdateDialog extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 'Update required to continue using the app',
-                                textAlign:
-                                    TextAlign.center,
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 7.5,
-                                  fontWeight:
-                                      FontWeight.w600,
-                                  color: AppColors
-                                      .textSecondary
-                                      .withValues(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary.withValues(
                                     alpha: 0.60,
                                   ),
                                 ),
@@ -519,10 +429,7 @@ class _CloseButton extends StatelessWidget {
   final bool enabled;
   final VoidCallback onTap;
 
-  const _CloseButton({
-    required this.enabled,
-    required this.onTap,
-  });
+  const _CloseButton({required this.enabled, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -537,18 +444,12 @@ class _CloseButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.background,
             borderRadius: BorderRadius.circular(11),
-            border: Border.all(
-              color: AppColors.border.withValues(
-                alpha: 0.28,
-              ),
-            ),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.28)),
           ),
           child: Icon(
             Icons.close_rounded,
             size: 17,
-            color: enabled
-                ? AppColors.textPrimary
-                : AppColors.textSecondary,
+            color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
           ),
         ),
       ),
@@ -579,25 +480,16 @@ class _VersionInformation extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: AppColors.border.withValues(
-            alpha: 0.25,
-          ),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
           Expanded(
-            child: _VersionItem(
-              label: 'CURRENT',
-              version: currentVersion,
-            ),
+            child: _VersionItem(label: 'CURRENT', version: currentVersion),
           ),
 
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Container(
               width: 30,
               height: 30,
@@ -615,9 +507,7 @@ class _VersionInformation extends StatelessWidget {
 
           Expanded(
             child: _VersionItem(
-              label: requiredUpdate
-                  ? 'REQUIRED'
-                  : 'LATEST',
+              label: requiredUpdate ? 'REQUIRED' : 'LATEST',
               version: latestVersion,
               alignRight: true,
             ),
@@ -656,10 +546,7 @@ class _VersionItem extends StatelessWidget {
             fontSize: 6,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.75,
-            color: AppColors.textSecondary
-                .withValues(
-              alpha: 0.52,
-            ),
+            color: AppColors.textSecondary.withValues(alpha: 0.52),
           ),
         ),
 
@@ -671,6 +558,83 @@ class _VersionItem extends StatelessWidget {
             fontSize: 11,
             fontWeight: FontWeight.w900,
             color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// =================================================================
+// DOWNLOAD PROGRESS
+// =================================================================
+
+class _DownloadProgress extends StatelessWidget {
+  final double? progress;
+
+  const _DownloadProgress({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    final double? safeProgress = progress?.clamp(0.0, 1.0);
+
+    final int? percentage = safeProgress == null
+        ? null
+        : (safeProgress * 100).round();
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'DOWNLOADING UPDATE',
+                style: TextStyle(
+                  fontSize: 7,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.8,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+
+            if (percentage != null)
+              Text(
+                '$percentage%',
+                style: const TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+          ],
+        ),
+
+        const SizedBox(height: 8),
+
+        ClipRRect(
+          borderRadius: BorderRadius.circular(99),
+          child: LinearProgressIndicator(
+            value: safeProgress,
+            minHeight: 6,
+            backgroundColor: AppColors.border.withValues(alpha: 0.20),
+            color: AppColors.textPrimary,
+          ),
+        ),
+
+        const SizedBox(height: 7),
+
+        Text(
+          percentage == null
+              ? 'Preparing your update...'
+              : percentage >= 100
+              ? 'Preparing installer...'
+              : 'Please keep the app open while the update downloads.',
+          style: TextStyle(
+            fontSize: 7.5,
+            height: 1.4,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary.withValues(alpha: 0.65),
           ),
         ),
       ],
