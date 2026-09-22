@@ -12,6 +12,7 @@ import 'seller_profile_menu_item.dart';
 class SellerProfileSections extends StatelessWidget {
   final bool isLoggingOut;
   final VoidCallback onEditProfile;
+  final VoidCallback onChangePassword;
   final VoidCallback onLogout;
   final DateTime? sellerSince;
 
@@ -19,6 +20,7 @@ class SellerProfileSections extends StatelessWidget {
     super.key,
     required this.isLoggingOut,
     required this.onEditProfile,
+    required this.onChangePassword,
     required this.onLogout,
     required this.sellerSince,
   });
@@ -49,25 +51,44 @@ class SellerProfileSections extends StatelessWidget {
         SellerProfileSection(
           eyebrow: 'Security',
           title: 'Session',
-          child: SellerProfileMenuItem(
-            icon: Icons.logout_rounded,
-            title: 'Log out',
-            subtitle: 'Sign out of this device.',
-            destructive: true,
-            onTap: isLoggingOut ? () {} : onLogout,
-            trailing: isLoggingOut
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.textPrimary,
-                    ),
-                  )
-                : null,
+          child: Column(
+            children: [
+              SellerProfileMenuItem(
+                icon: Icons.lock_outline_rounded,
+                title: 'Change password',
+                subtitle:
+                    'Update your password and keep your seller account secure.',
+                onTap: onChangePassword,
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Divider(
+                  height: 1,
+                  color: AppColors.border.withValues(alpha: 0.22),
+                ),
+              ),
+
+              SellerProfileMenuItem(
+                icon: Icons.logout_rounded,
+                title: 'Log out',
+                subtitle: 'Sign out of this device.',
+                destructive: true,
+                onTap: isLoggingOut ? null : onLogout,
+                trailing: isLoggingOut
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.textPrimary,
+                        ),
+                      )
+                    : null,
+              ),
+            ],
           ),
         ),
-
         const SizedBox(height: 20),
 
         // =====================================================
@@ -1013,10 +1034,19 @@ class SellerProfileFooter extends StatelessWidget {
                 color: AppColors.border.withValues(alpha: 0.30),
               ),
             ),
-            child: const Icon(
-              Icons.storefront_outlined,
-              size: 15,
-              color: AppColors.textSecondary,
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Image.asset(
+                'assets/logoSmoothie.png',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.local_drink_outlined,
+                    size: 15,
+                    color: AppColors.textSecondary,
+                  );
+                },
+              ),
             ),
           ),
 

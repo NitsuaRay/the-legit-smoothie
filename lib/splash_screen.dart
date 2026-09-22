@@ -214,7 +214,6 @@ class _SplashScreenState extends State<SplashScreen>
   // ============================================================
 
   @override
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -536,8 +535,10 @@ class _PremiumLoaderState extends State<_PremiumLoader>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    _controller.repeat();
   }
 
   @override

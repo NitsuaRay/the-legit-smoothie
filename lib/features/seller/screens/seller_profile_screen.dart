@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:the_legit_smoothie/features/auth/screens/login_screen.dart';
+import 'package:the_legit_smoothie/widgets/change_password_dialog.dart';
 import 'package:the_legit_smoothie/features/seller/widgets/profileScreen/seller_profile_header.dart';
 import 'package:the_legit_smoothie/features/seller/widgets/profileScreen/seller_profile_identity_card.dart';
 import 'package:the_legit_smoothie/features/seller/widgets/profileScreen/seller_profile_info_card.dart';
@@ -40,6 +41,27 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
   void initState() {
     super.initState();
     _loadProfile();
+  }
+
+  Future<void> _showChangePassword() async {
+    final bool? changed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return const ChangePasswordDialog();
+      },
+    );
+
+    if (!mounted || changed != true) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Password changed successfully.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   // =============================================================
@@ -718,6 +740,10 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
 
     final String rawAvatar = _profile?['avatar_url']?.toString().trim() ?? '';
 
+    final DateTime? sellerSince = DateTime.tryParse(
+      _profile?['created_at']?.toString() ?? '',
+    )?.toLocal();
+
     final String? avatarUrl = rawAvatar.isEmpty ? null : rawAvatar;
 
     final String email = user?.email?.trim() ?? '';
@@ -822,10 +848,9 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                         child: SellerProfileSections(
                           isLoggingOut: _isLoggingOut,
                           onEditProfile: _editProfile,
+                          onChangePassword: _showChangePassword,
                           onLogout: _confirmLogout,
-                          sellerSince: DateTime.tryParse(
-                            _profile?['created_at']?.toString() ?? '',
-                          )?.toLocal(),
+                          sellerSince: sellerSince,
                         ),
                       ),
                     ),

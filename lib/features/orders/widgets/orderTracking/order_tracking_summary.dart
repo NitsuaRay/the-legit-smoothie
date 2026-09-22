@@ -7,16 +7,37 @@ import '../../../../core/utils/helpers.dart';
 
 class OrderTrackingSummary extends StatelessWidget {
   final Future<List<Map<String, dynamic>>> itemsFuture;
+
   final String orderType;
+
+  /// Discounted subtotal stored on the order.
+  final double subtotal;
+
+  /// Actual delivery fee stored on the order.
+  final double deliveryFee;
+
+  /// Final amount paid.
   final double totalPrice;
 
-  static const double deliveryFeeAmount = 45.00;
+  /// Promotion discount stored on the order.
+  final double discountAmount;
+
+  /// Historical promotion title stored on the order.
+  final String? promotionTitle;
+
+  /// Historical promotion snapshot stored on the order.
+  final dynamic promotionSnapshot;
 
   const OrderTrackingSummary({
     super.key,
     required this.itemsFuture,
     required this.orderType,
+    required this.subtotal,
+    required this.deliveryFee,
     required this.totalPrice,
+    required this.discountAmount,
+    this.promotionTitle,
+    this.promotionSnapshot,
   });
 
   // ==============================================================
@@ -146,10 +167,19 @@ class OrderTrackingSummary extends StatelessWidget {
 
     for (final option in options) {
       final String group =
-          option['group']?.toString().trim().isNotEmpty ==
+          option['option_group']
+                      ?.toString()
+                      .trim()
+                      .isNotEmpty ==
                   true
-              ? option['group'].toString()
-              : 'Options';
+              ? option['option_group'].toString()
+              : option['group']
+                          ?.toString()
+                          .trim()
+                          .isNotEmpty ==
+                      true
+                  ? option['group'].toString()
+                  : 'Options';
 
       grouped
           .putIfAbsent(group, () => [])
@@ -160,19 +190,91 @@ class OrderTrackingSummary extends StatelessWidget {
   }
 
   // ==============================================================
+  // PROMOTION
+  // ==============================================================
+
+  bool get _hasPromotion {
+    return discountAmount > 0;
+  }
+
+  String get _promotionName {
+    final String title =
+        promotionTitle?.trim() ?? '';
+
+    if (title.isNotEmpty) {
+      return title;
+    }
+
+    return 'Promotion Discount';
+  }
+
+  Map<String, dynamic>? get _promotionData {
+    final dynamic raw =
+        promotionSnapshot;
+
+    if (raw == null) {
+      return null;
+    }
+
+    if (raw is Map) {
+      return Map<String, dynamic>.from(
+        raw,
+      );
+    }
+
+    if (raw is String &&
+        raw.trim().isNotEmpty) {
+      try {
+        final dynamic decoded =
+            jsonDecode(raw);
+
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(
+            decoded,
+          );
+        }
+      } catch (_) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  int get _promotionApplications {
+    final Map<String, dynamic>? data =
+        _promotionData;
+
+    if (data == null) {
+      return 0;
+    }
+
+    final dynamic raw =
+        data['applications'];
+
+    if (raw is num) {
+      return raw.toInt();
+    }
+
+    return int.tryParse(
+          raw?.toString() ?? '',
+        ) ??
+        0;
+  }
+
+  // ==============================================================
   // BUILD
   // ==============================================================
 
   @override
   Widget build(BuildContext context) {
     final bool isDelivery =
-        orderType.toLowerCase() == 'delivery';
-
-    final double deliveryFee =
-        isDelivery ? deliveryFeeAmount : 0;
+        orderType.toLowerCase() ==
+            'delivery';
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
       children: [
         // ==========================================================
         // HEADER
@@ -206,10 +308,14 @@ class OrderTrackingSummary extends StatelessWidget {
                     'YOUR ORDER',
                     style: TextStyle(
                       fontSize: 7,
-                      fontWeight: FontWeight.w900,
+                      fontWeight:
+                          FontWeight.w900,
                       letterSpacing: 1.1,
-                      color: AppColors.textSecondary
-                          .withValues(alpha: 0.50),
+                      color: AppColors
+                          .textSecondary
+                          .withValues(
+                        alpha: 0.50,
+                      ),
                     ),
                   ),
 
@@ -220,9 +326,11 @@ class OrderTrackingSummary extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       height: 1,
-                      fontWeight: FontWeight.w900,
+                      fontWeight:
+                          FontWeight.w900,
                       letterSpacing: -0.4,
-                      color: AppColors.textPrimary,
+                      color:
+                          AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -234,11 +342,12 @@ class OrderTrackingSummary extends StatelessWidget {
         const SizedBox(height: 7),
 
         Text(
-          'Your items, customizations, and payment breakdown.',
+          'Your items, customizations, promotion, and payment breakdown.',
           style: TextStyle(
             fontSize: 10,
             height: 1.4,
-            color: AppColors.textSecondary.withValues(
+            color: AppColors.textSecondary
+                .withValues(
               alpha: 0.72,
             ),
           ),
@@ -250,7 +359,8 @@ class OrderTrackingSummary extends StatelessWidget {
         // ITEMS
         // ==========================================================
 
-        FutureBuilder<List<Map<String, dynamic>>>(
+        FutureBuilder<
+            List<Map<String, dynamic>>>(
           future: itemsFuture,
           builder: (
             context,
@@ -258,7 +368,7 @@ class OrderTrackingSummary extends StatelessWidget {
           ) {
             if (snapshot.connectionState ==
                 ConnectionState.waiting) {
-              return _LoadingCard();
+              return const _LoadingCard();
             }
 
             if (snapshot.hasError ||
@@ -270,13 +380,32 @@ class OrderTrackingSummary extends StatelessWidget {
             final List<Map<String, dynamic>>
                 items = snapshot.data!;
 
+            // ======================================================
+            // ORIGINAL ITEMS SUBTOTAL
+            // ======================================================
+            //
+            // order_items.total_price contains the original item
+            // totals before the promotion discount.
+            // ======================================================
+
             double itemsSubtotal = 0;
 
             for (final item in items) {
-              itemsSubtotal +=
-                  ((item['total_price'] ?? 0)
-                          as num)
-                      .toDouble();
+              final dynamic rawTotal =
+                  item['total_price'];
+
+              if (rawTotal is num) {
+                itemsSubtotal +=
+                    rawTotal.toDouble();
+              } else {
+                itemsSubtotal +=
+                    double.tryParse(
+                          rawTotal
+                                  ?.toString() ??
+                              '',
+                        ) ??
+                        0;
+              }
             }
 
             return Column(
@@ -320,12 +449,14 @@ class OrderTrackingSummary extends StatelessWidget {
                         (context, index) {
                       return Padding(
                         padding:
-                            const EdgeInsets.symmetric(
+                            const EdgeInsets
+                                .symmetric(
                           vertical: 15,
                         ),
                         child: Divider(
                           height: 1,
-                          color: AppColors.border
+                          color: AppColors
+                              .border
                               .withValues(
                             alpha: 0.42,
                           ),
@@ -335,7 +466,8 @@ class OrderTrackingSummary extends StatelessWidget {
                     itemBuilder:
                         (context, index) {
                       final Map<String, dynamic>
-                          item = items[index];
+                          item =
+                          items[index];
 
                       final String itemName =
                           (item['product_name'] ??
@@ -343,23 +475,26 @@ class OrderTrackingSummary extends StatelessWidget {
                               .toString();
 
                       final int quantity =
-                          ((item['quantity'] ?? 1)
-                                  as num)
-                              .toInt();
+                          _parseInt(
+                        item['quantity'],
+                        fallback: 1,
+                      );
 
                       final double lineTotal =
-                          ((item['total_price'] ?? 0)
-                                  as num)
-                              .toDouble();
+                          _parseDouble(
+                        item['total_price'],
+                      );
 
                       final dynamic rawOptions =
-                          item['selected_options'] ??
+                          item[
+                                  'selected_options'] ??
                               item['options'] ??
                               item[
                                   'customizations'];
 
                       final List<
-                              Map<String, dynamic>>
+                              Map<String,
+                                  dynamic>>
                           options =
                           _parseSelectedOptions(
                         rawOptions,
@@ -391,7 +526,8 @@ class OrderTrackingSummary extends StatelessWidget {
                                   quantity
                               : lineTotal;
 
-                      final double baseUnitPrice =
+                      final double
+                          baseUnitPrice =
                           (unitTotal -
                                   optionsTotal)
                               .clamp(
@@ -400,9 +536,12 @@ class OrderTrackingSummary extends StatelessWidget {
                       );
 
                       return _OrderItem(
-                        itemName: itemName,
-                        quantity: quantity,
-                        lineTotal: lineTotal,
+                        itemName:
+                            itemName,
+                        quantity:
+                            quantity,
+                        lineTotal:
+                            lineTotal,
                         baseUnitPrice:
                             baseUnitPrice,
                         groupedOptions:
@@ -418,6 +557,25 @@ class OrderTrackingSummary extends StatelessWidget {
                   ),
                 ),
 
+                // ==================================================
+                // PROMOTION APPLIED
+                // ==================================================
+
+                if (_hasPromotion) ...[
+                  const SizedBox(
+                    height: 12,
+                  ),
+
+                  _PromotionAppliedCard(
+                    promotionTitle:
+                        _promotionName,
+                    discountAmount:
+                        discountAmount,
+                    applications:
+                        _promotionApplications,
+                  ),
+                ],
+
                 const SizedBox(height: 12),
 
                 // ==================================================
@@ -429,21 +587,54 @@ class OrderTrackingSummary extends StatelessWidget {
                   padding:
                       const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.textPrimary,
+                    color:
+                        AppColors.textPrimary,
                     borderRadius:
-                        BorderRadius.circular(20),
+                        BorderRadius.circular(
+                      20,
+                    ),
                   ),
                   child: Column(
                     children: [
+                      // ============================================
+                      // ORIGINAL SUBTOTAL
+                      // ============================================
+
                       _SummaryPriceRow(
-                        label: 'Items subtotal',
-                        value:
-                            AppHelpers.formatCurrency(
+                        label:
+                            'Items subtotal',
+                        value: AppHelpers
+                            .formatCurrency(
                           itemsSubtotal,
                         ),
                       ),
 
-                      const SizedBox(height: 10),
+                      // ============================================
+                      // PROMOTION DISCOUNT
+                      // ============================================
+
+                      if (_hasPromotion) ...[
+                        const SizedBox(
+                          height: 10,
+                        ),
+
+                        _SummaryPriceRow(
+                          label:
+                              _promotionName,
+                          value:
+                              '-${AppHelpers.formatCurrency(discountAmount)}',
+                          valueColor:
+                              AppColors.success,
+                        ),
+                      ],
+
+                      // ============================================
+                      // DELIVERY / PICKUP
+                      // ============================================
+
+                      const SizedBox(
+                        height: 10,
+                      ),
 
                       _SummaryPriceRow(
                         label: isDelivery
@@ -458,12 +649,33 @@ class OrderTrackingSummary extends StatelessWidget {
                         valueColor:
                             isDelivery
                                 ? Colors.white
-                                : AppColors.success,
+                                : AppColors
+                                    .success,
                       ),
+
+                      // ============================================
+                      // DISCOUNTED SUBTOTAL
+                      // ============================================
+
+                      if (_hasPromotion) ...[
+                        const SizedBox(
+                          height: 10,
+                        ),
+
+                        _SummaryPriceRow(
+                          label:
+                              'After discount',
+                          value: AppHelpers
+                              .formatCurrency(
+                            subtotal,
+                          ),
+                        ),
+                      ],
 
                       Padding(
                         padding:
-                            const EdgeInsets.symmetric(
+                            const EdgeInsets
+                                .symmetric(
                           vertical: 14,
                         ),
                         child: Divider(
@@ -474,6 +686,10 @@ class OrderTrackingSummary extends StatelessWidget {
                           ),
                         ),
                       ),
+
+                      // ============================================
+                      // FINAL TOTAL
+                      // ============================================
 
                       Row(
                         children: [
@@ -501,14 +717,17 @@ class OrderTrackingSummary extends StatelessWidget {
                                     ),
                                   ),
                                 ),
+
                                 const SizedBox(
                                   height: 4,
                                 ),
+
                                 Text(
                                   'Amount paid',
                                   style:
                                       TextStyle(
-                                    fontSize: 9,
+                                    fontSize:
+                                        9,
                                     fontWeight:
                                         FontWeight
                                             .w500,
@@ -524,6 +743,10 @@ class OrderTrackingSummary extends StatelessWidget {
                             ),
                           ),
 
+                          const SizedBox(
+                            width: 12,
+                          ),
+
                           Text(
                             AppHelpers
                                 .formatCurrency(
@@ -534,10 +757,12 @@ class OrderTrackingSummary extends StatelessWidget {
                               fontSize: 22,
                               height: 1,
                               fontWeight:
-                                  FontWeight.w900,
+                                  FontWeight
+                                      .w900,
                               letterSpacing:
                                   -0.7,
-                              color: Colors.white,
+                              color:
+                                  Colors.white,
                             ),
                           ),
                         ],
@@ -552,6 +777,46 @@ class OrderTrackingSummary extends StatelessWidget {
       ],
     );
   }
+
+  // ==============================================================
+  // HELPERS
+  // ==============================================================
+
+  double _parseDouble(
+    dynamic value, {
+    double fallback = 0,
+  }) {
+    if (value == null) {
+      return fallback;
+    }
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(
+          value.toString(),
+        ) ??
+        fallback;
+  }
+
+  int _parseInt(
+    dynamic value, {
+    int fallback = 0,
+  }) {
+    if (value == null) {
+      return fallback;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(
+          value.toString(),
+        ) ??
+        fallback;
+  }
 }
 
 // =================================================================
@@ -564,17 +829,22 @@ class _OrderItem extends StatelessWidget {
   final double lineTotal;
   final double baseUnitPrice;
 
-  final Map<String, List<Map<String, dynamic>>>
+  final Map<
+      String,
+      List<Map<String, dynamic>>>
       groupedOptions;
 
-  final double Function(Map<String, dynamic>)
-      getExtraPrice;
+  final double Function(
+    Map<String, dynamic>,
+  ) getExtraPrice;
 
-  final String Function(double)
-      formatOptionPrice;
+  final String Function(
+    double,
+  ) formatOptionPrice;
 
-  final IconData Function(String)
-      getGroupIcon;
+  final IconData Function(
+    String,
+  ) getGroupIcon;
 
   const _OrderItem({
     required this.itemName,
@@ -604,16 +874,19 @@ class _OrderItem extends StatelessWidget {
                 vertical: 6,
               ),
               decoration: BoxDecoration(
-                color: AppColors.textPrimary,
+                color:
+                    AppColors.textPrimary,
                 borderRadius:
                     BorderRadius.circular(9),
               ),
               child: Text(
                 '${quantity}x',
-                style: const TextStyle(
+                style:
+                    const TextStyle(
                   fontSize: 9,
                   height: 1,
-                  fontWeight: FontWeight.w900,
+                  fontWeight:
+                      FontWeight.w900,
                   color: Colors.white,
                 ),
               ),
@@ -624,28 +897,39 @@ class _OrderItem extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    CrossAxisAlignment
+                        .start,
                 children: [
                   Text(
                     itemName,
-                    style: const TextStyle(
+                    style:
+                        const TextStyle(
                       fontSize: 13,
                       height: 1.25,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.2,
-                      color: AppColors.textPrimary,
+                      fontWeight:
+                          FontWeight.w900,
+                      letterSpacing:
+                          -0.2,
+                      color: AppColors
+                          .textPrimary,
                     ),
                   ),
 
-                  const SizedBox(height: 5),
+                  const SizedBox(
+                    height: 5,
+                  ),
 
                   Text(
                     '${AppHelpers.formatCurrency(baseUnitPrice)} each',
                     style: TextStyle(
                       fontSize: 8.5,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary
-                          .withValues(alpha: 0.68),
+                      fontWeight:
+                          FontWeight.w500,
+                      color: AppColors
+                          .textSecondary
+                          .withValues(
+                        alpha: 0.68,
+                      ),
                     ),
                   ),
                 ],
@@ -658,10 +942,13 @@ class _OrderItem extends StatelessWidget {
               AppHelpers.formatCurrency(
                 lineTotal,
               ),
-              style: const TextStyle(
+              style:
+                  const TextStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
+                fontWeight:
+                    FontWeight.w900,
+                color:
+                    AppColors.textPrimary,
               ),
             ),
           ],
@@ -671,50 +958,65 @@ class _OrderItem extends StatelessWidget {
         // OPTIONS
         // ==========================================================
 
-        if (groupedOptions.isNotEmpty) ...[
+        if (groupedOptions
+            .isNotEmpty) ...[
           const SizedBox(height: 12),
 
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(11),
+            padding:
+                const EdgeInsets.all(11),
             decoration: BoxDecoration(
               color: AppColors.background,
               borderRadius:
-                  BorderRadius.circular(14),
+                  BorderRadius.circular(
+                14,
+              ),
             ),
             child: Column(
               crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  CrossAxisAlignment
+                      .start,
               children: [
                 Row(
                   children: [
                     Container(
                       width: 27,
                       height: 27,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
+                      decoration:
+                          BoxDecoration(
+                        color: AppColors
+                            .surface,
                         borderRadius:
-                            BorderRadius.circular(
+                            BorderRadius
+                                .circular(
                           8,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.tune_rounded,
+                      child:
+                          const Icon(
+                        Icons
+                            .tune_rounded,
                         size: 13,
-                        color:
-                            AppColors.textPrimary,
+                        color: AppColors
+                            .textPrimary,
                       ),
                     ),
 
-                    const SizedBox(width: 8),
+                    const SizedBox(
+                      width: 8,
+                    ),
 
                     const Text(
                       'CUSTOMIZATIONS',
-                      style: TextStyle(
+                      style:
+                          TextStyle(
                         fontSize: 6.5,
                         fontWeight:
-                            FontWeight.w900,
-                        letterSpacing: 0.8,
+                            FontWeight
+                                .w900,
+                        letterSpacing:
+                            0.8,
                         color: AppColors
                             .textSecondary,
                       ),
@@ -722,18 +1024,26 @@ class _OrderItem extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(
+                  height: 10,
+                ),
 
-                ...groupedOptions.entries.map(
+                ...groupedOptions
+                    .entries
+                    .map(
                   (entry) {
                     return Padding(
                       padding:
-                          const EdgeInsets.only(
+                          const EdgeInsets
+                              .only(
                         bottom: 9,
                       ),
-                      child: _OptionGroup(
-                        groupName: entry.key,
-                        options: entry.value,
+                      child:
+                          _OptionGroup(
+                        groupName:
+                            entry.key,
+                        options:
+                            entry.value,
                         getExtraPrice:
                             getExtraPrice,
                         formatOptionPrice:
@@ -759,16 +1069,22 @@ class _OrderItem extends StatelessWidget {
 // OPTION GROUP
 // =================================================================
 
-class _OptionGroup extends StatelessWidget {
+class _OptionGroup
+    extends StatelessWidget {
   final String groupName;
-  final List<Map<String, dynamic>> options;
+
+  final List<Map<String, dynamic>>
+      options;
+
   final IconData icon;
 
-  final double Function(Map<String, dynamic>)
-      getExtraPrice;
+  final double Function(
+    Map<String, dynamic>,
+  ) getExtraPrice;
 
-  final String Function(double)
-      formatOptionPrice;
+  final String Function(
+    double,
+  ) formatOptionPrice;
 
   const _OptionGroup({
     required this.groupName,
@@ -787,7 +1103,8 @@ class _OptionGroup extends StatelessWidget {
         Icon(
           icon,
           size: 13,
-          color: AppColors.textSecondary,
+          color:
+              AppColors.textSecondary,
         ),
 
         const SizedBox(width: 7),
@@ -801,10 +1118,14 @@ class _OptionGroup extends StatelessWidget {
                 groupName.toUpperCase(),
                 style: TextStyle(
                   fontSize: 6,
-                  fontWeight: FontWeight.w900,
+                  fontWeight:
+                      FontWeight.w900,
                   letterSpacing: 0.7,
-                  color: AppColors.textSecondary
-                      .withValues(alpha: 0.55),
+                  color: AppColors
+                      .textSecondary
+                      .withValues(
+                    alpha: 0.55,
+                  ),
                 ),
               ),
 
@@ -813,19 +1134,22 @@ class _OptionGroup extends StatelessWidget {
               ...options.map(
                 (option) {
                   final String name =
-                      (option['name'] ??
-                              option[
+                      (option[
                                   'option_name'] ??
+                              option['name'] ??
                               option['value'] ??
                               'Option')
                           .toString();
 
                   final double extra =
-                      getExtraPrice(option);
+                      getExtraPrice(
+                    option,
+                  );
 
                   return Padding(
                     padding:
-                        const EdgeInsets.only(
+                        const EdgeInsets
+                            .only(
                       bottom: 3,
                     ),
                     child: Row(
@@ -837,24 +1161,30 @@ class _OptionGroup extends StatelessWidget {
                                 const TextStyle(
                               fontSize: 9,
                               fontWeight:
-                                  FontWeight.w700,
+                                  FontWeight
+                                      .w700,
                               color: AppColors
                                   .textPrimary,
                             ),
                           ),
                         ),
 
-                        const SizedBox(width: 8),
+                        const SizedBox(
+                          width: 8,
+                        ),
 
                         Text(
                           formatOptionPrice(
                             extra,
                           ),
-                          style: TextStyle(
+                          style:
+                              TextStyle(
                             fontSize: 8,
                             fontWeight:
-                                FontWeight.w700,
-                            color: extra > 0
+                                FontWeight
+                                    .w700,
+                            color: extra >
+                                    0
                                 ? AppColors
                                     .textPrimary
                                 : AppColors
@@ -875,10 +1205,203 @@ class _OptionGroup extends StatelessWidget {
 }
 
 // =================================================================
-// SUMMARY ROW
+// PROMOTION APPLIED CARD
 // =================================================================
 
-class _SummaryPriceRow extends StatelessWidget {
+class _PromotionAppliedCard
+    extends StatelessWidget {
+  final String promotionTitle;
+  final double discountAmount;
+  final int applications;
+
+  const _PromotionAppliedCard({
+    required this.promotionTitle,
+    required this.discountAmount,
+    required this.applications,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius:
+            BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.success
+              .withValues(
+            alpha: 0.20,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black
+                .withValues(
+              alpha: 0.018,
+            ),
+            blurRadius: 16,
+            offset:
+                const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          // =======================================================
+          // PROMOTION ICON
+          // =======================================================
+
+          Container(
+            width: 45,
+            height: 45,
+            decoration: BoxDecoration(
+              color: AppColors.success
+                  .withValues(
+                alpha: 0.09,
+              ),
+              borderRadius:
+                  BorderRadius.circular(
+                14,
+              ),
+            ),
+            child: const Icon(
+              Icons.local_offer_outlined,
+              size: 19,
+              color: AppColors.success,
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // =======================================================
+          // PROMOTION INFORMATION
+          // =======================================================
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'PROMOTION APPLIED',
+                  style: TextStyle(
+                    fontSize: 6.5,
+                    fontWeight:
+                        FontWeight.w900,
+                    letterSpacing: 0.9,
+                    color: AppColors
+                        .textSecondary
+                        .withValues(
+                      alpha: 0.55,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(
+                  height: 5,
+                ),
+
+                Text(
+                  promotionTitle,
+                  style:
+                      const TextStyle(
+                    fontSize: 13,
+                    height: 1.2,
+                    fontWeight:
+                        FontWeight.w900,
+                    letterSpacing: -0.2,
+                    color: AppColors
+                        .textPrimary,
+                  ),
+                ),
+
+                const SizedBox(
+                  height: 5,
+                ),
+
+                Text(
+                  applications > 1
+                      ? 'Applied $applications times to this order.'
+                      : 'Applied to this order.',
+                  style: TextStyle(
+                    fontSize: 8.5,
+                    height: 1.35,
+                    fontWeight:
+                        FontWeight.w500,
+                    color: AppColors
+                        .textSecondary
+                        .withValues(
+                      alpha: 0.68,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // =======================================================
+          // SAVINGS
+          // =======================================================
+
+          Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.end,
+            children: [
+              Text(
+                'YOU SAVED',
+                style: TextStyle(
+                  fontSize: 6,
+                  fontWeight:
+                      FontWeight.w900,
+                  letterSpacing: 0.7,
+                  color: AppColors
+                      .textSecondary
+                      .withValues(
+                    alpha: 0.50,
+                  ),
+                ),
+              ),
+
+              const SizedBox(
+                height: 5,
+              ),
+
+              Text(
+                AppHelpers
+                    .formatCurrency(
+                  discountAmount,
+                ),
+                style:
+                    const TextStyle(
+                  fontSize: 14,
+                  fontWeight:
+                      FontWeight.w900,
+                  letterSpacing: -0.3,
+                  color:
+                      AppColors.success,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =================================================================
+// SUMMARY PRICE ROW
+// =================================================================
+
+class _SummaryPriceRow
+    extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
@@ -898,8 +1421,10 @@ class _SummaryPriceRow extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 9.5,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(
+              fontWeight:
+                  FontWeight.w600,
+              color: Colors.white
+                  .withValues(
                 alpha: 0.62,
               ),
             ),
@@ -912,9 +1437,11 @@ class _SummaryPriceRow extends StatelessWidget {
           value,
           style: TextStyle(
             fontSize: 10.5,
-            fontWeight: FontWeight.w800,
+            fontWeight:
+                FontWeight.w800,
             color:
-                valueColor ?? Colors.white,
+                valueColor ??
+                    Colors.white,
           ),
         ),
       ],
@@ -926,7 +1453,10 @@ class _SummaryPriceRow extends StatelessWidget {
 // LOADING
 // =================================================================
 
-class _LoadingCard extends StatelessWidget {
+class _LoadingCard
+    extends StatelessWidget {
+  const _LoadingCard();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -934,9 +1464,11 @@ class _LoadingCard extends StatelessWidget {
       height: 110,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius:
+            BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.border.withValues(
+          color: AppColors.border
+              .withValues(
             alpha: 0.28,
           ),
         ),
@@ -945,9 +1477,11 @@ class _LoadingCard extends StatelessWidget {
         child: SizedBox(
           width: 21,
           height: 21,
-          child: CircularProgressIndicator(
+          child:
+              CircularProgressIndicator(
             strokeWidth: 2,
-            color: AppColors.textPrimary,
+            color:
+                AppColors.textPrimary,
           ),
         ),
       ),
@@ -959,22 +1493,26 @@ class _LoadingCard extends StatelessWidget {
 // EMPTY
 // =================================================================
 
-class _EmptyOrderCard extends StatelessWidget {
+class _EmptyOrderCard
+    extends StatelessWidget {
   const _EmptyOrderCard();
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
+      padding:
+          const EdgeInsets.symmetric(
         horizontal: 20,
         vertical: 26,
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius:
+            BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.border.withValues(
+          color: AppColors.border
+              .withValues(
             alpha: 0.28,
           ),
         ),
@@ -985,14 +1523,19 @@ class _EmptyOrderCard extends StatelessWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color:
+                  AppColors.background,
               borderRadius:
-                  BorderRadius.circular(14),
+                  BorderRadius.circular(
+                14,
+              ),
             ),
             child: const Icon(
-              Icons.receipt_long_outlined,
+              Icons
+                  .receipt_long_outlined,
               size: 20,
-              color: AppColors.textPrimary,
+              color:
+                  AppColors.textPrimary,
             ),
           ),
 
@@ -1002,8 +1545,10 @@ class _EmptyOrderCard extends StatelessWidget {
             'No item details found',
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w900,
-              color: AppColors.textPrimary,
+              fontWeight:
+                  FontWeight.w900,
+              color:
+                  AppColors.textPrimary,
             ),
           ),
 
@@ -1011,12 +1556,16 @@ class _EmptyOrderCard extends StatelessWidget {
 
           Text(
             'The items for this order could not be loaded.',
-            textAlign: TextAlign.center,
+            textAlign:
+                TextAlign.center,
             style: TextStyle(
               fontSize: 9,
               height: 1.4,
-              color: AppColors.textSecondary
-                  .withValues(alpha: 0.68),
+              color: AppColors
+                  .textSecondary
+                  .withValues(
+                alpha: 0.68,
+              ),
             ),
           ),
         ],

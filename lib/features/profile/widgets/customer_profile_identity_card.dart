@@ -18,8 +18,7 @@ class CustomerProfileIdentityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasAvatar =
-        avatarUrl != null && avatarUrl!.trim().isNotEmpty;
+    final bool hasAvatar = avatarUrl != null && avatarUrl!.trim().isNotEmpty;
 
     return Container(
       width: double.infinity,
@@ -27,9 +26,7 @@ class CustomerProfileIdentityCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.30),
-        ),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.30)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.025),
@@ -46,8 +43,8 @@ class CustomerProfileIdentityCard extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: 72,
-                    height: 72,
+                    width: 92,
+                    height: 92,
                     padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
@@ -58,8 +55,8 @@ class CustomerProfileIdentityCard extends StatelessWidget {
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 14,
-                          offset: const Offset(0, 5),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
@@ -67,6 +64,8 @@ class CustomerProfileIdentityCard extends StatelessWidget {
                       child: hasAvatar
                           ? Image.network(
                               avatarUrl!,
+                              width: 92,
+                              height: 92,
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) {
                                 return _avatarFallback();
@@ -75,6 +74,7 @@ class CustomerProfileIdentityCard extends StatelessWidget {
                           : _avatarFallback(),
                     ),
                   ),
+
                   Positioned(
                     right: -2,
                     bottom: -2,
@@ -84,8 +84,8 @@ class CustomerProfileIdentityCard extends StatelessWidget {
                         onTap: onEditAvatar,
                         customBorder: const CircleBorder(),
                         child: Ink(
-                          width: 27,
-                          height: 27,
+                          width: 32,
+                          height: 32,
                           decoration: BoxDecoration(
                             color: AppColors.textPrimary,
                             shape: BoxShape.circle,
@@ -96,7 +96,7 @@ class CustomerProfileIdentityCard extends StatelessWidget {
                           ),
                           child: const Icon(
                             Icons.camera_alt_outlined,
-                            size: 12,
+                            size: 14,
                             color: Colors.white,
                           ),
                         ),
@@ -216,10 +216,7 @@ class CustomerProfileIdentityCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 17),
-          Divider(
-            height: 1,
-            color: AppColors.border.withValues(alpha: 0.22),
-          ),
+          Divider(height: 1, color: AppColors.border.withValues(alpha: 0.22)),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -255,7 +252,7 @@ class CustomerProfileIdentityCard extends StatelessWidget {
       alignment: Alignment.center,
       child: const Icon(
         Icons.person_rounded,
-        size: 31,
+        size: 40,
         color: AppColors.textPrimary,
       ),
     );
@@ -286,11 +283,7 @@ class _SummaryItem extends StatelessWidget {
               color: AppColors.background,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              size: 14,
-              color: AppColors.textPrimary,
-            ),
+            child: Icon(icon, size: 14, color: AppColors.textPrimary),
           ),
           const SizedBox(width: 8),
           Expanded(

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:philippines_rpcmb/philippines_rpcmb.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:the_legit_smoothie/features/auth/screens/login_screen.dart';
+import 'package:the_legit_smoothie/widgets/change_password_dialog.dart';
 import 'package:the_legit_smoothie/features/profile/widgets/customer_profile_header.dart';
 import 'package:the_legit_smoothie/features/profile/widgets/customer_profile_identity_card.dart';
 import 'package:the_legit_smoothie/features/profile/widgets/customer_profile_info_card.dart';
@@ -122,6 +123,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       _showMessage('Unable to load your profile.', isError: true);
     }
+  }
+
+  Future<void> _showChangePassword() async {
+    final bool? changed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return const ChangePasswordDialog();
+      },
+    );
+
+    if (!mounted || changed != true) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Password changed successfully.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   // =============================================================
@@ -830,6 +852,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         child: CustomerProfileSections(
                           onEditProfile: _showEditProfileSheet,
+                          onChangePassword: _showChangePassword,
                           onLogout: _confirmLogout,
                           isLoggingOut: _isLoggingOut,
                           customerSince: customerSince,

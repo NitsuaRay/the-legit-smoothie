@@ -77,8 +77,8 @@ class SellerProfileIdentityCard extends StatelessWidget {
                       child: hasAvatar
                           ? Image.network(
                               avatarUrl!,
-                              width: 66,
-                              height: 66,
+                              width: 92,
+                              height: 92,
                               fit: BoxFit.cover,
                               loadingBuilder: (
                                 context,
@@ -330,8 +330,8 @@ class SellerProfileIdentityCard extends StatelessWidget {
       alignment: Alignment.center,
       child: loading
           ? const SizedBox(
-              width: 18,
-              height: 18,
+              width: 20,
+              height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: AppColors.textPrimary,
@@ -339,7 +339,7 @@ class SellerProfileIdentityCard extends StatelessWidget {
             )
           : const Icon(
               Icons.person_rounded,
-              size: 31,
+              size: 40,
               color: AppColors.textPrimary,
             ),
     );

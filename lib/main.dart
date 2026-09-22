@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:the_legit_smoothie/widgets/internet_connection_wrapper.dart';
 import 'core/constants/app_colors.dart';
 import 'splash_screen.dart';
 
@@ -30,6 +31,13 @@ class TheLegitSmoothieApp extends StatelessWidget {
     return MaterialApp(
       title: 'The Legit',
       debugShowCheckedModeBanner: false,
+
+      builder: (context, child) {
+        return InternetConnectionWrapper(
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+      
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: AppColors.background,
@@ -61,7 +69,7 @@ class TheLegitSmoothieApp extends StatelessWidget {
             ),
           ),
         ),
-      inputDecorationTheme: InputDecorationTheme(
+        inputDecorationTheme: InputDecorationTheme(
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: AppColors.primary, width: 2),

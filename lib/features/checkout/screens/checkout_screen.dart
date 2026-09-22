@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:the_legit_smoothie/features/checkout/widgets/checkoutScreen/checkout_contact_card.dart';
 import 'package:the_legit_smoothie/features/checkout/widgets/checkoutScreen/checkout_header.dart';
 import 'package:the_legit_smoothie/features/checkout/widgets/checkoutScreen/checkout_order_notice.dart';
@@ -9,6 +10,7 @@ import 'package:the_legit_smoothie/features/checkout/widgets/checkoutScreen/chec
 import 'package:the_legit_smoothie/features/checkout/widgets/checkoutScreen/checkout_section_header.dart';
 import 'package:the_legit_smoothie/features/checkout/widgets/checkoutScreen/checkout_security_message.dart';
 import 'package:the_legit_smoothie/features/profile/screens/profile_screen.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
@@ -34,16 +36,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   final CartService _cartService = CartService();
 
+  final Uuid _uuid = const Uuid();
+
+  String? _checkoutRequestId;
+
   String _orderType = 'delivery';
 
   bool _isSubmitting = false;
   bool _isLoadingProfile = true;
 
   static const double _deliveryFeeAmount = 45.00;
-
-  // =============================================================
-  // GETTERS
-  // =============================================================
 
   double get _subtotal {
     return _cartService.subtotal;
@@ -64,10 +66,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   int get _totalItemCount {
     return _cartService.items.fold(0, (sum, item) => sum + item.quantity);
   }
-
-  // =============================================================
-  // LIFECYCLE
-  // =============================================================
 
   @override
   void initState() {
@@ -101,10 +99,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     super.dispose();
   }
 
-  // =============================================================
-  // LOAD SAVED PROFILE
-  // =============================================================
-
   Future<void> _loadSavedProfile() async {
     final user = supabase.auth.currentUser;
 
@@ -134,8 +128,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         final String address = data['default_address']?.toString().trim() ?? '';
 
         setState(() {
-          // Always refresh these values from Profile.
-          // This is important after returning from editing Profile.
           _contactController.text = phoneNumber;
           _addressController.text = address;
         });
@@ -150,10 +142,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     }
   }
-
-  // =============================================================
-  // OPEN PROFILE
-  // =============================================================
 
   Future<void> _openProfile() async {
     await Navigator.of(context).push(
@@ -171,10 +159,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     await _loadSavedProfile();
   }
 
-  // =============================================================
-  // CHANGE ORDER TYPE
-  // =============================================================
-
   void _changeOrderType(String value) {
     if (_orderType == value) {
       return;
@@ -185,16 +169,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
   }
 
-  // =============================================================
-  // SUBMIT ORDER
-  // =============================================================
-
   Future<void> _submitOrder() async {
-    if (_isSubmitting) return;
+    // =============================================================
+    // PREVENT DOUBLE TAP
+    // =============================================================
+
+    if (_isSubmitting) {
+      return;
+    }
+
+    // =============================================================
+    // VALIDATE FORM
+    // =============================================================
 
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    // =============================================================
+    // USER
+    // =============================================================
 
     final user = supabase.auth.currentUser;
 
@@ -203,52 +197,46 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'You need to be signed in to place an order.',
         isError: true,
       );
+
       return;
     }
 
+    // =============================================================
+    // CART
+    // =============================================================
+
     if (_cartService.items.isEmpty) {
-      _showMessage('Your cart is empty.');
+      _showMessage('Your cart is empty.', isError: true);
+
       return;
     }
+
+    // =============================================================
+    // REQUEST ID
+    // =============================================================
+    //
+    // IMPORTANT:
+    //
+    // Generate only when there is no existing checkout request.
+    //
+    // If the internet disconnects and the customer retries,
+    // this SAME ID is sent again.
+    //
+    // That prevents duplicate orders.
+    // =============================================================
+
+    _checkoutRequestId ??= _uuid.v4();
+
+    final String requestId = _checkoutRequestId!;
 
     setState(() {
       _isSubmitting = true;
     });
 
     try {
-      // ==========================================================
-      // RE-CALCULATE PROMOTION BEFORE CHECKOUT
-      // ==========================================================
-      //
-      // This is important because calculate_best_promotion()
-      // now checks max_uses_per_user against promotion_redemptions.
-      //
-      // If the customer already used Triple Drink Combo,
-      // it will no longer be returned here.
-      // ==========================================================
-
-      await _cartService.calculatePromotion();
-
-      // Make sure the cart was not emptied while calculating.
-      if (_cartService.items.isEmpty) {
-        throw Exception('Your cart is empty.');
-      }
-
-      // ==========================================================
-      // SNAPSHOT VALUES
-      // ==========================================================
-
-      final double originalSubtotalSnapshot = _cartService.subtotal;
-
-      final promotionSnapshot = _cartService.appliedPromotion;
-
-      final double discountSnapshot = _cartService.discountAmount;
-
-      final double subtotalSnapshot = _cartService.discountedSubtotal;
-
-      final double deliveryFeeSnapshot = _deliveryFee;
-
-      final double grandTotalSnapshot = subtotalSnapshot + deliveryFeeSnapshot;
+      // ===========================================================
+      // CONTACT SNAPSHOT
+      // ===========================================================
 
       final String contactSnapshot = _contactController.text.trim();
 
@@ -258,159 +246,199 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       final String notesSnapshot = _notesController.text.trim();
 
-      // ==========================================================
-      // SNAPSHOT CART ITEMS
-      // ==========================================================
+      // ===========================================================
+      // CART PAYLOAD
+      // ===========================================================
       //
-      // Build these before clearing the cart.
-      // ==========================================================
+      // SAME FORMAT AS PromotionService:
+      //
+      // {
+      //   product_id,
+      //   quantity,
+      //   selected_option_ids
+      // }
+      //
+      // ===========================================================
 
-      final orderItemsData = _cartService.items.map((item) {
+      final List<Map<String, dynamic>> cartPayload = _cartService.items.map((
+        item,
+      ) {
+        final List<String> optionIds = [];
+
+        for (final option in item.selectedOptions) {
+          final dynamic rawId = option['id'] ?? option['option_id'];
+
+          if (rawId == null) {
+            continue;
+          }
+
+          final String id = rawId.toString().trim();
+
+          if (id.isNotEmpty) {
+            optionIds.add(id);
+          }
+        }
+
         return {
           'product_id': item.product.id,
-          'product_name': item.product.name,
+
           'quantity': item.quantity,
-          'unit_price': item.unitPrice,
-          'total_price': item.totalPrice,
-          'selected_options': item.selectedOptions,
+
+          'selected_option_ids': optionIds,
         };
       }).toList();
 
-      // ==========================================================
-      // UPDATE USER PROFILE
-      // ==========================================================
+      // ===========================================================
+      // SINGLE TRANSACTIONAL CHECKOUT RPC
+      // ===========================================================
 
-      await supabase.from('profiles').upsert({
-        'id': user.id,
-        'phone_number': contactSnapshot,
-        'default_address': _orderType == 'delivery' ? addressSnapshot : null,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+      final dynamic response = await supabase.rpc(
+        'create_order',
+        params: {
+          'p_checkout_request_id': requestId,
 
-      // ==========================================================
-      // CREATE ORDER
-      // ==========================================================
+          'p_order_type': _orderType,
 
-      final orderResponse = await supabase
-          .from('orders')
-          .insert({
-            'user_id': user.id,
+          'p_contact_number': contactSnapshot,
 
-            'order_type': _orderType,
+          'p_delivery_address': addressSnapshot,
 
-            'delivery_address': _orderType == 'delivery'
-                ? addressSnapshot
-                : null,
+          'p_notes': notesSnapshot,
 
-            'contact_number': contactSnapshot,
+          'p_cart': cartPayload,
+        },
+      );
 
-            'notes': notesSnapshot,
-
-            // ----------------------------------------------------
-            // TOTALS
-            // ----------------------------------------------------
-
-            // Your current schema stores the already-discounted
-            // subtotal here.
-            'subtotal': subtotalSnapshot,
-
-            'delivery_fee': deliveryFeeSnapshot,
-
-            'total_price': grandTotalSnapshot,
-
-            // ----------------------------------------------------
-            // PROMOTION
-            // ----------------------------------------------------
-            'discount_amount': discountSnapshot,
-
-            'promotion_id': promotionSnapshot?.id,
-
-            'promotion_title': promotionSnapshot?.title,
-
-            'promotion_snapshot': promotionSnapshot?.snapshot,
-
-            'status': 'pending',
-          })
-          .select('id')
-          .single();
-
-      final String orderId = orderResponse['id'].toString();
-
-      // ==========================================================
-      // CREATE ORDER ITEMS
-      // ==========================================================
-
-      final orderItemsWithOrderId = orderItemsData.map((item) {
-        return {...item, 'order_id': orderId};
-      }).toList();
-
-      await supabase.from('order_items').insert(orderItemsWithOrderId);
-
-      // ==========================================================
-      // CREATE PROMOTION REDEMPTION
-      // ==========================================================
-      //
-      // Only create a redemption when:
-      //
-      // 1. A promotion was actually applied.
-      // 2. The discount is greater than zero.
-      //
-      // This row is what max_uses_per_user uses to determine
-      // whether this customer has already redeemed the promotion.
-      // ==========================================================
-
-      if (promotionSnapshot != null && discountSnapshot > 0) {
-        await supabase.from('promotion_redemptions').insert({
-          'promotion_id': promotionSnapshot.id,
-
-          'order_id': orderId,
-
-          'user_id': user.id,
-
-          'promotion_title': promotionSnapshot.title,
-
-          'discount_amount': discountSnapshot,
-
-          'promotion_snapshot': promotionSnapshot.snapshot,
-        });
+      if (response == null) {
+        throw Exception('The server did not return an order.');
       }
 
-      // ==========================================================
-      // DEBUG
-      // ==========================================================
+      final Map<String, dynamic> result = Map<String, dynamic>.from(
+        response as Map,
+      );
 
-      debugPrint('Order created: $orderId');
+      // ===========================================================
+      // SERVER VALUES
+      // ===========================================================
+      //
+      // Do NOT use Flutter totals as the authoritative receipt.
+      //
+      // The database has recalculated everything.
+      // ===========================================================
 
-      if (promotionSnapshot != null && discountSnapshot > 0) {
-        debugPrint(
-          'Promotion redeemed: '
-          '${promotionSnapshot.title}',
-        );
+      double toDouble(dynamic value, {double fallback = 0}) {
+        if (value == null) {
+          return fallback;
+        }
 
-        debugPrint(
-          'Promotion ID: '
-          '${promotionSnapshot.id}',
-        );
+        if (value is num) {
+          return value.toDouble();
+        }
 
-        debugPrint(
-          'Discount: '
-          '$discountSnapshot',
-        );
+        return double.tryParse(value.toString()) ?? fallback;
+      }
+
+      final String orderId = result['order_id'].toString();
+
+      final double originalSubtotal = toDouble(
+        result['original_subtotal'],
+        fallback: _cartService.subtotal,
+      );
+
+      final double subtotal = toDouble(result['subtotal']);
+
+      final double deliveryFee = toDouble(result['delivery_fee']);
+
+      final double grandTotal = toDouble(result['total_price']);
+
+      final double discountAmount = toDouble(result['discount_amount']);
+
+      final String? promotionTitle = result['promotion_title']?.toString();
+
+      final bool submittedWhileClosed =
+          result['submitted_while_closed'] == true;
+
+      final bool alreadyProcessed = result['already_processed'] == true;
+
+      // ===========================================================
+      // RECEIPT ITEMS
+      // ===========================================================
+
+      final List<Map<String, dynamic>> receiptItems = [];
+
+      final dynamic rawItems = result['items'];
+
+      if (rawItems is List) {
+        for (final dynamic item in rawItems) {
+          if (item is Map) {
+            receiptItems.add(Map<String, dynamic>.from(item));
+          }
+        }
       } else {
-        debugPrint('Order has no promotion.');
+        // A successful idempotent retry may return an existing
+        // order without the item payload depending on the RPC
+        // response path.
+        //
+        // Load its authoritative items.
+
+        final List<dynamic> existingItems = await supabase
+            .from('order_items')
+            .select(
+              'id, order_id, product_id, '
+              'product_name, quantity, '
+              'unit_price, selected_options, '
+              'total_price',
+            )
+            .eq('order_id', orderId);
+
+        for (final dynamic item in existingItems) {
+          if (item is Map) {
+            receiptItems.add(Map<String, dynamic>.from(item));
+          }
+        }
       }
 
-      // ==========================================================
+      debugPrint('Checkout successful: $orderId');
+
+      debugPrint('Checkout request: $requestId');
+
+      debugPrint(
+        'Already processed: '
+        '$alreadyProcessed',
+      );
+
+      debugPrint(
+        'Submitted while closed: '
+        '$submittedWhileClosed',
+      );
+
+      // ===========================================================
       // CLEAR CART
-      // ==========================================================
+      // ===========================================================
+      //
+      // Only clear AFTER the database confirms success.
+      // ===========================================================
 
       _cartService.clearCart();
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
-      // ==========================================================
+      // ===========================================================
+      // RESET REQUEST ID
+      // ===========================================================
+      //
+      // This checkout is complete.
+      //
+      // A future checkout needs a new UUID.
+      // ===========================================================
+
+      _checkoutRequestId = null;
+
+      // ===========================================================
       // RECEIPT
-      // ==========================================================
+      // ===========================================================
 
       await Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -425,30 +453,55 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
             notes: notesSnapshot,
 
-            originalSubtotal: originalSubtotalSnapshot,
+            originalSubtotal: originalSubtotal,
 
-            discountAmount: discountSnapshot,
+            discountAmount: discountAmount,
 
-            promotionTitle: promotionSnapshot?.title,
+            promotionTitle: promotionTitle,
 
-            subtotal: subtotalSnapshot,
+            subtotal: subtotal,
 
-            deliveryFee: deliveryFeeSnapshot,
+            deliveryFee: deliveryFee,
 
-            grandTotal: grandTotalSnapshot,
+            grandTotal: grandTotal,
 
-            items: orderItemsWithOrderId,
+            items: receiptItems,
 
             orderDate: DateTime.now(),
           ),
         ),
       );
-    } catch (e) {
-      debugPrint('Checkout error: $e');
+    } on PostgrestException catch (error) {
+      debugPrint(
+        'Checkout RPC error: '
+        '${error.message}',
+      );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
-      _showMessage('Failed to submit order: $e', isError: true);
+      // DO NOT reset _checkoutRequestId here.
+      //
+      // If the server created the order but the response was lost,
+      // retrying must use the SAME request ID.
+
+      _showMessage(error.message, isError: true);
+    } catch (error) {
+      debugPrint('Checkout error: $error');
+
+      if (!mounted) {
+        return;
+      }
+
+      // Again:
+      // KEEP _checkoutRequestId for retry.
+
+      _showMessage(
+        'We could not confirm your order. '
+        'Check your connection and try again.',
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {

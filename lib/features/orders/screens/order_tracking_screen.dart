@@ -14,18 +14,13 @@ import '../widgets/orderTracking/order_tracking_summary.dart';
 class OrderTrackingScreen extends StatefulWidget {
   final String orderId;
 
-  const OrderTrackingScreen({
-    super.key,
-    required this.orderId,
-  });
+  const OrderTrackingScreen({super.key, required this.orderId});
 
   @override
-  State<OrderTrackingScreen> createState() =>
-      _OrderTrackingScreenState();
+  State<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
 }
 
-class _OrderTrackingScreenState
-    extends State<OrderTrackingScreen> {
+class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   late final Stream<List<Map<String, dynamic>>> _orderStream;
 
   late final Future<List<Map<String, dynamic>>> _itemsFuture;
@@ -56,12 +51,10 @@ class _OrderTrackingScreenState
   // ==============================================================
 
   Future<void> _showCancelDialog() async {
-    final String? reason =
-        await showDialog<String>(
+    final String? reason = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (_) =>
-          const CancelOrderDialog(),
+      builder: (_) => const CancelOrderDialog(),
     );
 
     if (!mounted || reason == null) {
@@ -75,9 +68,7 @@ class _OrderTrackingScreenState
   // CANCEL ORDER
   // ==============================================================
 
-  Future<void> _cancelOrder(
-    String reason,
-  ) async {
+  Future<void> _cancelOrder(String reason) async {
     if (_isCancelling) {
       return;
     }
@@ -92,14 +83,9 @@ class _OrderTrackingScreenState
           .update({
             'status': 'cancelled',
             'cancel_reason': reason,
-            'updated_at': DateTime.now()
-                .toUtc()
-                .toIso8601String(),
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
           })
-          .eq(
-            'id',
-            widget.orderId,
-          );
+          .eq('id', widget.orderId);
 
       if (!mounted) return;
 
@@ -109,11 +95,9 @@ class _OrderTrackingScreenState
           SnackBar(
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
-            backgroundColor:
-                AppColors.textPrimary,
+            backgroundColor: AppColors.textPrimary,
             shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14),
             ),
             content: const Row(
               children: [
@@ -128,8 +112,7 @@ class _OrderTrackingScreenState
                     'Order cancelled successfully.',
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight:
-                          FontWeight.w700,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                   ),
@@ -139,9 +122,7 @@ class _OrderTrackingScreenState
           ),
         );
     } catch (e) {
-      debugPrint(
-        'Failed to cancel order: $e',
-      );
+      debugPrint('Failed to cancel order: $e');
 
       if (!mounted) return;
 
@@ -153,8 +134,7 @@ class _OrderTrackingScreenState
             margin: const EdgeInsets.all(16),
             backgroundColor: AppColors.error,
             shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14),
             ),
             content: const Row(
               children: [
@@ -169,8 +149,7 @@ class _OrderTrackingScreenState
                     'Unable to cancel the order right now. Please try again.',
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight:
-                          FontWeight.w700,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                   ),
@@ -192,9 +171,7 @@ class _OrderTrackingScreenState
   // CREATED DATE
   // ==============================================================
 
-  DateTime? _parseCreatedAt(
-    dynamic value,
-  ) {
+  DateTime? _parseCreatedAt(dynamic value) {
     if (value == null) {
       return null;
     }
@@ -204,9 +181,7 @@ class _OrderTrackingScreenState
     }
 
     try {
-      return DateTime.parse(
-        value.toString(),
-      ).toLocal();
+      return DateTime.parse(value.toString()).toLocal();
     } catch (_) {
       return null;
     }
@@ -219,8 +194,7 @@ class _OrderTrackingScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-          AppColors.background,
+      backgroundColor: AppColors.background,
 
       body: SafeArea(
         bottom: false,
@@ -229,27 +203,20 @@ class _OrderTrackingScreenState
             // ======================================================
             // PAGE HEADER
             // ======================================================
-
             const OrderTrackingAppHeader(),
 
             // ======================================================
             // REALTIME ORDER
             // ======================================================
-
             Expanded(
-              child: StreamBuilder<
-                  List<Map<String, dynamic>>>(
+              child: StreamBuilder<List<Map<String, dynamic>>>(
                 stream: _orderStream,
-                builder: (
-                  context,
-                  snapshot,
-                ) {
+                builder: (context, snapshot) {
                   // =================================================
                   // LOADING
                   // =================================================
 
-                  if (snapshot.connectionState ==
-                          ConnectionState.waiting &&
+                  if (snapshot.connectionState == ConnectionState.waiting &&
                       !snapshot.hasData) {
                     return const _TrackingLoadingState();
                   }
@@ -262,9 +229,7 @@ class _OrderTrackingScreenState
                       !snapshot.hasData ||
                       snapshot.data!.isEmpty) {
                     return _TrackingErrorState(
-                      onBack: () =>
-                          Navigator.of(context)
-                              .maybePop(),
+                      onBack: () => Navigator.of(context).maybePop(),
                     );
                   }
 
@@ -272,49 +237,49 @@ class _OrderTrackingScreenState
                   // ORDER DATA
                   // =================================================
 
-                  final Map<String, dynamic>
-                      orderData =
-                      snapshot.data!.first;
+                  final Map<String, dynamic> orderData = snapshot.data!.first;
 
-                  final String status =
-                      (orderData['status'] ??
-                              'pending')
-                          .toString()
-                          .trim()
-                          .toLowerCase();
+                  final String status = (orderData['status'] ?? 'pending')
+                      .toString()
+                      .trim()
+                      .toLowerCase();
 
                   final String orderType =
-                      (orderData[
-                                  'order_type'] ??
-                              'delivery')
+                      (orderData['order_type'] ?? 'delivery')
                           .toString()
                           .trim()
                           .toLowerCase();
 
-                  final double totalPrice =
-                      _toDouble(
-                    orderData['total_price'],
+                  final double totalPrice = _toDouble(orderData['total_price']);
+
+                  final double subtotal = _toDouble(orderData['subtotal']);
+
+                  final double deliveryFee = _toDouble(
+                    orderData['delivery_fee'],
                   );
 
-                  final String? address =
-                      _nullableString(
-                    orderData[
-                        'delivery_address'],
+                  final double discountAmount = _toDouble(
+                    orderData['discount_amount'],
                   );
 
-                  final String? notes =
-                      _nullableString(
-                    orderData['notes'],
+                  final String? promotionTitle = _nullableString(
+                    orderData['promotion_title'],
                   );
 
-                  final String? cancelReason =
-                      _nullableString(
-                    orderData[
-                        'cancel_reason'],
+                  final dynamic promotionSnapshot =
+                      orderData['promotion_snapshot'];
+
+                  final String? address = _nullableString(
+                    orderData['delivery_address'],
                   );
 
-                  final DateTime? createdAt =
-                      _parseCreatedAt(
+                  final String? notes = _nullableString(orderData['notes']);
+
+                  final String? cancelReason = _nullableString(
+                    orderData['cancel_reason'],
+                  );
+
+                  final DateTime? createdAt = _parseCreatedAt(
                     orderData['created_at'],
                   );
 
@@ -323,78 +288,54 @@ class _OrderTrackingScreenState
                   // =================================================
 
                   return SingleChildScrollView(
-                    physics:
-                        const BouncingScrollPhysics(
-                      parent:
-                          AlwaysScrollableScrollPhysics(),
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
                     ),
-                    padding:
-                        const EdgeInsets.fromLTRB(
-                      18,
-                      7,
-                      18,
-                      32,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(18, 7, 18, 32),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // ===========================================
                         // ORDER OVERVIEW
                         // ===========================================
-
                         OrderTrackingOverview(
-                          orderId:
-                              widget.orderId,
+                          orderId: widget.orderId,
                           status: status,
-                          orderType:
-                              orderType,
-                          totalPrice:
-                              totalPrice,
+                          orderType: orderType,
+                          totalPrice: totalPrice,
                           address: address,
                           notes: notes,
-                          createdAt:
-                              createdAt,
+                          createdAt: createdAt,
                         ),
 
-                        const SizedBox(
-                          height: 23,
-                        ),
+                        const SizedBox(height: 23),
 
                         // ===========================================
                         // LIVE TRACKING / CANCELLED
                         // ===========================================
-
-                        if (status ==
-                            'cancelled')
-                          OrderTrackingCancelledCard(
-                            cancelReason:
-                                cancelReason,
-                          )
+                        if (status == 'cancelled')
+                          OrderTrackingCancelledCard(cancelReason: cancelReason)
                         else
                           LiveOrderStatus(
                             status: status,
-                            orderType:
-                                orderType,
-                            orderId:
-                                widget.orderId,
+                            orderType: orderType,
+                            orderId: widget.orderId,
                           ),
 
-                        const SizedBox(
-                          height: 23,
-                        ),
+                        const SizedBox(height: 23),
 
                         // ===========================================
                         // SUMMARY
                         // ===========================================
-
                         OrderTrackingSummary(
-                          itemsFuture:
-                              _itemsFuture,
-                          orderType:
-                              orderType,
-                          totalPrice:
-                              totalPrice,
+                          itemsFuture: _itemsFuture,
+                          orderType: orderType,
+                          subtotal: subtotal,
+                          deliveryFee: deliveryFee,
+                          totalPrice: totalPrice,
+                          discountAmount: discountAmount,
+                          promotionTitle: promotionTitle,
+                          promotionSnapshot: promotionSnapshot,
                         ),
 
                         // ===========================================
@@ -403,24 +344,16 @@ class _OrderTrackingScreenState
                         // Customer cancellation is only available
                         // while the order is pending.
                         // ===========================================
-
-                        if (status ==
-                            'pending') ...[
-                          const SizedBox(
-                            height: 23,
-                          ),
+                        if (status == 'pending') ...[
+                          const SizedBox(height: 23),
 
                           OrderCancelButton(
-                            isLoading:
-                                _isCancelling,
-                            onPressed:
-                                _showCancelDialog,
+                            isLoading: _isCancelling,
+                            onPressed: _showCancelDialog,
                           ),
                         ],
 
-                        const SizedBox(
-                          height: 10,
-                        ),
+                        const SizedBox(height: 10),
                       ],
                     ),
                   );
@@ -437,9 +370,7 @@ class _OrderTrackingScreenState
   // HELPERS
   // ==============================================================
 
-  double _toDouble(
-    dynamic value,
-  ) {
+  double _toDouble(dynamic value) {
     if (value == null) {
       return 0;
     }
@@ -448,21 +379,15 @@ class _OrderTrackingScreenState
       return value.toDouble();
     }
 
-    return double.tryParse(
-          value.toString(),
-        ) ??
-        0;
+    return double.tryParse(value.toString()) ?? 0;
   }
 
-  String? _nullableString(
-    dynamic value,
-  ) {
+  String? _nullableString(dynamic value) {
     if (value == null) {
       return null;
     }
 
-    final String text =
-        value.toString().trim();
+    final String text = value.toString().trim();
 
     if (text.isEmpty) {
       return null;
@@ -476,40 +401,32 @@ class _OrderTrackingScreenState
 // LOADING STATE
 // =================================================================
 
-class _TrackingLoadingState
-    extends StatelessWidget {
+class _TrackingLoadingState extends StatelessWidget {
   const _TrackingLoadingState();
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Column(
-        mainAxisSize:
-            MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 52,
             height: 52,
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius:
-                  BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.border
-                    .withValues(
-                  alpha: 0.28,
-                ),
+                color: AppColors.border.withValues(alpha: 0.28),
               ),
             ),
             child: const Center(
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child:
-                    CircularProgressIndicator(
+                child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color:
-                      AppColors.textPrimary,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -521,10 +438,8 @@ class _TrackingLoadingState
             'Loading your order',
             style: TextStyle(
               fontSize: 13,
-              fontWeight:
-                  FontWeight.w800,
-              color:
-                  AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
             ),
           ),
 
@@ -534,11 +449,7 @@ class _TrackingLoadingState
             'Getting the latest status...',
             style: TextStyle(
               fontSize: 9,
-              color: AppColors
-                  .textSecondary
-                  .withValues(
-                alpha: 0.68,
-              ),
+              color: AppColors.textSecondary.withValues(alpha: 0.68),
             ),
           ),
         ],
@@ -551,44 +462,33 @@ class _TrackingLoadingState
 // ERROR STATE
 // =================================================================
 
-class _TrackingErrorState
-    extends StatelessWidget {
+class _TrackingErrorState extends StatelessWidget {
   final VoidCallback onBack;
 
-  const _TrackingErrorState({
-    required this.onBack,
-  });
+  const _TrackingErrorState({required this.onBack});
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding:
-            const EdgeInsets.all(30),
+        padding: const EdgeInsets.all(30),
         child: Column(
-          mainAxisSize:
-              MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 58,
               height: 58,
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius:
-                    BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: AppColors.border
-                      .withValues(
-                    alpha: 0.28,
-                  ),
+                  color: AppColors.border.withValues(alpha: 0.28),
                 ),
               ),
               child: const Icon(
-                Icons
-                    .receipt_long_outlined,
+                Icons.receipt_long_outlined,
                 size: 25,
-                color:
-                    AppColors.textPrimary,
+                color: AppColors.textPrimary,
               ),
             ),
 
@@ -598,11 +498,9 @@ class _TrackingErrorState
               'Order unavailable',
               style: TextStyle(
                 fontSize: 17,
-                fontWeight:
-                    FontWeight.w900,
+                fontWeight: FontWeight.w900,
                 letterSpacing: -0.3,
-                color:
-                    AppColors.textPrimary,
+                color: AppColors.textPrimary,
               ),
             ),
 
@@ -610,16 +508,11 @@ class _TrackingErrorState
 
             Text(
               'We couldn’t load the latest information for this order.',
-              textAlign:
-                  TextAlign.center,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 10,
                 height: 1.45,
-                color: AppColors
-                    .textSecondary
-                    .withValues(
-                  alpha: 0.72,
-                ),
+                color: AppColors.textSecondary.withValues(alpha: 0.72),
               ),
             ),
 
@@ -627,34 +520,19 @@ class _TrackingErrorState
 
             OutlinedButton.icon(
               onPressed: onBack,
-              icon: const Icon(
-                Icons.arrow_back_rounded,
-                size: 15,
-              ),
-              label: const Text(
-                'Go back',
-              ),
-              style:
-                  OutlinedButton.styleFrom(
-                foregroundColor:
-                    AppColors.textPrimary,
+              icon: const Icon(Icons.arrow_back_rounded, size: 15),
+              label: const Text('Go back'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textPrimary,
                 side: BorderSide(
-                  color: AppColors.border
-                      .withValues(
-                    alpha: 0.50,
-                  ),
+                  color: AppColors.border.withValues(alpha: 0.50),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(
+                padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
                 ),
-                shape:
-                    RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(
-                    13,
-                  ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(13),
                 ),
               ),
             ),
