@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'package:the_legit_smoothie/features/cart/screens/cart_screen.dart';
 import 'package:the_legit_smoothie/features/cart/services/cart_service.dart';
 import 'package:the_legit_smoothie/features/catalog/screens/home_screen.dart';
 import 'package:the_legit_smoothie/features/orders/screens/order_history_screen.dart';
 import 'package:the_legit_smoothie/features/profile/screens/profile_screen.dart';
-import 'package:the_legit_smoothie/features/promotions/screens/promotions_screen.dart';
+import 'package:the_legit_smoothie/features/store/screens/store_screen.dart';
+
 import '../../core/constants/app_colors.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -18,41 +20,100 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _currentIndex;
+
   final CartService _cartService = CartService();
+
+  // =============================================================
+  // LIFECYCLE
+  // =============================================================
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
+
+    _currentIndex = _safeInitialIndex(widget.initialIndex);
+
     _cartService.addListener(_onCartChanged);
   }
 
   @override
   void dispose() {
     _cartService.removeListener(_onCartChanged);
+
     super.dispose();
   }
 
-  void _onCartChanged() {
-    setState(() {}); // Rebuild to update cart badge count dynamically
+  // =============================================================
+  // INITIAL INDEX
+  // =============================================================
+
+  int _safeInitialIndex(int index) {
+    if (index < 0 || index > 4) {
+      return 0;
+    }
+
+    return index;
   }
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    PromotionsScreen(),
-    CartScreen(),
-    OrderHistoryScreen(),
-    ProfileScreen(),
-  ];
+  // =============================================================
+  // CART
+  // =============================================================
+
+  void _onCartChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+  }
+
+  // =============================================================
+  // NAVIGATION
+  // =============================================================
+
+  void _changeTab(int index) {
+    if (_currentIndex == index) {
+      return;
+    }
+
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  void _openMenu() {
+    _changeTab(1);
+  }
+
+  // =============================================================
+  // SCREENS
+  // =============================================================
+
+  List<Widget> get _screens {
+    return [
+      StoreScreen(onBrowseMenu: _openMenu),
+      const HomeScreen(),
+      const CartScreen(),
+      const OrderHistoryScreen(),
+      const ProfileScreen(),
+    ];
+  }
+
+  // =============================================================
+  // BUILD
+  // =============================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
-
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
+
+  // =============================================================
+  // BOTTOM NAVIGATION
+  // =============================================================
 
   Widget _buildBottomNavigationBar() {
     final items = [
@@ -62,9 +123,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         label: 'Store',
       ),
       (
-        icon: Icons.local_offer_outlined,
-        activeIcon: Icons.local_offer_rounded,
-        label: 'Deals',
+        icon: Icons.restaurant_menu_outlined,
+        activeIcon: Icons.restaurant_menu_rounded,
+        label: 'Menu',
       ),
       (
         icon: Icons.shopping_bag_outlined,
@@ -124,11 +185,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   selected: _currentIndex == index,
                   badgeCount: index == 2 ? _cartService.itemCount : 0,
                   onTap: () {
-                    if (_currentIndex != index) {
-                      setState(() {
-                        _currentIndex = index;
-                      });
-                    }
+                    _changeTab(index);
                   },
                 ),
               );
@@ -138,6 +195,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
     );
   }
+
+  // =============================================================
+  // NAV ITEM
+  // =============================================================
 
   Widget _buildNavItem({
     required IconData icon,
@@ -165,6 +226,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ===================================================
+            // ICON
+            // ===================================================
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -189,6 +253,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                 ),
 
+                // ===============================================
+                // CART BADGE
+                // ===============================================
                 if (badgeCount > 0)
                   Positioned(
                     right: -9,
@@ -222,6 +289,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
             const SizedBox(height: 3),
 
+            // ===================================================
+            // LABEL
+            // ===================================================
             Text(
               label,
               maxLines: 1,

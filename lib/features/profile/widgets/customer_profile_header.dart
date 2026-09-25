@@ -52,7 +52,7 @@ class CustomerProfileHeader extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.textPrimary,
             borderRadius: BorderRadius.circular(13),
             border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
             boxShadow: [
@@ -66,7 +66,7 @@ class CustomerProfileHeader extends StatelessWidget {
           child: const Icon(
             Icons.person_outline_rounded,
             size: 20,
-            color: AppColors.textPrimary,
+            color: AppColors.surface,
           ),
         ),
         const SizedBox(width: 11),

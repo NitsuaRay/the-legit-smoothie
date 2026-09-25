@@ -85,31 +85,24 @@ class SellerAddressPicker extends StatefulWidget {
 
 class _SellerAddressPickerState extends State<SellerAddressPicker> {
   // ==========================================================================
-  // SELLER LOCATION AREA
+  // STORE LOCATION
   //
-  // Store is currently located in Botocan, Quezon City.
+  // The Legit Smoothie store is located in Quezon City.
   //
-  // Keeping this separate from the customer picker means you can later
-  // change the seller/store location rules without affecting customers.
+  // Seller/store addresses are therefore restricted to:
+  //
+  // NCR
+  //   -> Quezon City
+  //      -> Barangay
+  //         -> Detailed address
+  //
+  // The seller cannot select another city.
   // ==========================================================================
-
-  static const Set<String> _allowedCities = {
-    'quezon city',
-    'manila',
-    'san juan',
-    'mandaluyong',
-    'marikina',
-    'caloocan',
-  };
 
   dynamic _region;
   dynamic _province;
   dynamic _municipality;
   dynamic _barangay;
-
-  dynamic _metroManilaRegion;
-
-  List<dynamic> _cities = [];
 
   late final TextEditingController _detailsController;
 
@@ -129,6 +122,10 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
 
     _prepareAddressData();
   }
+
+  // ==========================================================================
+  // DISPOSE
+  // ==========================================================================
 
   @override
   void dispose() {
@@ -191,40 +188,24 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
       'quezon city': 'quezon city',
       'city of quezon': 'quezon city',
       'city of quezon city': 'quezon city',
-
-      'manila': 'manila',
-      'city of manila': 'manila',
-
-      'san juan': 'san juan',
-      'city of san juan': 'san juan',
-
-      'mandaluyong': 'mandaluyong',
-      'city of mandaluyong': 'mandaluyong',
-
-      'marikina': 'marikina',
-      'city of marikina': 'marikina',
-
-      'caloocan': 'caloocan',
-      'city of caloocan': 'caloocan',
     };
 
     return aliases[name] ?? name;
   }
 
-  bool _isAllowedCity(String value) {
-    return _allowedCities.contains(
-      _normalizeCityName(value),
-    );
-  }
-
   // ==========================================================================
-  // PREPARE NCR DATA
+  // PREPARE ADDRESS DATA
   // ==========================================================================
 
   void _prepareAddressData() {
     dynamic ncr;
+    dynamic quezonCity;
+    dynamic quezonCityProvince;
 
-    // Find NCR from philippines_rpcmb.
+    // ------------------------------------------------------------------------
+    // 1. FIND NCR
+    // ------------------------------------------------------------------------
+
     for (final dynamic region in philippineRegions) {
       try {
         final String id =
@@ -239,7 +220,10 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
       }
     }
 
+    // ------------------------------------------------------------------------
     // Fallback using region name.
+    // ------------------------------------------------------------------------
+
     if (ncr == null) {
       for (final dynamic region in philippineRegions) {
         try {
@@ -249,7 +233,9 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
               .toLowerCase();
 
           if (name == 'ncr' ||
-              name.contains('national capital region')) {
+              name.contains(
+                'national capital region',
+              )) {
             ncr = region;
             break;
           }
@@ -259,10 +245,13 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
       }
     }
 
+    // ------------------------------------------------------------------------
+    // NCR NOT FOUND
+    // ------------------------------------------------------------------------
+
     if (ncr == null) {
       if (mounted) {
         setState(() {
-          _cities = [];
           _isPreparing = false;
         });
       }
@@ -270,129 +259,91 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
       return;
     }
 
-    _metroManilaRegion = ncr;
     _region = ncr;
 
-    final List<dynamic> availableCities = [];
-
-    // Actual philippines_rpcmb structure:
+    // ------------------------------------------------------------------------
+    // 2. FIND QUEZON CITY
+    //
+    // RPCMB structure:
     //
     // NCR
-    //   -> Province / District
+    //   -> NCR District
     //      -> Municipality / City
     //         -> Barangays
+    //
+    // In the current RPCMB data Quezon City is located under:
+    //
+    // NATIONAL CAPITAL REGION - SECOND DISTRICT
+    // ------------------------------------------------------------------------
 
     try {
       for (final dynamic province in ncr.provinces) {
         for (final dynamic municipality
             in province.municipalities) {
           final String cityName =
-              _itemName(municipality);
-
-          if (!_isAllowedCity(cityName)) {
-            continue;
-          }
-
-          final bool alreadyAdded =
-              availableCities.any(
-            (dynamic existing) =>
-                _normalizeCityName(
-                  _itemName(existing),
-                ) ==
-                _normalizeCityName(cityName),
+              _normalizeCityName(
+            _itemName(municipality),
           );
 
-          if (!alreadyAdded) {
-            availableCities.add(
-              municipality,
-            );
+          if (cityName == 'quezon city') {
+            quezonCity = municipality;
+            quezonCityProvince = province;
+            break;
           }
+        }
+
+        if (quezonCity != null) {
+          break;
         }
       }
     } catch (error) {
       debugPrint(
-        'SELLER ADDRESS CITY ERROR: $error',
+        'SELLER QUEZON CITY ERROR: $error',
       );
     }
 
-    // Quezon City first.
-    availableCities.sort(
-      (dynamic a, dynamic b) {
-        final String aName =
-            _normalizeCityName(
-          _itemName(a),
-        );
+    // ------------------------------------------------------------------------
+    // QUEZON CITY NOT FOUND
+    // ------------------------------------------------------------------------
 
-        final String bName =
-            _normalizeCityName(
-          _itemName(b),
-        );
-
-        if (aName == 'quezon city' &&
-            bName != 'quezon city') {
-          return -1;
-        }
-
-        if (bName == 'quezon city' &&
-            aName != 'quezon city') {
-          return 1;
-        }
-
-        return aName.compareTo(bName);
-      },
-    );
-
-    _cities = availableCities;
-
-    // Restore a typed municipality if one was provided.
-    if (widget.initialMunicipality != null) {
-      final String previousCity =
-          _normalizeCityName(
-        _itemName(
-          widget.initialMunicipality,
-        ),
-      );
-
-      for (final dynamic city in _cities) {
-        if (_normalizeCityName(
-              _itemName(city),
-            ) ==
-            previousCity) {
-          _municipality = city;
-          break;
-        }
+    if (quezonCity == null) {
+      if (mounted) {
+        setState(() {
+          _municipality = null;
+          _province = null;
+          _barangay = null;
+          _isPreparing = false;
+        });
       }
+
+      return;
     }
 
-    // Otherwise default to Quezon City.
-    if (_municipality == null) {
-      for (final dynamic city in _cities) {
-        if (_normalizeCityName(
-              _itemName(city),
-            ) ==
-            'quezon city') {
-          _municipality = city;
-          break;
-        }
-      }
-    }
+    // ------------------------------------------------------------------------
+    // 3. LOCK STORE CITY TO QUEZON CITY
+    // ------------------------------------------------------------------------
 
-    if (_municipality != null) {
-      _findProvinceForCity(
-        _municipality,
-      );
-    }
+    _municipality = quezonCity;
+    _province = quezonCityProvince;
 
-    // Restore barangay if supplied.
-    if (_municipality != null &&
-        widget.initialBarangay != null) {
+    // ------------------------------------------------------------------------
+    // 4. RESTORE EXISTING BARANGAY
+    //
+    // We intentionally do not restore another municipality/city.
+    // Even if an old seller address contains another city, the picker is
+    // now permanently restricted to Quezon City.
+    // ------------------------------------------------------------------------
+
+    if (widget.initialBarangay != null) {
       final String previousBarangay =
           _itemName(
         widget.initialBarangay,
-      ).toLowerCase();
+      ).trim().toLowerCase();
 
       for (final dynamic barangay in _barangays) {
-        if (_itemName(barangay).toLowerCase() ==
+        if (_itemName(barangay)
+                .trim()
+                .toLowerCase() ==
             previousBarangay) {
           _barangay = barangay;
           break;
@@ -400,50 +351,14 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
       }
     }
 
+    // ------------------------------------------------------------------------
+    // DONE
+    // ------------------------------------------------------------------------
+
     if (mounted) {
       setState(() {
         _isPreparing = false;
       });
-    }
-  }
-
-  // ==========================================================================
-  // FIND NCR DISTRICT
-  // ==========================================================================
-
-  void _findProvinceForCity(
-    dynamic selectedCity,
-  ) {
-    _province = null;
-
-    if (_metroManilaRegion == null ||
-        selectedCity == null) {
-      return;
-    }
-
-    final String selectedName =
-        _normalizeCityName(
-      _itemName(selectedCity),
-    );
-
-    try {
-      for (final dynamic province
-          in _metroManilaRegion.provinces) {
-        for (final dynamic municipality
-            in province.municipalities) {
-          if (_normalizeCityName(
-                _itemName(municipality),
-              ) ==
-              selectedName) {
-            _province = province;
-            return;
-          }
-        }
-      }
-    } catch (error) {
-      debugPrint(
-        'SELLER ADDRESS DISTRICT ERROR: $error',
-      );
     }
   }
 
@@ -457,9 +372,22 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
     }
 
     try {
-      return List<dynamic>.from(
+      final List<dynamic> barangays =
+          List<dynamic>.from(
         _municipality.barangays,
       );
+
+      barangays.sort(
+        (dynamic a, dynamic b) {
+          return _itemName(a)
+              .toLowerCase()
+              .compareTo(
+                _itemName(b).toLowerCase(),
+              );
+        },
+      );
+
+      return barangays;
     } catch (error) {
       debugPrint(
         'SELLER ADDRESS BARANGAY ERROR: $error',
@@ -472,31 +400,6 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
   // ==========================================================================
   // DISPLAY HELPERS
   // ==========================================================================
-
-  String _displayCityName(String value) {
-    switch (_normalizeCityName(value)) {
-      case 'quezon city':
-        return 'Quezon City';
-
-      case 'manila':
-        return 'Manila';
-
-      case 'san juan':
-        return 'San Juan';
-
-      case 'mandaluyong':
-        return 'Mandaluyong';
-
-      case 'marikina':
-        return 'Marikina';
-
-      case 'caloocan':
-        return 'Caloocan';
-
-      default:
-        return _toTitleCase(value);
-    }
-  }
 
   String _toTitleCase(String value) {
     if (value.trim().isEmpty) {
@@ -530,9 +433,7 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
       _toTitleCase(
         _itemName(_barangay),
       ),
-      _displayCityName(
-        _itemName(_municipality),
-      ),
+      'Quezon City',
       'Metro Manila',
     ]
         .where(
@@ -549,23 +450,25 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
   // ==========================================================================
 
   void _saveAddress() {
-    if (_municipality == null) {
+    // ------------------------------------------------------------------------
+    // QUEZON CITY MUST BE AVAILABLE
+    // ------------------------------------------------------------------------
+
+    if (_municipality == null ||
+        _normalizeCityName(
+              _itemName(_municipality),
+            ) !=
+            'quezon city') {
       _showMessage(
-        'Please select the store city.',
+        'Quezon City address data could not be loaded.',
       );
 
       return;
     }
 
-    if (!_isAllowedCity(
-      _itemName(_municipality),
-    )) {
-      _showMessage(
-        'Please select a supported Metro Manila city.',
-      );
-
-      return;
-    }
+    // ------------------------------------------------------------------------
+    // BARANGAY
+    // ------------------------------------------------------------------------
 
     if (_barangay == null) {
       _showMessage(
@@ -574,6 +477,10 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
 
       return;
     }
+
+    // ------------------------------------------------------------------------
+    // DETAILED ADDRESS
+    // ------------------------------------------------------------------------
 
     if (_detailsController.text
         .trim()
@@ -584,6 +491,10 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
 
       return;
     }
+
+    // ------------------------------------------------------------------------
+    // RETURN RESULT
+    // ------------------------------------------------------------------------
 
     Navigator.of(context).pop(
       SellerAddressResult(
@@ -598,12 +509,21 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
     );
   }
 
+  // ==========================================================================
+  // MESSAGE
+  // ==========================================================================
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: Text(
+            message,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           backgroundColor:
               AppColors.textPrimary,
           behavior:
@@ -679,29 +599,26 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                   child: Center(
                     child:
                         CircularProgressIndicator(
-                      color: AppColors
-                          .textPrimary,
+                      color:
+                          AppColors.textPrimary,
                     ),
                   ),
                 )
               : SingleChildScrollView(
                   padding:
                       const EdgeInsets.fromLTRB(
-                    AppConstants
-                        .defaultPadding,
+                    AppConstants.defaultPadding,
                     10,
-                    AppConstants
-                        .defaultPadding,
+                    AppConstants.defaultPadding,
                     24,
                   ),
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment
-                            .start,
+                        CrossAxisAlignment.start,
                     children: [
-                      // ==============================================
+                      // ======================================================
                       // HANDLE
-                      // ==============================================
+                      // ======================================================
 
                       Center(
                         child: Container(
@@ -713,9 +630,7 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                                 AppColors.border,
                             borderRadius:
                                 BorderRadius
-                                    .circular(
-                              20,
-                            ),
+                                    .circular(20),
                           ),
                         ),
                       ),
@@ -724,14 +639,13 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                         height: 22,
                       ),
 
-                      // ==============================================
+                      // ======================================================
                       // HEADER
-                      // ==============================================
+                      // ======================================================
 
                       Row(
                         crossAxisAlignment:
-                            CrossAxisAlignment
-                                .start,
+                            CrossAxisAlignment.start,
                         children: [
                           Container(
                             width: 48,
@@ -742,16 +656,12 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                                   .textPrimary,
                               borderRadius:
                                   BorderRadius
-                                      .circular(
-                                15,
-                              ),
+                                      .circular(15),
                             ),
-                            child:
-                                const Icon(
+                            child: const Icon(
                               Icons
                                   .storefront_outlined,
-                              color:
-                                  Colors.white,
+                              color: Colors.white,
                               size: 21,
                             ),
                           ),
@@ -768,8 +678,7 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                               children: [
                                 Text(
                                   'STORE LOCATION',
-                                  style:
-                                      TextStyle(
+                                  style: TextStyle(
                                     fontSize: 7,
                                     fontWeight:
                                         FontWeight
@@ -779,8 +688,7 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                                     color: AppColors
                                         .textSecondary
                                         .withValues(
-                                      alpha:
-                                          0.62,
+                                      alpha: 0.62,
                                     ),
                                   ),
                                 ),
@@ -791,8 +699,7 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
 
                                 const Text(
                                   'Store address',
-                                  style:
-                                      TextStyle(
+                                  style: TextStyle(
                                     fontSize: 20,
                                     height: 1,
                                     fontWeight:
@@ -810,16 +717,14 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                                 ),
 
                                 Text(
-                                  'Set the physical location of The Legit Smoothie.',
-                                  style:
-                                      TextStyle(
+                                  'Set the physical location of The Legit Smoothie in Quezon City.',
+                                  style: TextStyle(
                                     fontSize: 9,
                                     height: 1.4,
                                     color: AppColors
                                         .textSecondary
                                         .withValues(
-                                      alpha:
-                                          0.70,
+                                      alpha: 0.70,
                                     ),
                                   ),
                                 ),
@@ -832,8 +737,7 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                           ),
 
                           Material(
-                            color: Colors
-                                .transparent,
+                            color: Colors.transparent,
                             child: InkWell(
                               onTap: () {
                                 Navigator.of(
@@ -851,18 +755,15 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                                       .background,
                                   shape:
                                       BoxShape.circle,
-                                  border:
-                                      Border.all(
+                                  border: Border.all(
                                     color: AppColors
                                         .border
                                         .withValues(
-                                      alpha:
-                                          0.25,
+                                      alpha: 0.25,
                                     ),
                                   ),
                                 ),
-                                child:
-                                    const Icon(
+                                child: const Icon(
                                   Icons
                                       .close_rounded,
                                   size: 18,
@@ -879,30 +780,26 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                         height: 22,
                       ),
 
-                      // ==============================================
-                      // CURRENT STORE INFO
-                      // ==============================================
+                      // ======================================================
+                      // STORE INFO
+                      // ======================================================
 
                       Container(
-                        width:
-                            double.infinity,
+                        width: double.infinity,
                         padding:
-                            const EdgeInsets
-                                .all(14),
+                            const EdgeInsets.all(14),
                         decoration:
                             BoxDecoration(
-                          color: AppColors
-                              .background,
+                          color:
+                              AppColors.background,
                           borderRadius:
-                              BorderRadius
-                                  .circular(16),
-                          border:
-                              Border.all(
-                            color: AppColors
-                                .border
+                              BorderRadius.circular(
+                            16,
+                          ),
+                          border: Border.all(
+                            color: AppColors.border
                                 .withValues(
-                              alpha:
-                                  0.25,
+                              alpha: 0.25,
                             ),
                           ),
                         ),
@@ -916,16 +813,13 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                               height: 36,
                               decoration:
                                   BoxDecoration(
-                                color: AppColors
-                                    .surface,
+                                color:
+                                    AppColors.surface,
                                 borderRadius:
                                     BorderRadius
-                                        .circular(
-                                  11,
-                                ),
+                                        .circular(11),
                               ),
-                              child:
-                                  const Icon(
+                              child: const Icon(
                                 Icons
                                     .location_on_outlined,
                                 size: 17,
@@ -945,11 +839,9 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                                         .start,
                                 children: [
                                   const Text(
-                                    'BOTOCAN, QUEZON CITY',
-                                    style:
-                                        TextStyle(
-                                      fontSize:
-                                          7,
+                                    'QUEZON CITY ONLY',
+                                    style: TextStyle(
+                                      fontSize: 7,
                                       fontWeight:
                                           FontWeight
                                               .w900,
@@ -965,18 +857,14 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                                   ),
 
                                   Text(
-                                    'Quezon City is selected by default for the current store location.',
-                                    style:
-                                        TextStyle(
-                                      fontSize:
-                                          8.5,
-                                      height:
-                                          1.4,
+                                    'The store location is restricted to Quezon City. Select the barangay and enter the exact street or building address.',
+                                    style: TextStyle(
+                                      fontSize: 8.5,
+                                      height: 1.4,
                                       color: AppColors
                                           .textSecondary
                                           .withValues(
-                                        alpha:
-                                            0.70,
+                                        alpha: 0.70,
                                       ),
                                     ),
                                   ),
@@ -991,56 +879,113 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                         height: 20,
                       ),
 
-                      // ==============================================
-                      // CITY
-                      // ==============================================
+                      // ======================================================
+                      // CITY - LOCKED TO QUEZON CITY
+                      // ======================================================
 
-                      _SellerAddressDropdown<
-                          dynamic>(
-                        key: ValueKey(
-                          'seller_city_${_itemName(_municipality)}',
+                      Text(
+                        'CITY',
+                        style: TextStyle(
+                          fontSize: 6.5,
+                          fontWeight:
+                              FontWeight.w900,
+                          letterSpacing: 0.9,
+                          color: AppColors
+                              .textSecondary
+                              .withValues(
+                            alpha: 0.60,
+                          ),
                         ),
-                        label: 'CITY',
-                        icon: Icons
-                            .location_city_outlined,
-                        value:
-                            _municipality,
-                        items: _cities,
-                        itemName:
-                            (dynamic item) {
-                          return _displayCityName(
-                            _itemName(item),
-                          );
-                        },
-                        hint:
-                            'Select store city',
-                        enabled:
-                            _cities.isNotEmpty,
-                        onChanged:
-                            (dynamic value) {
-                          setState(() {
-                            _municipality =
-                                value;
-                            _barangay =
-                                null;
+                      ),
 
-                            _findProvinceForCity(
-                              value,
-                            );
-                          });
-                        },
+                      const SizedBox(
+                        height: 7,
+                      ),
+
+                      Container(
+                        width: double.infinity,
+                        padding:
+                            const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        decoration:
+                            BoxDecoration(
+                          color:
+                              AppColors.background,
+                          borderRadius:
+                              BorderRadius.circular(
+                            14,
+                          ),
+                          border: Border.all(
+                            color: AppColors.border
+                                .withValues(
+                              alpha: 0.28,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons
+                                  .location_city_outlined,
+                              size: 18,
+                              color: AppColors
+                                  .textSecondary,
+                            ),
+
+                            const SizedBox(
+                              width: 12,
+                            ),
+
+                            const Expanded(
+                              child: Text(
+                                'Quezon City',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight:
+                                      FontWeight
+                                          .w700,
+                                  color: AppColors
+                                      .textPrimary,
+                                ),
+                              ),
+                            ),
+
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration:
+                                  BoxDecoration(
+                                color: AppColors
+                                    .surface,
+                                shape:
+                                    BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons
+                                    .lock_outline_rounded,
+                                size: 14,
+                                color: AppColors
+                                    .textSecondary
+                                    .withValues(
+                                  alpha: 0.65,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
 
                       const SizedBox(
                         height: 12,
                       ),
 
-                      // ==============================================
+                      // ======================================================
                       // BARANGAY
-                      // ==============================================
+                      // ======================================================
 
-                      _SellerAddressDropdown<
-                          dynamic>(
+                      _SellerAddressDropdown<dynamic>(
                         key: ValueKey(
                           'seller_barangay_${_itemName(_municipality)}',
                         ),
@@ -1055,21 +1000,17 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                             _itemName(item),
                           );
                         },
-                        hint:
-                            _municipality ==
-                                    null
-                                ? 'Select a city first'
-                                : 'Select barangay',
+                        hint: _municipality == null
+                            ? 'Quezon City data unavailable'
+                            : 'Select barangay',
                         enabled:
-                            _municipality !=
-                                    null &&
+                            _municipality != null &&
                                 _barangays
                                     .isNotEmpty,
                         onChanged:
                             (dynamic value) {
                           setState(() {
-                            _barangay =
-                                value;
+                            _barangay = value;
                           });
                         },
                       ),
@@ -1078,9 +1019,9 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                         height: 12,
                       ),
 
-                      // ==============================================
+                      // ======================================================
                       // DETAILS
-                      // ==============================================
+                      // ======================================================
 
                       _SellerAddressTextField(
                         controller:
@@ -1100,12 +1041,11 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                         height: 18,
                       ),
 
-                      // ==============================================
+                      // ======================================================
                       // PREVIEW
-                      // ==============================================
+                      // ======================================================
 
-                      if (_municipality !=
-                              null &&
+                      if (_municipality != null &&
                           _barangay != null)
                         _SellerAddressPreview(
                           address:
@@ -1116,23 +1056,20 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                         height: 20,
                       ),
 
-                      // ==============================================
+                      // ======================================================
                       // SAVE
-                      // ==============================================
+                      // ======================================================
 
                       SizedBox(
-                        width:
-                            double.infinity,
+                        width: double.infinity,
                         height: 54,
-                        child:
-                            FilledButton(
+                        child: FilledButton(
                           onPressed:
-                              _cities.isEmpty
+                              _municipality == null
                                   ? null
                                   : _saveAddress,
                           style:
-                              FilledButton
-                                  .styleFrom(
+                              FilledButton.styleFrom(
                             backgroundColor:
                                 AppColors
                                     .textPrimary,
@@ -1142,21 +1079,17 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                                 AppColors
                                     .textSecondary
                                     .withValues(
-                              alpha:
-                                  0.25,
+                              alpha: 0.25,
                             ),
                             elevation: 0,
                             shape:
                                 RoundedRectangleBorder(
                               borderRadius:
                                   BorderRadius
-                                      .circular(
-                                17,
-                              ),
+                                      .circular(17),
                             ),
                           ),
-                          child:
-                              const Row(
+                          child: const Row(
                             mainAxisAlignment:
                                 MainAxisAlignment
                                     .center,
@@ -1171,8 +1104,7 @@ class _SellerAddressPickerState extends State<SellerAddressPicker> {
                               ),
                               Text(
                                 'Use this store address',
-                                style:
-                                    TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight:
                                       FontWeight
@@ -1252,7 +1184,9 @@ class _SellerAddressDropdown<T>
           ),
         ),
 
-        const SizedBox(height: 7),
+        const SizedBox(
+          height: 7,
+        ),
 
         DropdownButtonFormField<T>(
           initialValue: validValue,
@@ -1303,6 +1237,20 @@ class _SellerAddressDropdown<T>
                 color: AppColors.border
                     .withValues(
                   alpha: 0.28,
+                ),
+              ),
+            ),
+            disabledBorder:
+                OutlineInputBorder(
+              borderRadius:
+                  BorderRadius.circular(
+                14,
+              ),
+              borderSide:
+                  BorderSide(
+                color: AppColors.border
+                    .withValues(
+                  alpha: 0.18,
                 ),
               ),
             ),
@@ -1374,8 +1322,7 @@ class _SellerAddressTextField
   final String label;
   final String hint;
   final IconData icon;
-  final ValueChanged<String>?
-      onChanged;
+  final ValueChanged<String>? onChanged;
 
   const _SellerAddressTextField({
     required this.controller,
@@ -1412,7 +1359,9 @@ class _SellerAddressTextField
           ),
         ),
 
-        const SizedBox(height: 7),
+        const SizedBox(
+          height: 7,
+        ),
 
         TextFormField(
           controller: controller,
@@ -1431,6 +1380,14 @@ class _SellerAddressTextField
           decoration:
               InputDecoration(
             hintText: hint,
+            hintStyle: TextStyle(
+              fontSize: 10,
+              color: AppColors
+                  .textSecondary
+                  .withValues(
+                alpha: 0.45,
+              ),
+            ),
             prefixIcon: Icon(
               icon,
               size: 18,
@@ -1440,6 +1397,12 @@ class _SellerAddressTextField
             filled: true,
             fillColor:
                 AppColors.background,
+            contentPadding:
+                const EdgeInsets
+                    .symmetric(
+              horizontal: 14,
+              vertical: 15,
+            ),
             border:
                 OutlineInputBorder(
               borderRadius:
@@ -1529,7 +1492,9 @@ class _SellerAddressPreview
                 AppColors.textPrimary,
           ),
 
-          const SizedBox(width: 10),
+          const SizedBox(
+            width: 10,
+          ),
 
           Expanded(
             child: Column(
@@ -1553,7 +1518,9 @@ class _SellerAddressPreview
                   ),
                 ),
 
-                const SizedBox(height: 5),
+                const SizedBox(
+                  height: 5,
+                ),
 
                 Text(
                   address,

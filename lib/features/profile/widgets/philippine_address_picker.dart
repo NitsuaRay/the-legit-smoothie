@@ -27,6 +27,57 @@ class PhilippineAddressResult {
 }
 
 // ============================================================================
+// DELIVERY CITY
+//
+// This is an internal wrapper used only by this picker.
+//
+// Normal city:
+//   Quezon City
+//       ↓
+//   Barangay
+//
+// Special Manila structure in philippines_rpcmb:
+//
+//   NCR
+//       ↓
+//   NATIONAL CAPITAL REGION - MANILA
+//       ↓
+//   Sampaloc / Tondo / Ermita / etc.
+//       ↓
+//   Barangay
+//
+// The customer should still see "Manila" as one delivery city.
+// ============================================================================
+
+class _DeliveryCity {
+  final String name;
+
+  /// Normal RPCMB municipality object.
+  ///
+  /// Used by Quezon City, Marikina, Pasig and Mandaluyong.
+  final dynamic municipality;
+
+  /// NCR district/province containing the city.
+  final dynamic province;
+
+  /// Used by Manila.
+  ///
+  /// RPCMB represents Manila's areas such as Sampaloc and Tondo
+  /// at the municipality level.
+  final List<dynamic> areas;
+
+  const _DeliveryCity({
+    required this.name,
+    this.municipality,
+    this.province,
+    this.areas = const [],
+  });
+
+  bool get isManila =>
+      name.trim().toLowerCase() == 'manila';
+}
+
+// ============================================================================
 // SHOW ADDRESS PICKER
 // ============================================================================
 
@@ -92,45 +143,49 @@ class PhilippineAddressPicker extends StatefulWidget {
 class _PhilippineAddressPickerState
     extends State<PhilippineAddressPicker> {
   // ==========================================================================
-  // CURRENT DELIVERY AREA
+  // DELIVERY COVERAGE
   //
   // Store:
   // Botocan, Quezon City
   //
-  // For now we only allow selected nearby Metro Manila cities.
+  // Supported:
   //
-  // To add another city later, simply add its normalized name here.
+  // Quezon City
+  // Mandaluyong
+  // Marikina
+  // Pasig
+  // Manila
+  //
+  // Manila is handled specially because RPCMB does not expose a
+  // municipality called "Manila". Instead it exposes Manila areas such as
+  // Sampaloc, Tondo, Ermita, etc.
   // ==========================================================================
 
-  static const Set<String> _allowedCities = {
+  static const Set<String> _allowedNormalCities = {
     'quezon city',
-    'manila',
-    'san juan',
     'mandaluyong',
     'marikina',
-    'caloocan',
+    'pasig',
   };
 
-  // ==========================================================================
-  // STATE
-  // ==========================================================================
-
   dynamic _region;
+
   dynamic _province;
   dynamic _municipality;
+
   dynamic _barangay;
 
-  dynamic _metroManilaRegion;
 
-  List<dynamic> _deliveryCities = [];
+  /// Customer-facing selected city.
+  _DeliveryCity? _selectedDeliveryCity;
+
+  List<_DeliveryCity> _deliveryCities = [];
+
+  dynamic _manilaArea;
 
   late final TextEditingController _detailsController;
 
   bool _isPreparingAddressData = true;
-
-  // ==========================================================================
-  // INIT
-  // ==========================================================================
 
   @override
   void initState() {
@@ -143,10 +198,6 @@ class _PhilippineAddressPickerState
     _prepareDeliveryArea();
   }
 
-  // ==========================================================================
-  // DISPOSE
-  // ==========================================================================
-
   @override
   void dispose() {
     _detailsController.dispose();
@@ -154,28 +205,15 @@ class _PhilippineAddressPickerState
     super.dispose();
   }
 
-  // ==========================================================================
-  // ITEM NAME
-  //
-  // philippines_rpcmb uses typed objects for:
-  // Region
-  // Province
-  // Municipality
-  //
-  // Barangays are strings in the data shown by your debug output.
-  // ==========================================================================
-
   String _itemName(dynamic item) {
     if (item == null) {
       return '';
     }
 
-    // Barangays
     if (item is String) {
       return item.trim();
     }
 
-    // Province / Municipality
     try {
       final dynamic name = item.name;
 
@@ -187,7 +225,6 @@ class _PhilippineAddressPickerState
       // Continue below.
     }
 
-    // Region
     try {
       final dynamic regionName = item.regionName;
 
@@ -204,18 +241,6 @@ class _PhilippineAddressPickerState
 
   // ==========================================================================
   // NORMALIZE CITY NAME
-  //
-  // Different Philippine datasets sometimes use:
-  //
-  // QUEZON CITY
-  // CITY OF QUEZON
-  //
-  // CITY OF MANILA
-  // MANILA
-  //
-  // etc.
-  //
-  // We normalize those variations so filtering still works.
   // ==========================================================================
 
   String _normalizeCityName(String value) {
@@ -233,55 +258,79 @@ class _PhilippineAddressPickerState
       'city of quezon': 'quezon city',
       'city of quezon city': 'quezon city',
 
-      // Manila
-      'manila': 'manila',
-      'city of manila': 'manila',
-
-      // San Juan
-      'san juan': 'san juan',
-      'city of san juan': 'san juan',
-
       // Mandaluyong
       'mandaluyong': 'mandaluyong',
       'city of mandaluyong': 'mandaluyong',
+      'mandaluyong city': 'mandaluyong',
 
       // Marikina
       'marikina': 'marikina',
       'city of marikina': 'marikina',
+      'marikina city': 'marikina',
 
-      // Caloocan
-      'caloocan': 'caloocan',
-      'city of caloocan': 'caloocan',
+      // Pasig
+      'pasig': 'pasig',
+      'city of pasig': 'pasig',
+      'pasig city': 'pasig',
+
+      // Manila
+      'manila': 'manila',
+      'city of manila': 'manila',
+      'manila city': 'manila',
     };
 
     return aliases[name] ?? name;
   }
 
   // ==========================================================================
-  // ALLOWED CITY CHECK
+  // NORMALIZE DISTRICT NAME
   // ==========================================================================
 
-  bool _isAllowedCity(String cityName) {
-    final String normalized =
-        _normalizeCityName(cityName);
+  String _normalizeDistrictName(
+    String value,
+  ) {
+    return value
+        .trim()
+        .toLowerCase()
+        .replaceAll(
+          RegExp(r'\s+'),
+          ' ',
+        );
+  }
 
-    return _allowedCities.contains(
-      normalized,
+  // ==========================================================================
+  // MANILA DISTRICT CHECK
+  // ==========================================================================
+
+  bool _isManilaProvince(
+    dynamic province,
+  ) {
+    final String name =
+        _normalizeDistrictName(
+      _itemName(province),
+    );
+
+    return name.contains(
+      'national capital region - manila',
+    );
+  }
+
+  // ==========================================================================
+  // NORMAL DELIVERY CITY CHECK
+  // ==========================================================================
+
+  bool _isAllowedNormalCity(
+    String cityName,
+  ) {
+    return _allowedNormalCities.contains(
+      _normalizeCityName(
+        cityName,
+      ),
     );
   }
 
   // ==========================================================================
   // PREPARE DELIVERY AREA
-  //
-  // Actual philippines_rpcmb hierarchy from your debug output:
-  //
-  // Region NCR
-  //    ↓
-  // Province / NCR District
-  //    ↓
-  // Municipality / City
-  //    ↓
-  // Barangays
   // ==========================================================================
 
   void _prepareDeliveryArea() {
@@ -306,7 +355,7 @@ class _PhilippineAddressPickerState
     }
 
     // ------------------------------------------------------------------------
-    // Fallback: search using regionName.
+    // Fallback using region name.
     // ------------------------------------------------------------------------
 
     if (ncr == null) {
@@ -331,7 +380,7 @@ class _PhilippineAddressPickerState
     }
 
     // ------------------------------------------------------------------------
-    // NCR still not found.
+    // NCR NOT FOUND
     // ------------------------------------------------------------------------
 
     if (ncr == null) {
@@ -345,108 +394,174 @@ class _PhilippineAddressPickerState
       return;
     }
 
-    _metroManilaRegion = ncr;
     _region = ncr;
 
-    // ------------------------------------------------------------------------
-    // 2. READ ALL NCR CITIES
-    // ------------------------------------------------------------------------
-
-    final List<dynamic> allowedCities = [];
+    final List<_DeliveryCity> cities = [];
 
     try {
       for (final dynamic province in ncr.provinces) {
+
+        if (_isManilaProvince(province)) {
+          final List<dynamic> manilaAreas =
+              List<dynamic>.from(
+            province.municipalities,
+          );
+
+          manilaAreas.sort(
+            (dynamic a, dynamic b) {
+              return _itemName(a)
+                  .toLowerCase()
+                  .compareTo(
+                    _itemName(b)
+                        .toLowerCase(),
+                  );
+            },
+          );
+
+          if (manilaAreas.isNotEmpty) {
+            cities.add(
+              _DeliveryCity(
+                name: 'Manila',
+                province: province,
+                areas: manilaAreas,
+              ),
+            );
+          }
+
+          continue;
+        }
+
         for (final dynamic municipality
             in province.municipalities) {
           final String cityName =
               _itemName(municipality);
 
-          if (_isAllowedCity(cityName)) {
-            final bool alreadyAdded =
-                allowedCities.any(
-              (dynamic existing) =>
-                  _normalizeCityName(
-                    _itemName(existing),
-                  ) ==
-                  _normalizeCityName(
-                    cityName,
-                  ),
-            );
+          if (!_isAllowedNormalCity(
+            cityName,
+          )) {
+            continue;
+          }
 
-            if (!alreadyAdded) {
-              allowedCities.add(
-                municipality,
-              );
-            }
+          final String displayName =
+              _displayCityName(
+            cityName,
+          );
+
+          final bool alreadyAdded =
+              cities.any(
+            (_DeliveryCity existing) =>
+                existing.name
+                    .toLowerCase() ==
+                displayName
+                    .toLowerCase(),
+          );
+
+          if (!alreadyAdded) {
+            cities.add(
+              _DeliveryCity(
+                name: displayName,
+                municipality:
+                    municipality,
+                province: province,
+              ),
+            );
           }
         }
       }
     } catch (error) {
       debugPrint(
-        'Error reading NCR cities: $error',
+        'Error preparing NCR delivery cities: $error',
       );
     }
 
-    // ------------------------------------------------------------------------
-    // 3. SORT
-    //
-    // Quezon City should appear first because the store is in Botocan.
-    // ------------------------------------------------------------------------
-
-    allowedCities.sort(
-      (dynamic a, dynamic b) {
-        final String aName =
-            _normalizeCityName(
-          _itemName(a),
-        );
-
-        final String bName =
-            _normalizeCityName(
-          _itemName(b),
-        );
-
-        if (aName == 'quezon city' &&
-            bName != 'quezon city') {
+    cities.sort(
+      (_DeliveryCity a, _DeliveryCity b) {
+        if (a.name == 'Quezon City' &&
+            b.name != 'Quezon City') {
           return -1;
         }
 
-        if (bName == 'quezon city' &&
-            aName != 'quezon city') {
+        if (b.name == 'Quezon City' &&
+            a.name != 'Quezon City') {
           return 1;
         }
 
-        return aName.compareTo(
-          bName,
+        return a.name.compareTo(
+          b.name,
         );
       },
     );
 
-    _deliveryCities = allowedCities;
-
-    // ------------------------------------------------------------------------
-    // 4. RESTORE EXISTING CITY
-    //
-    // If customer already selected an allowed city, restore it.
-    // ------------------------------------------------------------------------
+    _deliveryCities = cities;
 
     if (widget.initialMunicipality != null) {
-      final String previousCity =
+      final dynamic initialMunicipality =
+          widget.initialMunicipality;
+
+      final String initialName =
           _normalizeCityName(
         _itemName(
-          widget.initialMunicipality,
+          initialMunicipality,
         ),
       );
 
-      for (final dynamic city
+      for (final _DeliveryCity city
           in _deliveryCities) {
-        final String currentCity =
+        if (city.isManila ||
+            city.municipality == null) {
+          continue;
+        }
+
+        final String cityName =
             _normalizeCityName(
-          _itemName(city),
+          _itemName(
+            city.municipality,
+          ),
         );
 
-        if (currentCity == previousCity) {
-          _municipality = city;
+        if (cityName == initialName) {
+          _selectedDeliveryCity = city;
+          _municipality =
+              city.municipality;
+          _province = city.province;
+
           break;
+        }
+      }
+
+
+      if (_selectedDeliveryCity == null) {
+        for (final _DeliveryCity city
+            in _deliveryCities) {
+          if (!city.isManila) {
+            continue;
+          }
+
+          for (final dynamic area
+              in city.areas) {
+            if (_itemName(area)
+                    .trim()
+                    .toLowerCase() ==
+                _itemName(
+                  initialMunicipality,
+                )
+                    .trim()
+                    .toLowerCase()) {
+              _selectedDeliveryCity =
+                  city;
+
+              _manilaArea = area;
+              _municipality = area;
+              _province = city.province;
+
+              break;
+            }
+          }
+
+          if (_selectedDeliveryCity !=
+              null) {
+            break;
+          }
         }
       }
     }
@@ -455,31 +570,26 @@ class _PhilippineAddressPickerState
     // 5. DEFAULT TO QUEZON CITY
     // ------------------------------------------------------------------------
 
-    if (_municipality == null) {
-      for (final dynamic city
+    if (_selectedDeliveryCity == null) {
+      for (final _DeliveryCity city
           in _deliveryCities) {
-        if (_normalizeCityName(
-              _itemName(city),
-            ) ==
-            'quezon city') {
-          _municipality = city;
+        if (city.name ==
+            'Quezon City') {
+          _selectedDeliveryCity = city;
+
+          _municipality =
+              city.municipality;
+
+          _province =
+              city.province;
+
           break;
         }
       }
     }
 
     // ------------------------------------------------------------------------
-    // 6. FIND NCR DISTRICT FOR CITY
-    // ------------------------------------------------------------------------
-
-    if (_municipality != null) {
-      _findProvinceForCity(
-        _municipality,
-      );
-    }
-
-    // ------------------------------------------------------------------------
-    // 7. RESTORE EXISTING BARANGAY
+    // 6. RESTORE BARANGAY
     // ------------------------------------------------------------------------
 
     if (_municipality != null &&
@@ -512,63 +622,73 @@ class _PhilippineAddressPickerState
   }
 
   // ==========================================================================
-  // FIND NCR DISTRICT / PROVINCE FOR SELECTED CITY
-  //
-  // This is kept internally.
-  //
-  // The customer does NOT manually select the NCR district.
+  // SELECT DELIVERY CITY
   // ==========================================================================
 
-  void _findProvinceForCity(
-    dynamic selectedCity,
+  void _selectDeliveryCity(
+    _DeliveryCity? city,
   ) {
-    _province = null;
-
-    if (_metroManilaRegion == null ||
-        selectedCity == null) {
+    if (city == null) {
       return;
     }
 
-    final String selectedCityName =
-        _normalizeCityName(
-      _itemName(selectedCity),
-    );
+    setState(() {
+      _selectedDeliveryCity = city;
 
-    try {
-      for (final dynamic province
-          in _metroManilaRegion.provinces) {
-        for (final dynamic municipality
-            in province.municipalities) {
-          final String municipalityName =
-              _normalizeCityName(
-            _itemName(municipality),
-          );
+      _barangay = null;
+      _manilaArea = null;
 
-          if (municipalityName ==
-              selectedCityName) {
-            _province = province;
-            return;
-          }
-        }
+      if (city.isManila) {
+        // Manila needs area selection first.
+        _province = city.province;
+        _municipality = null;
+      } else {
+        // Normal city.
+        _province = city.province;
+        _municipality =
+            city.municipality;
       }
-    } catch (error) {
-      debugPrint(
-        'Error finding NCR district: $error',
-      );
+    });
+  }
+
+  // ==========================================================================
+  // SELECT MANILA AREA
+  // ==========================================================================
+
+  void _selectManilaArea(
+    dynamic area,
+  ) {
+    setState(() {
+      _manilaArea = area;
+
+      // Keep municipality compatible with existing app.
+      //
+      // RPCMB itself considers Sampaloc/Tondo/etc. municipality-level
+      // objects, so we return that actual object.
+      _municipality = area;
+
+      _barangay = null;
+    });
+  }
+
+  // ==========================================================================
+  // MANILA AREAS
+  // ==========================================================================
+
+  List<dynamic> get _manilaAreas {
+    final _DeliveryCity? city =
+        _selectedDeliveryCity;
+
+    if (city == null ||
+        !city.isManila) {
+      return <dynamic>[];
     }
+
+    return city.areas;
   }
 
   // ==========================================================================
   // BARANGAYS
-  //
-  // Your debug output showed:
-  //
-  // Municipality(
-  //   ...,
-  //   barangays: [...]
-  // )
-  //
-  // Therefore we can access .barangays directly.
   // ==========================================================================
 
   List<dynamic> get _barangays {
@@ -592,20 +712,34 @@ class _PhilippineAddressPickerState
   // ==========================================================================
   // BUILD FULL ADDRESS
   //
-  // Example:
+  // Normal:
   //
   // 172 Area 4, Botocan, Quezon City, Metro Manila
+  //
+  // Manila:
+  //
+  // 123 Street, Barangay ..., Sampaloc, Manila, Metro Manila
   // ==========================================================================
 
   String _buildAddress() {
     final List<String> parts = [
       _detailsController.text.trim(),
+
       _formatBarangayName(
         _itemName(_barangay),
       ),
-      _displayCityName(
-        _itemName(_municipality),
-      ),
+
+      if (_selectedDeliveryCity?.isManila ==
+          true) ...[
+        _formatManilaAreaName(
+          _itemName(
+            _manilaArea,
+          ),
+        ),
+        'Manila',
+      ] else
+        _selectedDeliveryCity?.name ?? '',
+
       'Metro Manila',
     ]
         .where(
@@ -619,14 +753,6 @@ class _PhilippineAddressPickerState
 
   // ==========================================================================
   // DISPLAY CITY NAME
-  //
-  // Converts package names like:
-  //
-  // CITY OF QUEZON
-  //
-  // into:
-  //
-  // Quezon City
   // ==========================================================================
 
   String _displayCityName(
@@ -636,24 +762,35 @@ class _PhilippineAddressPickerState
       case 'quezon city':
         return 'Quezon City';
 
-      case 'manila':
-        return 'Manila';
-
-      case 'san juan':
-        return 'San Juan';
-
       case 'mandaluyong':
         return 'Mandaluyong';
 
       case 'marikina':
         return 'Marikina';
 
-      case 'caloocan':
-        return 'Caloocan';
+      case 'pasig':
+        return 'Pasig';
+
+      case 'manila':
+        return 'Manila';
 
       default:
-        return _toTitleCase(rawName);
+        return _toTitleCase(
+          rawName,
+        );
     }
+  }
+
+  // ==========================================================================
+  // FORMAT MANILA AREA
+  // ==========================================================================
+
+  String _formatManilaAreaName(
+    String value,
+  ) {
+    return _toTitleCase(
+      value,
+    );
   }
 
   // ==========================================================================
@@ -663,7 +800,9 @@ class _PhilippineAddressPickerState
   String _formatBarangayName(
     String value,
   ) {
-    return _toTitleCase(value);
+    return _toTitleCase(
+      value,
+    );
   }
 
   // ==========================================================================
@@ -680,7 +819,9 @@ class _PhilippineAddressPickerState
     return value
         .trim()
         .toLowerCase()
-        .split(RegExp(r'\s+'))
+        .split(
+          RegExp(r'\s+'),
+        )
         .map(
           (String word) {
             if (word.isEmpty) {
@@ -700,10 +841,10 @@ class _PhilippineAddressPickerState
 
   void _saveAddress() {
     // ------------------------------------------------------------------------
-    // City
+    // DELIVERY CITY
     // ------------------------------------------------------------------------
 
-    if (_municipality == null) {
+    if (_selectedDeliveryCity == null) {
       _showValidation(
         'Please select a delivery city.',
       );
@@ -712,21 +853,32 @@ class _PhilippineAddressPickerState
     }
 
     // ------------------------------------------------------------------------
-    // Allowed delivery city
+    // MANILA AREA
     // ------------------------------------------------------------------------
 
-    if (!_isAllowedCity(
-      _itemName(_municipality),
-    )) {
+    if (_selectedDeliveryCity!.isManila &&
+        _manilaArea == null) {
       _showValidation(
-        'Sorry, we do not deliver to this city yet.',
+        'Please select your Manila area.',
       );
 
       return;
     }
 
     // ------------------------------------------------------------------------
-    // Barangay
+    // RPCMB MUNICIPALITY
+    // ------------------------------------------------------------------------
+
+    if (_municipality == null) {
+      _showValidation(
+        'Please select your delivery area.',
+      );
+
+      return;
+    }
+
+    // ------------------------------------------------------------------------
+    // BARANGAY
     // ------------------------------------------------------------------------
 
     if (_barangay == null) {
@@ -738,7 +890,7 @@ class _PhilippineAddressPickerState
     }
 
     // ------------------------------------------------------------------------
-    // Detailed address
+    // DETAILED ADDRESS
     // ------------------------------------------------------------------------
 
     if (_detailsController.text
@@ -752,18 +904,21 @@ class _PhilippineAddressPickerState
     }
 
     // ------------------------------------------------------------------------
-    // Return result
+    // RETURN RESULT
     // ------------------------------------------------------------------------
 
     Navigator.of(context).pop(
       PhilippineAddressResult(
         region: _region,
         province: _province,
-        municipality: _municipality,
+        municipality:
+            _municipality,
         barangay: _barangay,
         detailedAddress:
-            _detailsController.text.trim(),
-        fullAddress: _buildAddress(),
+            _detailsController.text
+                .trim(),
+        fullAddress:
+            _buildAddress(),
       ),
     );
   }
@@ -989,10 +1144,12 @@ class _PhilippineAddressPickerState
                                         ),
                                       ),
                                     ),
+
                                     const SizedBox(
                                       height:
                                           4,
                                     ),
+
                                     const Text(
                                       'Delivery address',
                                       style:
@@ -1010,10 +1167,12 @@ class _PhilippineAddressPickerState
                                             .textPrimary,
                                       ),
                                     ),
+
                                     const SizedBox(
                                       height:
                                           7,
                                     ),
+
                                     Text(
                                       'Available in Quezon City and selected nearby Metro Manila cities.',
                                       style:
@@ -1091,7 +1250,7 @@ class _PhilippineAddressPickerState
                           ),
 
                           // ================================================
-                          // SERVICE AREA CARD
+                          // SERVICE AREA
                           // ================================================
 
                           Container(
@@ -1175,12 +1334,14 @@ class _PhilippineAddressPickerState
                                               .textPrimary,
                                         ),
                                       ),
+
                                       const SizedBox(
                                         height:
                                             5,
                                       ),
+
                                       Text(
-                                        'The store currently serves selected cities near Quezon City.',
+                                        'Serving Quezon City, Manila, Mandaluyong, Marikina and Pasig.',
                                         style:
                                             TextStyle(
                                           fontSize:
@@ -1207,7 +1368,7 @@ class _PhilippineAddressPickerState
                           ),
 
                           // ================================================
-                          // NO CITIES ERROR
+                          // NO CITIES
                           // ================================================
 
                           if (_deliveryCities
@@ -1243,7 +1404,8 @@ class _PhilippineAddressPickerState
                                   ),
                                 ),
                               ),
-                              child: const Row(
+                              child:
+                                  const Row(
                                 children: [
                                   Icon(
                                     Icons
@@ -1252,9 +1414,11 @@ class _PhilippineAddressPickerState
                                     color:
                                         Colors.red,
                                   ),
+
                                   SizedBox(
                                     width: 10,
                                   ),
+
                                   Expanded(
                                     child:
                                         Text(
@@ -1276,6 +1440,7 @@ class _PhilippineAddressPickerState
                                 ],
                               ),
                             ),
+
                             const SizedBox(
                               height: 16,
                             ),
@@ -1286,45 +1451,77 @@ class _PhilippineAddressPickerState
                           // ================================================
 
                           _AddressDropdown<
-                              dynamic>(
+                              _DeliveryCity>(
                             key: ValueKey(
-                              'city_${_itemName(_municipality)}',
+                              'city_${_selectedDeliveryCity?.name ?? ''}',
                             ),
                             label:
                                 'DELIVERY CITY',
                             icon: Icons
                                 .location_city_outlined,
                             value:
-                                _municipality,
+                                _selectedDeliveryCity,
                             items:
                                 _deliveryCities,
                             itemName:
-                                (dynamic item) =>
-                                    _displayCityName(
-                              _itemName(
-                                item,
-                              ),
-                            ),
+                                (_DeliveryCity item) =>
+                                    item.name,
                             hint:
                                 'Select delivery city',
                             enabled:
                                 _deliveryCities
                                     .isNotEmpty,
                             onChanged:
-                                (dynamic value) {
-                              setState(() {
-                                _municipality =
-                                    value;
-
-                                _barangay =
-                                    null;
-
-                                _findProvinceForCity(
-                                  value,
-                                );
-                              });
-                            },
+                                _selectDeliveryCity,
                           ),
+
+                          // ================================================
+                          // MANILA AREA
+                          // ================================================
+
+                          if (_selectedDeliveryCity
+                                  ?.isManila ==
+                              true) ...[
+                            const SizedBox(
+                              height: 12,
+                            ),
+
+                            _AddressDropdown<
+                                dynamic>(
+                              key: ValueKey(
+                                'manila_area_${_itemName(_manilaArea)}',
+                              ),
+                              label:
+                                  'MANILA AREA',
+                              icon: Icons
+                                  .map_outlined,
+                              value:
+                                  _manilaArea,
+                              items:
+                                  _manilaAreas,
+                              itemName:
+                                  (dynamic item) =>
+                                      _formatManilaAreaName(
+                                _itemName(
+                                  item,
+                                ),
+                              ),
+                              hint:
+                                  'Select Manila area',
+                              enabled:
+                                  _manilaAreas
+                                      .isNotEmpty,
+                              onChanged:
+                                  (dynamic value) {
+                                if (value !=
+                                    null) {
+                                  _selectManilaArea(
+                                    value,
+                                  );
+                                }
+                              },
+                            ),
+                          ],
 
                           const SizedBox(
                             height: 12,
@@ -1354,10 +1551,16 @@ class _PhilippineAddressPickerState
                                 item,
                               ),
                             ),
-                            hint: _municipality ==
-                                    null
-                                ? 'Select a city first'
-                                : 'Select barangay',
+                            hint:
+                                _selectedDeliveryCity ==
+                                        null
+                                    ? 'Select a city first'
+                                    : _selectedDeliveryCity!
+                                            .isManila &&
+                                        _manilaArea ==
+                                            null
+                                    ? 'Select Manila area first'
+                                    : 'Select barangay',
                             enabled:
                                 _municipality !=
                                         null &&
@@ -1405,7 +1608,9 @@ class _PhilippineAddressPickerState
                           // ADDRESS PREVIEW
                           // ================================================
 
-                          if (_municipality !=
+                          if (_selectedDeliveryCity !=
+                                  null &&
+                              _municipality !=
                                   null &&
                               _barangay !=
                                   null)
@@ -1419,7 +1624,7 @@ class _PhilippineAddressPickerState
                           ),
 
                           // ================================================
-                          // SAVE BUTTON
+                          // SAVE
                           // ================================================
 
                           SizedBox(
@@ -1469,9 +1674,11 @@ class _PhilippineAddressPickerState
                                         .check_rounded,
                                     size: 18,
                                   ),
+
                                   SizedBox(
                                     width: 8,
                                   ),
+
                                   Text(
                                     'Use this address',
                                     style:

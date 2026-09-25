@@ -2,13 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:the_legit_smoothie/core/models/app_notification.dart';
 import 'package:the_legit_smoothie/core/services/notification_service.dart';
 import 'package:the_legit_smoothie/features/notifications/screens/notifications_screen.dart';
+import 'package:the_legit_smoothie/features/seller/screens/seller_sales_screen.dart';
 
+import 'package:the_legit_smoothie/features/seller/widgets/homeScreen/seller_business_snapshot.dart';
 import 'package:the_legit_smoothie/features/seller/widgets/homeScreen/seller_dashboard_header.dart';
-import 'package:the_legit_smoothie/features/seller/widgets/homeScreen/seller_quick_action.dart';
-import 'package:the_legit_smoothie/features/seller/widgets/homeScreen/seller_recent_order_card.dart';
 import 'package:the_legit_smoothie/features/seller/widgets/homeScreen/seller_sales_card.dart';
 import 'package:the_legit_smoothie/features/seller/widgets/homeScreen/seller_stat_card.dart';
 import 'package:the_legit_smoothie/features/seller/widgets/homeScreen/seller_store_status_card.dart';
@@ -54,11 +55,11 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
   int _pendingOrders = 0;
   int _activeOrders = 0;
   int _productCount = 0;
+
+  int _ordersToday = 0;
   int _completedOrdersToday = 0;
 
   double _todaySales = 0;
-
-  List<Map<String, dynamic>> _recentOrders = [];
 
   // =============================================================
   // LIFECYCLE
@@ -80,13 +81,14 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
 
     super.dispose();
   }
+
   // =============================================================
   // NOTIFICATIONS
   // =============================================================
 
   Future<void> _loadUnreadNotificationCount() async {
     try {
-      final count = await _notificationService.getUnreadCount();
+      final int count = await _notificationService.getUnreadCount();
 
       if (!mounted) {
         return;
@@ -108,7 +110,10 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
             _loadUnreadNotificationCount();
           },
           onError: (Object error) {
-            debugPrint('Seller notification realtime error: $error');
+            debugPrint(
+              'Seller notification realtime error: '
+              '$error',
+            );
           },
         );
   }
@@ -127,6 +132,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
 
     await _loadUnreadNotificationCount();
   }
+
   // =============================================================
   // LOAD DASHBOARD
   // =============================================================
@@ -147,7 +153,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
     }
 
     try {
-      final user = _supabase.auth.currentUser;
+      final User? user = _supabase.auth.currentUser;
 
       if (user == null) {
         return;
@@ -163,7 +169,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
       // SELLER PROFILE
       // ==========================================================
 
-      final profileResponse = await _supabase
+      final Map<String, dynamic>? profileResponse = await _supabase
           .from('profiles')
           .select('full_name')
           .eq('id', user.id)
@@ -176,7 +182,9 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
       // PRODUCTS
       // ==========================================================
 
-      final productResponse = await _supabase.from('products').select('id');
+      final List<dynamic> productResponse = await _supabase
+          .from('products')
+          .select('id');
 
       final List<Map<String, dynamic>> products =
           List<Map<String, dynamic>>.from(productResponse);
@@ -185,19 +193,19 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
       // ORDERS
       // ==========================================================
 
-      final ordersResponse = await _supabase
+      final List<dynamic> ordersResponse = await _supabase
           .from('orders')
           .select('''
-      id,
-      status,
-      order_type,
-      total_price,
-      created_at,
-      order_status_history (
-        status,
-        created_at
-      )
-    ''')
+                id,
+                status,
+                order_type,
+                total_price,
+                created_at,
+                order_status_history (
+                  status,
+                  created_at
+                )
+                ''')
           .order('created_at', ascending: false);
 
       final List<Map<String, dynamic>> orders = List<Map<String, dynamic>>.from(
@@ -209,7 +217,10 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
       // ==========================================================
 
       final int pendingOrders = orders.where((order) {
-        final String status = (order['status'] ?? '').toString().toLowerCase();
+        final String status = (order['status'] ?? '')
+            .toString()
+            .toLowerCase()
+            .trim();
 
         return status == 'pending';
       }).length;
@@ -229,33 +240,62 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
       };
 
       final int activeOrders = orders.where((order) {
-        final String status = (order['status'] ?? '').toString().toLowerCase();
+        final String status = (order['status'] ?? '')
+            .toString()
+            .toLowerCase()
+            .trim();
 
         return activeStatuses.contains(status);
       }).length;
 
       // ==========================================================
+      // ORDERS RECEIVED TODAY
+      //
+      // This uses the order creation time because this metric
+      // represents orders that entered the store today.
+      // ==========================================================
+
+      final DateTime now = DateTime.now();
+
+      final int ordersToday = orders.where((order) {
+        final String? rawCreatedAt = order['created_at']?.toString();
+
+        if (rawCreatedAt == null || rawCreatedAt.isEmpty) {
+          return false;
+        }
+
+        final DateTime? parsed = DateTime.tryParse(rawCreatedAt);
+
+        if (parsed == null) {
+          return false;
+        }
+
+        final DateTime localCreatedAt = parsed.toLocal();
+
+        return _isSameLocalDay(localCreatedAt, now);
+      }).length;
+
+      // ==========================================================
       // TODAY'S SALES + COMPLETED ORDERS
       //
-      // Count revenue based on when the order became completed in
-      // order_status_history, not when the order was created.
+      // Revenue is based on when an order became completed,
+      // not when the order was originally created.
       // ==========================================================
 
       double todaySales = 0;
       int completedOrdersToday = 0;
 
-      for (final order in orders) {
+      for (final Map<String, dynamic> order in orders) {
         final String currentStatus = (order['status'] ?? '')
             .toString()
             .toLowerCase()
             .trim();
 
-        // Only orders that are currently completed count as sales.
+        // Only currently completed orders count as sales.
         if (currentStatus != 'completed') {
           continue;
         }
 
-        // Returns a timestamp only when this order became completed today.
         final DateTime? completedAt = _completedAtToday(order);
 
         if (completedAt == null) {
@@ -268,12 +308,6 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
         todaySales += orderTotal;
         completedOrdersToday++;
       }
-
-      // ==========================================================
-      // RECENT ORDERS
-      // ==========================================================
-
-      final List<Map<String, dynamic>> recentOrders = orders.take(5).toList();
 
       // ==========================================================
       // UPDATE UI
@@ -291,10 +325,10 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
 
         _productCount = products.length;
 
+        _ordersToday = ordersToday;
+
         _todaySales = todaySales;
         _completedOrdersToday = completedOrdersToday;
-
-        _recentOrders = recentOrders;
       });
     } on PostgrestException catch (error) {
       debugPrint(
@@ -309,7 +343,10 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
       debugPrint('Seller dashboard error: $error');
 
       if (mounted) {
-        _showErrorMessage('Something went wrong while loading the dashboard.');
+        _showErrorMessage(
+          'Something went wrong while loading '
+          'the dashboard.',
+        );
       }
     } finally {
       if (mounted) {
@@ -327,7 +364,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
 
   Future<void> _loadStoreStatus() async {
     try {
-      final response = await _supabase
+      final Map<String, dynamic>? response = await _supabase
           .from('store_settings')
           .select('id, is_open')
           .limit(1)
@@ -362,7 +399,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (sheetContext) {
+      builder: (BuildContext sheetContext) {
         return SafeArea(
           top: false,
           child: Container(
@@ -582,9 +619,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
                               : Icons.power_settings_new_rounded,
                           size: 17,
                         ),
-
                         const SizedBox(width: 8),
-
                         Text(
                           newStatus ? 'Open Store' : 'Close Store',
                           style: const TextStyle(
@@ -687,7 +722,10 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
 
       _showErrorMessage('Unable to change store status.');
     } catch (error) {
-      debugPrint('Failed to update store status: $error');
+      debugPrint(
+        'Failed to update store status: '
+        '$error',
+      );
 
       if (!mounted) {
         return;
@@ -741,9 +779,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
                 size: 17,
                 color: Colors.white,
               ),
-
               const SizedBox(width: 9),
-
               Expanded(
                 child: Text(
                   message,
@@ -782,9 +818,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
           content: Row(
             children: [
               Icon(icon, size: 18, color: Colors.white),
-
               const SizedBox(width: 9),
-
               Expanded(
                 child: Text(
                   message,
@@ -813,29 +847,15 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
     widget.onNavigateToTab?.call(1);
   }
 
-  void _createPromotion() {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.textPrimary,
-          margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          content: const Text(
-            'Promotion management is coming next.',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      );
+  void _openSales() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const SellerSalesScreen()));
   }
+
+  // =============================================================
+  // DATE HELPERS
+  // =============================================================
 
   bool _isSameLocalDay(DateTime date, DateTime target) {
     return date.year == target.year &&
@@ -854,8 +874,10 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
 
     DateTime? latestCompletedAt;
 
-    for (final entry in historyData) {
-      if (entry is! Map) continue;
+    for (final dynamic entry in historyData) {
+      if (entry is! Map) {
+        continue;
+      }
 
       final String historyStatus =
           entry['status']?.toString().toLowerCase().trim() ?? '';
@@ -961,6 +983,7 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
                           SellerSalesCard(
                             value: '₱${_todaySales.toStringAsFixed(2)}',
                             completedOrders: _completedOrdersToday,
+                            onViewSales: _openSales,
                           ),
 
                           const SizedBox(height: 12),
@@ -1015,53 +1038,13 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
                           const SizedBox(height: 30),
 
                           // =====================================
-                          // QUICK ACTIONS
+                          // BUSINESS SNAPSHOT
                           // =====================================
-                          _buildSectionHeader(
-                            eyebrow: 'SHORTCUTS',
-                            title: 'Quick Actions',
-                            subtitle: 'Jump straight into common store tasks.',
+                          SellerBusinessSnapshot(
+                            ordersToday: _ordersToday,
+                            completedToday: _completedOrdersToday,
+                            todaySales: _todaySales,
                           ),
-
-                          const SizedBox(height: 13),
-
-                          SellerQuickAction(
-                            title: 'Manage Orders',
-                            subtitle: _pendingOrders > 0
-                                ? '$_pendingOrders pending ${_pendingOrders == 1 ? 'order' : 'orders'}'
-                                : 'Review and update customer orders',
-                            icon: Icons.receipt_long_outlined,
-                            onTap: _openOrders,
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          SellerQuickAction(
-                            title: 'Manage Products',
-                            subtitle: '$_productCount products in your catalog',
-                            icon: Icons.inventory_2_outlined,
-                            onTap: _openProducts,
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          SellerQuickAction(
-                            title: 'Create Promotion',
-                            subtitle: 'Set up offers and customer deals',
-                            icon: Icons.local_offer_outlined,
-                            onTap: _createPromotion,
-                          ),
-
-                          const SizedBox(height: 30),
-
-                          // =====================================
-                          // RECENT ORDERS
-                          // =====================================
-                          _buildRecentOrdersHeader(),
-
-                          const SizedBox(height: 13),
-
-                          _buildRecentOrders(),
                         ]),
                       ),
                     ),
@@ -1270,181 +1253,6 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  // =============================================================
-  // SECTION HEADER
-  // =============================================================
-
-  Widget _buildSectionHeader({
-    required String eyebrow,
-    required String title,
-    required String subtitle,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          eyebrow,
-          style: TextStyle(
-            fontSize: 8,
-            height: 1,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.1,
-            color: AppColors.textSecondary.withValues(alpha: 0.50),
-          ),
-        ),
-
-        const SizedBox(height: 7),
-
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            height: 1,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.45,
-            color: AppColors.textPrimary,
-          ),
-        ),
-
-        const SizedBox(height: 6),
-
-        Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 10,
-            height: 1.35,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary.withValues(alpha: 0.66),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // =============================================================
-  // RECENT ORDERS HEADER
-  // =============================================================
-
-  Widget _buildRecentOrdersHeader() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: _buildSectionHeader(
-            eyebrow: 'ORDERS',
-            title: 'Recent Orders',
-            subtitle: 'Latest customer orders from your store.',
-          ),
-        ),
-
-        if (_recentOrders.isNotEmpty) ...[
-          const SizedBox(width: 12),
-
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _openOrders,
-              borderRadius: BorderRadius.circular(30),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'View all',
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-
-                    const SizedBox(width: 4),
-
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 13,
-                      color: AppColors.textSecondary.withValues(alpha: 0.65),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  // =============================================================
-  // RECENT ORDERS
-  // =============================================================
-
-  Widget _buildRecentOrders() {
-    if (_recentOrders.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.40)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Icon(
-                Icons.receipt_long_outlined,
-                size: 21,
-                color: AppColors.textSecondary.withValues(alpha: 0.65),
-              ),
-            ),
-
-            const SizedBox(height: 13),
-
-            const Text(
-              'No orders yet',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-
-            const SizedBox(height: 5),
-
-            Text(
-              'New customer orders will appear here.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 10,
-                height: 1.4,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary.withValues(alpha: 0.65),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        for (int index = 0; index < _recentOrders.length; index++) ...[
-          SellerRecentOrderCard(order: _recentOrders[index]),
-
-          if (index != _recentOrders.length - 1) const SizedBox(height: 10),
-        ],
-      ],
     );
   }
 

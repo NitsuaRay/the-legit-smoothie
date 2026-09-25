@@ -23,9 +23,7 @@ class NotificationService {
   // GET NOTIFICATIONS
   // ============================================================
 
-  Future<List<AppNotification>> getNotifications({
-    int limit = 50,
-  }) async {
+  Future<List<AppNotification>> getNotifications({int limit = 50}) async {
     final userId = currentUserId;
 
     if (userId == null) {
@@ -42,15 +40,11 @@ class NotificationService {
 
       return (response as List)
           .map(
-            (json) => AppNotification.fromJson(
-              Map<String, dynamic>.from(json),
-            ),
+            (json) => AppNotification.fromJson(Map<String, dynamic>.from(json)),
           )
           .toList();
     } catch (e) {
-      throw Exception(
-        'Failed to load notifications: $e',
-      );
+      throw Exception('Failed to load notifications: $e');
     }
   }
 
@@ -74,9 +68,7 @@ class NotificationService {
 
       return (response as List).length;
     } catch (e) {
-      throw Exception(
-        'Failed to get unread notification count: $e',
-      );
+      throw Exception('Failed to get unread notification count: $e');
     }
   }
 
@@ -94,15 +86,11 @@ class NotificationService {
     try {
       await _supabase
           .from('notifications')
-          .update({
-            'is_read': true,
-          })
+          .update({'is_read': true})
           .eq('id', notificationId)
           .eq('user_id', userId);
     } catch (e) {
-      throw Exception(
-        'Failed to mark notification as read: $e',
-      );
+      throw Exception('Failed to mark notification as read: $e');
     }
   }
 
@@ -120,15 +108,33 @@ class NotificationService {
     try {
       await _supabase
           .from('notifications')
-          .update({
-            'is_read': true,
-          })
+          .update({'is_read': true})
           .eq('user_id', userId)
           .eq('is_read', false);
     } catch (e) {
-      throw Exception(
-        'Failed to mark all notifications as read: $e',
-      );
+      throw Exception('Failed to mark all notifications as read: $e');
+    }
+  }
+
+  // ============================================================
+  // DELETE ONE NOTIFICATION
+  // ============================================================
+
+  Future<void> deleteNotification(String notificationId) async {
+    final userId = currentUserId;
+
+    if (userId == null) {
+      return;
+    }
+
+    try {
+      await _supabase
+          .from('notifications')
+          .delete()
+          .eq('id', notificationId)
+          .eq('user_id', userId);
+    } catch (e) {
+      throw Exception('Failed to delete notification: $e');
     }
   }
 

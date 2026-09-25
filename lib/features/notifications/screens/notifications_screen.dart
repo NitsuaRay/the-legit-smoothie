@@ -14,10 +14,7 @@ import '../../seller/screens/seller_order_detail_screen.dart';
 // VIEWER TYPE
 // =================================================================
 
-enum NotificationViewer {
-  customer,
-  seller,
-}
+enum NotificationViewer { customer, seller }
 
 // =================================================================
 // NOTIFICATIONS SCREEN
@@ -26,19 +23,14 @@ enum NotificationViewer {
 class NotificationsScreen extends StatefulWidget {
   final NotificationViewer viewer;
 
-  const NotificationsScreen({
-    super.key,
-    required this.viewer,
-  });
+  const NotificationsScreen({super.key, required this.viewer});
 
   @override
-  State<NotificationsScreen> createState() =>
-      _NotificationsScreenState();
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  final NotificationService _notificationService =
-      NotificationService.instance;
+  final NotificationService _notificationService = NotificationService.instance;
 
   List<AppNotification> _notifications = [];
 
@@ -47,6 +39,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _isLoading = true;
   bool _isMarkingAllRead = false;
 
+  bool _showAllNotifications = false;
+
+  static const int _collapsedNotificationCount = 5;
   // =============================================================
   // LIFECYCLE
   // =============================================================
@@ -72,8 +67,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _loadNotifications() async {
     try {
-      final notifications =
-          await _notificationService.getNotifications();
+      final notifications = await _notificationService.getNotifications();
 
       if (!mounted) {
         return;
@@ -84,8 +78,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _isLoading = false;
       });
     } catch (error) {
-
-
       if (!mounted) {
         return;
       }
@@ -94,9 +86,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _isLoading = false;
       });
 
-      _showMessage(
-        'Unable to load notifications.',
-      );
+      _showMessage('Unable to load notifications.');
     }
   }
 
@@ -105,46 +95,36 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   // =============================================================
 
   void _listenForNotifications() {
-    _notificationSubscription =
-        _notificationService.watchNewNotifications().listen(
-      (notification) {
-        if (!mounted) {
-          return;
-        }
-
-        setState(() {
-          final alreadyExists = _notifications.any(
-            (item) => item.id == notification.id,
-          );
-
-          if (!alreadyExists) {
-            _notifications.insert(
-              0,
-              notification,
-            );
+    _notificationSubscription = _notificationService
+        .watchNewNotifications()
+        .listen((notification) {
+          if (!mounted) {
+            return;
           }
-        });
-      },
-      onError: (Object error) {
-      },
-    );
+
+          setState(() {
+            final alreadyExists = _notifications.any(
+              (item) => item.id == notification.id,
+            );
+
+            if (!alreadyExists) {
+              _notifications.insert(0, notification);
+            }
+          });
+        }, onError: (Object error) {});
   }
 
   // =============================================================
   // MARK ONE AS READ
   // =============================================================
 
-  Future<void> _markAsRead(
-    AppNotification notification,
-  ) async {
+  Future<void> _markAsRead(AppNotification notification) async {
     if (notification.isRead) {
       return;
     }
 
     try {
-      await _notificationService.markAsRead(
-        notification.id,
-      );
+      await _notificationService.markAsRead(notification.id);
 
       if (!mounted) {
         return;
@@ -156,16 +136,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         );
 
         if (index != -1) {
-          _notifications[index] =
-              _notifications[index].copyWith(
-            isRead: true,
-          );
+          _notifications[index] = _notifications[index].copyWith(isRead: true);
         }
       });
     } catch (error) {
-      debugPrint(
-        'Failed to mark notification as read: $error',
-      );
+      debugPrint('Failed to mark notification as read: $error');
     }
   }
 
@@ -191,19 +166,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       setState(() {
         _notifications = _notifications
-            .map(
-              (notification) => notification.copyWith(
-                isRead: true,
-              ),
-            )
+            .map((notification) => notification.copyWith(isRead: true))
             .toList();
       });
     } catch (error) {
-
       if (mounted) {
-        _showMessage(
-          'Unable to mark notifications as read.',
-        );
+        _showMessage('Unable to mark notifications as read.');
       }
     } finally {
       if (mounted) {
@@ -218,9 +186,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   // NOTIFICATION TAP
   // =============================================================
 
-  Future<void> _onNotificationTap(
-    AppNotification notification,
-  ) async {
+  Future<void> _onNotificationTap(AppNotification notification) async {
     // Mark this notification as read first.
     await _markAsRead(notification);
 
@@ -242,9 +208,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (widget.viewer == NotificationViewer.seller) {
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => SellerOrderDetailScreen(
-            orderId: orderId,
-          ),
+          builder: (_) => SellerOrderDetailScreen(orderId: orderId),
         ),
       );
 
@@ -257,11 +221,95 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => OrderTrackingScreen(
-          orderId: orderId,
-        ),
+        builder: (_) => OrderTrackingScreen(orderId: orderId),
       ),
     );
+  }
+
+  // =============================================================
+  // DELETE NOTIFICATION
+  // =============================================================
+
+  Future<void> _deleteNotification(AppNotification notification) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text(
+            'Delete notification?',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.3,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          content: Text(
+            'This notification will be permanently removed.',
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.5,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary.withValues(alpha: 0.75),
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true);
+              },
+              child: const Text(
+                'Delete',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      await _notificationService.deleteNotification(notification.id);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _notifications.removeWhere((item) => item.id == notification.id);
+
+        if (_notifications.length <= _collapsedNotificationCount) {
+          _showAllNotifications = false;
+        }
+      });
+
+      _showMessage('Notification deleted.');
+    } catch (error) {
+      debugPrint('Failed to delete notification: $error');
+
+      if (mounted) {
+        _showMessage('Unable to delete notification.');
+      }
+    }
   }
 
   // =============================================================
@@ -269,9 +317,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   // =============================================================
 
   int get _unreadCount {
-    return _notifications.where(
-      (notification) => !notification.isRead,
-    ).length;
+    return _notifications.where((notification) => !notification.isRead).length;
+  }
+
+  List<AppNotification> get _visibleNotifications {
+    if (_showAllNotifications ||
+        _notifications.length <= _collapsedNotificationCount) {
+      return _notifications;
+    }
+
+    return _notifications.take(_collapsedNotificationCount).toList();
+  }
+
+  int get _hiddenNotificationCount {
+    final hidden = _notifications.length - _collapsedNotificationCount;
+
+    return hidden > 0 ? hidden : 0;
   }
 
   void _showMessage(String message) {
@@ -282,12 +343,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           behavior: SnackBarBehavior.floating,
           backgroundColor: AppColors.textPrimary,
           elevation: 0,
-          margin: const EdgeInsets.fromLTRB(
-            18,
-            0,
-            18,
-            18,
-          ),
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -320,39 +376,51 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: _isLoading
                   ? _buildLoadingState()
                   : _notifications.isEmpty
-                      ? _buildEmptyState()
-                      : RefreshIndicator(
-                          color: AppColors.textPrimary,
-                          onRefresh: _loadNotifications,
-                          child: ListView.separated(
-                            physics:
-                                const AlwaysScrollableScrollPhysics(
-                              parent: BouncingScrollPhysics(),
-                            ),
-                            padding: const EdgeInsets.fromLTRB(
-                              18,
-                              8,
-                              18,
-                              30,
-                            ),
-                            itemCount: _notifications.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              final notification =
-                                  _notifications[index];
-
-                              return _NotificationCard(
-                                notification: notification,
-                                onTap: () {
-                                  _onNotificationTap(
-                                    notification,
-                                  );
-                                },
-                              );
-                            },
-                          ),
+                  ? _buildEmptyState()
+                  : RefreshIndicator(
+                      color: AppColors.textPrimary,
+                      onRefresh: _loadNotifications,
+                      child: ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
                         ),
+                        padding: const EdgeInsets.fromLTRB(18, 8, 18, 30),
+                        itemCount:
+                            _visibleNotifications.length +
+                            (_notifications.length > _collapsedNotificationCount
+                                ? 1
+                                : 0),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final visibleNotifications = _visibleNotifications;
+
+                          if (index == visibleNotifications.length) {
+                            return _NotificationToggleButton(
+                              isExpanded: _showAllNotifications,
+                              hiddenCount: _hiddenNotificationCount,
+                              onTap: () {
+                                setState(() {
+                                  _showAllNotifications =
+                                      !_showAllNotifications;
+                                });
+                              },
+                            );
+                          }
+
+                          final notification = visibleNotifications[index];
+
+                          return _NotificationCard(
+                            notification: notification,
+                            onTap: () {
+                              _onNotificationTap(notification);
+                            },
+                            onDelete: () {
+                              _deleteNotification(notification);
+                            },
+                          );
+                        },
+                      ),
+                    ),
             ),
           ],
         ),
@@ -366,12 +434,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        18,
-        14,
-        18,
-        16,
-      ),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
       child: Row(
         children: [
           _HeaderButton(
@@ -385,8 +448,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'NOTIFICATIONS',
@@ -395,8 +457,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     height: 1,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.1,
-                    color: AppColors.textSecondary
-                        .withValues(alpha: 0.55),
+                    color: AppColors.textSecondary.withValues(alpha: 0.55),
                   ),
                 ),
 
@@ -418,12 +479,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
           if (_unreadCount > 0)
             TextButton(
-              onPressed: _isMarkingAllRead
-                  ? null
-                  : _markAllAsRead,
+              onPressed: _isMarkingAllRead ? null : _markAllAsRead,
               style: TextButton.styleFrom(
-                foregroundColor:
-                    AppColors.textPrimary,
+                foregroundColor: AppColors.textPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 8,
@@ -433,11 +491,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ? const SizedBox(
                       width: 15,
                       height: 15,
-                      child:
-                          CircularProgressIndicator(
+                      child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color:
-                            AppColors.textPrimary,
+                        color: AppColors.textPrimary,
                       ),
                     )
                   : const Text(
@@ -478,15 +534,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 30,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 30),
         children: [
-          SizedBox(
-            height:
-                MediaQuery.sizeOf(context).height *
-                    0.18,
-          ),
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
 
           Center(
             child: Container(
@@ -494,11 +544,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               height: 68,
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius:
-                    BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: AppColors.border
-                      .withValues(alpha: 0.30),
+                  color: AppColors.border.withValues(alpha: 0.30),
                 ),
               ),
               child: const Icon(
@@ -532,8 +580,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               fontSize: 10.5,
               height: 1.5,
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary
-                  .withValues(alpha: 0.70),
+              color: AppColors.textSecondary.withValues(alpha: 0.70),
             ),
           ),
         ],
@@ -549,10 +596,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 class _NotificationCard extends StatelessWidget {
   final AppNotification notification;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   const _NotificationCard({
     required this.notification,
     required this.onTap,
+    required this.onDelete,
   });
 
   @override
@@ -569,21 +618,17 @@ class _NotificationCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: unread
                 ? AppColors.surface
-                : AppColors.surface
-                    .withValues(alpha: 0.70),
+                : AppColors.surface.withValues(alpha: 0.70),
             borderRadius: BorderRadius.circular(19),
             border: Border.all(
               color: unread
-                  ? AppColors.textPrimary
-                      .withValues(alpha: 0.13)
-                  : AppColors.border
-                      .withValues(alpha: 0.25),
+                  ? AppColors.textPrimary.withValues(alpha: 0.13)
+                  : AppColors.border.withValues(alpha: 0.25),
             ),
             boxShadow: unread
                 ? [
                     BoxShadow(
-                      color: Colors.black
-                          .withValues(alpha: 0.035),
+                      color: Colors.black.withValues(alpha: 0.035),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -591,23 +636,21 @@ class _NotificationCard extends StatelessWidget {
                 : null,
           ),
           child: Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _NotificationIcon(
-                type: notification.type,
-                unread: unread,
-              ),
+              _NotificationIcon(type: notification.type, unread: unread),
 
               const SizedBox(width: 12),
 
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
+                        // =========================================================
+                        // NOTIFICATION TITLE
+                        // =========================================================
                         Expanded(
                           child: Text(
                             notification.title,
@@ -617,26 +660,79 @@ class _NotificationCard extends StatelessWidget {
                               fontWeight: unread
                                   ? FontWeight.w900
                                   : FontWeight.w700,
-                              color:
-                                  AppColors.textPrimary,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ),
 
+                        // =========================================================
+                        // UNREAD DOT
+                        // =========================================================
                         if (unread) ...[
                           const SizedBox(width: 8),
 
                           Container(
                             width: 7,
                             height: 7,
-                            decoration:
-                                const BoxDecoration(
-                              color:
-                                  AppColors.textPrimary,
+                            decoration: const BoxDecoration(
+                              color: AppColors.textPrimary,
                               shape: BoxShape.circle,
                             ),
                           ),
                         ],
+
+                        // =========================================================
+                        // OPTIONS MENU
+                        // =========================================================
+                        const SizedBox(width: 4),
+
+                        PopupMenuButton<String>(
+                          tooltip: 'Notification options',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 130),
+                          color: AppColors.surface,
+                          elevation: 6,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          icon: Icon(
+                            Icons.more_horiz_rounded,
+                            size: 18,
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.65,
+                            ),
+                          ),
+                          onSelected: (value) {
+                            if (value == 'delete') {
+                              onDelete();
+                            }
+                          },
+                          itemBuilder: (context) {
+                            return const [
+                              PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete_outline_rounded,
+                                      size: 18,
+                                    ),
+
+                                    SizedBox(width: 10),
+
+                                    Text(
+                                      'Delete',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ];
+                          },
+                        ),
                       ],
                     ),
 
@@ -648,22 +744,18 @@ class _NotificationCard extends StatelessWidget {
                         fontSize: 10,
                         height: 1.45,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary
-                            .withValues(alpha: 0.78),
+                        color: AppColors.textSecondary.withValues(alpha: 0.78),
                       ),
                     ),
 
                     const SizedBox(height: 9),
 
                     Text(
-                      _formatTime(
-                        notification.createdAt,
-                      ),
+                      _formatTime(notification.createdAt),
                       style: TextStyle(
                         fontSize: 8,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary
-                            .withValues(alpha: 0.50),
+                        color: AppColors.textSecondary.withValues(alpha: 0.50),
                       ),
                     ),
                   ],
@@ -674,13 +766,11 @@ class _NotificationCard extends StatelessWidget {
                 const SizedBox(width: 8),
 
                 Padding(
-                  padding:
-                      const EdgeInsets.only(top: 13),
+                  padding: const EdgeInsets.only(top: 13),
                   child: Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 11,
-                    color: AppColors.textSecondary
-                        .withValues(alpha: 0.45),
+                    color: AppColors.textSecondary.withValues(alpha: 0.45),
                   ),
                 ),
               ],
@@ -753,6 +843,71 @@ class _NotificationCard extends StatelessWidget {
 }
 
 // =================================================================
+// NOTIFICATION LIST TOGGLE
+// =================================================================
+
+class _NotificationToggleButton extends StatelessWidget {
+  final bool isExpanded;
+  final int hiddenCount;
+  final VoidCallback onTap;
+
+  const _NotificationToggleButton({
+    required this.isExpanded,
+    required this.hiddenCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Center(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(30),
+            child: Ink(
+              padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 11),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: AppColors.border.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isExpanded ? 'Show less' : 'Show $hiddenCount more',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: 17,
+                    color: AppColors.textPrimary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =================================================================
 // NOTIFICATION ICON
 // =================================================================
 
@@ -760,10 +915,7 @@ class _NotificationIcon extends StatelessWidget {
   final String type;
   final bool unread;
 
-  const _NotificationIcon({
-    required this.type,
-    required this.unread,
-  });
+  const _NotificationIcon({required this.type, required this.unread});
 
   @override
   Widget build(BuildContext context) {
@@ -771,23 +923,18 @@ class _NotificationIcon extends StatelessWidget {
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: unread
-            ? AppColors.textPrimary
-            : AppColors.background,
+        color: unread ? AppColors.textPrimary : AppColors.background,
         borderRadius: BorderRadius.circular(13),
         border: Border.all(
           color: unread
               ? AppColors.textPrimary
-              : AppColors.border
-                  .withValues(alpha: 0.30),
+              : AppColors.border.withValues(alpha: 0.30),
         ),
       ),
       child: Icon(
         _icon,
         size: 19,
-        color: unread
-            ? Colors.white
-            : AppColors.textPrimary,
+        color: unread ? Colors.white : AppColors.textPrimary,
       ),
     );
   }
@@ -829,10 +976,7 @@ class _HeaderButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _HeaderButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _HeaderButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -847,16 +991,9 @@ class _HeaderButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppColors.border
-                  .withValues(alpha: 0.35),
-            ),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
           ),
-          child: Icon(
-            icon,
-            size: 19,
-            color: AppColors.textPrimary,
-          ),
+          child: Icon(icon, size: 19, color: AppColors.textPrimary),
         ),
       ),
     );

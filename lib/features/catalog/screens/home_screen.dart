@@ -38,7 +38,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isLoading = true;
 
-  bool _isStoreOpen = false;
   RealtimeChannel? _storeStatusChannel;
 
   // =============================================================
@@ -49,8 +48,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    _loadStoreStatus();
-    _subscribeToStoreStatus();
     _fetchCatalogData();
   }
 
@@ -64,58 +61,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _loadStoreStatus() async {
-    try {
-      final data = await Supabase.instance.client
-          .from('store_settings')
-          .select('is_open')
-          .eq('id', 1)
-          .maybeSingle();
 
-      if (!mounted) return;
 
-      setState(() {
-        _isStoreOpen = data?['is_open'] == true;
-      });
-
-    } catch (e) {
-
-      if (!mounted) return;
-
-      setState(() {
-        // Fail closed if Supabase cannot be reached.
-        _isStoreOpen = false;
-      });
-    }
-  }
-
-  void _subscribeToStoreStatus() {
-    _storeStatusChannel = Supabase.instance.client
-        .channel('customer-store-status')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'store_settings',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'id',
-            value: 1,
-          ),
-          callback: (payload) {
-            final newRecord = payload.newRecord;
-
-            final bool newStatus = newRecord['is_open'] == true;
-
-            if (!mounted) return;
-
-            setState(() {
-              _isStoreOpen = newStatus;
-            });
-
-          },
-        )
-        .subscribe();
-  }
   // =============================================================
   // FETCH CATALOG
   // =============================================================
@@ -150,7 +97,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _filterProducts();
       });
     } catch (error) {
-
       if (!mounted) return;
 
       setState(() {
@@ -239,9 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     // =============================================
                     // HEADER
                     // =============================================
-                    SliverToBoxAdapter(
-                      child: CatalogHomeHeader(isStoreOpen: _isStoreOpen),
-                    ),
+                    const SliverToBoxAdapter(child: CatalogHomeHeader()),
 
                     // =============================================
                     // SEARCH
