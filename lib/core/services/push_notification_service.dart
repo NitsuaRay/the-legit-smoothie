@@ -77,17 +77,32 @@ class PushNotificationService {
       );
 
   // ============================================================
+  // NOTIFICATION PERMISSION
+  // ============================================================
+
+  Future<AuthorizationStatus> getPermissionStatus() async {
+    final NotificationSettings settings = await _messaging
+        .getNotificationSettings();
+
+    return settings.authorizationStatus;
+  }
+
+  Future<AuthorizationStatus> requestNotificationPermission() async {
+    final NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    return settings.authorizationStatus;
+  }
+
+  // ============================================================
   // INITIALIZE
   // ============================================================
 
   Future<void> initialize() async {
     try {
-      // --------------------------------------------------------
-      // REQUEST FCM NOTIFICATION PERMISSION
-      // --------------------------------------------------------
-
-      await _messaging.requestPermission(alert: true, badge: true, sound: true);
-
       // --------------------------------------------------------
       // INITIALIZE LOCAL NOTIFICATIONS
       // --------------------------------------------------------

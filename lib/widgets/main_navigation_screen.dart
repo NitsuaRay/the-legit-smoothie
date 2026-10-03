@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:the_legit_smoothie/core/services/notification_permission_service.dart';
 
 import 'package:the_legit_smoothie/features/cart/screens/cart_screen.dart';
 import 'package:the_legit_smoothie/features/cart/services/cart_service.dart';
@@ -34,6 +35,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _currentIndex = _safeInitialIndex(widget.initialIndex);
 
     _cartService.addListener(_onCartChanged);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkNotificationPermission();
+    });
+  }
+
+  Future<void> _checkNotificationPermission() async {
+    if (!mounted) {
+      return;
+    }
+
+    await NotificationPermissionService.instance.checkAndPrompt(
+      context: context,
+      role: 'customer',
+    );
   }
 
   @override

@@ -4,11 +4,13 @@ import '../../../../core/constants/app_colors.dart';
 
 class CheckoutOrderTypeSelector extends StatelessWidget {
   final String value;
+  final bool deliveryEnabled;
   final ValueChanged<String> onChanged;
 
   const CheckoutOrderTypeSelector({
     super.key,
     required this.value,
+    required this.deliveryEnabled,
     required this.onChanged,
   });
 
@@ -25,24 +27,34 @@ class CheckoutOrderTypeSelector extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // =========================================================
+          // DELIVERY
+          // =========================================================
           Expanded(
             child: _OrderTypeButton(
               label: 'Delivery',
-              subtitle: 'To your address',
+              subtitle: deliveryEnabled
+                  ? 'To your address'
+                  : 'Temporarily unavailable',
               icon: Icons.delivery_dining_outlined,
               selected: value == 'delivery',
+              enabled: deliveryEnabled,
               onTap: () => onChanged('delivery'),
             ),
           ),
 
           const SizedBox(width: 5),
 
+          // =========================================================
+          // STORE PICKUP
+          // =========================================================
           Expanded(
             child: _OrderTypeButton(
               label: 'Store Pickup',
               subtitle: 'Collect in store',
               icon: Icons.storefront_outlined,
               selected: value == 'pickup',
+              enabled: true,
               onTap: () => onChanged('pickup'),
             ),
           ),
@@ -57,6 +69,7 @@ class _OrderTypeButton extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final bool selected;
+  final bool enabled;
   final VoidCallback onTap;
 
   const _OrderTypeButton({
@@ -64,6 +77,7 @@ class _OrderTypeButton extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.selected,
+    required this.enabled,
     required this.onTap,
   });
 
@@ -72,6 +86,8 @@ class _OrderTypeButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        // Keep the unavailable Delivery option tappable so the
+        // checkout screen can explain why it cannot be selected.
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
@@ -84,7 +100,9 @@ class _OrderTypeButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected
                 ? AppColors.textPrimary
-                : Colors.transparent,
+                : enabled
+                    ? Colors.transparent
+                    : AppColors.background.withValues(alpha: 0.55),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
@@ -103,7 +121,11 @@ class _OrderTypeButton extends StatelessWidget {
                   size: 16,
                   color: selected
                       ? Colors.white
-                      : AppColors.textPrimary,
+                      : enabled
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary.withValues(
+                              alpha: 0.45,
+                            ),
                 ),
               ),
 
@@ -113,17 +135,38 @@ class _OrderTypeButton extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: selected
-                            ? Colors.white
-                            : AppColors.textPrimary,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: selected
+                                  ? Colors.white
+                                  : enabled
+                                      ? AppColors.textPrimary
+                                      : AppColors.textSecondary.withValues(
+                                          alpha: 0.55,
+                                        ),
+                            ),
+                          ),
+                        ),
+
+                        if (!enabled) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.lock_outline_rounded,
+                            size: 10,
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.45,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
 
                     const SizedBox(height: 3),
@@ -137,9 +180,13 @@ class _OrderTypeButton extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                         color: selected
                             ? Colors.white.withValues(alpha: 0.60)
-                            : AppColors.textSecondary.withValues(
-                                alpha: 0.60,
-                              ),
+                            : enabled
+                                ? AppColors.textSecondary.withValues(
+                                    alpha: 0.60,
+                                  )
+                                : AppColors.textSecondary.withValues(
+                                    alpha: 0.45,
+                                  ),
                       ),
                     ),
                   ],

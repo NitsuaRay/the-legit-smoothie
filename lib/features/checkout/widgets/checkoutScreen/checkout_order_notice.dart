@@ -12,6 +12,8 @@ class CheckoutOrderNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDelivery = orderType == 'delivery';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(13),
@@ -32,8 +34,10 @@ class CheckoutOrderNotice extends StatelessWidget {
               color: AppColors.background,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(
-              Icons.info_outline_rounded,
+            child: Icon(
+              isDelivery
+                  ? Icons.delivery_dining_outlined
+                  : Icons.storefront_outlined,
               size: 16,
               color: AppColors.textPrimary,
             ),
@@ -45,9 +49,11 @@ class CheckoutOrderNotice extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Before placing your order',
-                  style: TextStyle(
+                Text(
+                  isDelivery
+                      ? 'Before placing your order'
+                      : 'Store Pickup',
+                  style: const TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -57,9 +63,13 @@ class CheckoutOrderNotice extends StatelessWidget {
                 const SizedBox(height: 4),
 
                 Text(
-                  'Please make sure your contact information, '
-                  '${orderType == 'delivery' ? 'delivery address, ' : ''}'
-                  'items, and instructions are correct.',
+                  isDelivery
+                      ? 'Please make sure your contact information, '
+                          'delivery address, items, and instructions '
+                          'are correct.'
+                      : 'Your order will be prepared for pickup at '
+                          'the store. Please make sure your contact '
+                          'information, items, and instructions are correct.',
                   style: TextStyle(
                     fontSize: 9,
                     height: 1.4,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:the_legit_smoothie/core/services/notification_permission_service.dart';
 
 import 'package:the_legit_smoothie/features/seller/screens/seller_home_screen.dart';
 import 'package:the_legit_smoothie/features/seller/screens/seller_orders_screen.dart';
@@ -30,12 +31,26 @@ class _SellerMainNavigationScreenState
   // =============================================================
 
   @override
-  void initState() {
-    super.initState();
+void initState() {
+  super.initState();
 
-    _currentIndex =
-        widget.initialIndex.clamp(0, 4);
+  _currentIndex = widget.initialIndex.clamp(0, 4);
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _checkNotificationPermission();
+  });
+}
+
+Future<void> _checkNotificationPermission() async {
+  if (!mounted) {
+    return;
   }
+
+  await NotificationPermissionService.instance.checkAndPrompt(
+    context: context,
+    role: 'seller',
+  );
+}
 
   // =============================================================
   // CHANGE TAB

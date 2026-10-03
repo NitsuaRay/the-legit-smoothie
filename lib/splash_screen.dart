@@ -604,7 +604,6 @@ class _SplashScreenState extends State<SplashScreen>
       final BuildContext? navigatorContext = navigatorKey.currentContext;
 
       if (navigatorContext == null) {
-
         return;
       }
 

@@ -40,7 +40,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   String? _checkoutRequestId;
 
-  String _orderType = 'delivery';
+  // =============================================================
+  // FULFILLMENT AVAILABILITY
+  // =============================================================
+  //
+  // Keep delivery functionality in the app, but temporarily disable
+  // it until store delivery becomes available again.
+  //
+  // In the future, simply change this to true.
+  // Later, this can also come from Supabase store_settings.
+  //
+  static const bool _deliveryEnabled = false;
+
+  String _orderType = 'pickup';
 
   bool _isSubmitting = false;
   bool _isLoadingProfile = true;
@@ -160,6 +172,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   void _changeOrderType(String value) {
+    if (value == 'delivery' && !_deliveryEnabled) {
+      _showMessage(
+        'Delivery is temporarily unavailable. Please choose Store Pickup.',
+      );
+      return;
+    }
+
     if (_orderType == value) {
       return;
     }
@@ -433,15 +452,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       );
     } on PostgrestException catch (error) {
-
       if (!mounted) {
         return;
       }
 
-
       _showMessage(error.message, isError: true);
     } catch (error) {
-
       if (!mounted) {
         return;
       }
@@ -541,16 +557,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       // ===============================================
                       const CheckoutSectionHeader(
                         eyebrow: 'FULFILLMENT',
-                        icon: Icons.local_shipping_outlined,
+                        icon: Icons.storefront_outlined,
                         title: 'How would you like it?',
                         subtitle:
-                            'Choose delivery to your address or pick up your order from the store.',
+                            'Store Pickup is currently available. Delivery will be available soon.',
                       ),
-
                       const SizedBox(height: 14),
 
                       CheckoutOrderTypeSelector(
                         value: _orderType,
+                        deliveryEnabled: _deliveryEnabled,
                         onChanged: _changeOrderType,
                       ),
 
@@ -562,7 +578,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       const CheckoutSectionHeader(
                         eyebrow: 'YOUR DETAILS',
                         icon: Icons.person_outline_rounded,
-                        title: 'Contact & Delivery',
+                        title: 'Contact Details',
                         subtitle:
                             'We’ll use these details to contact you and complete your order.',
                       ),

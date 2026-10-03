@@ -25,6 +25,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   late final Future<List<Map<String, dynamic>>> _itemsFuture;
 
+  late final Future<String?> _storeAddressFuture;
+
   bool _isCancelling = false;
 
   // ==============================================================
@@ -44,6 +46,39 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         .from('order_items')
         .select()
         .eq('order_id', widget.orderId);
+
+    _storeAddressFuture = _loadStoreAddress();
+  }
+
+  // ==============================================================
+  // STORE ADDRESS
+  // ==============================================================
+
+  Future<String?> _loadStoreAddress() async {
+    try {
+      final Map<String, dynamic>? seller = await supabase
+          .from('profiles')
+          .select('default_address')
+          .eq('role', 'seller')
+          .limit(1)
+          .maybeSingle();
+
+      if (seller == null) {
+        return null;
+      }
+
+      final String? address = seller['default_address']?.toString().trim();
+
+      if (address == null || address.isEmpty) {
+        return null;
+      }
+
+      return address;
+    } catch (e) {
+      debugPrint('Unable to load store address: $e');
+
+      return null;
+    }
   }
 
   // ==============================================================
@@ -296,14 +331,20 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                         // ===========================================
                         // ORDER OVERVIEW
                         // ===========================================
-                        OrderTrackingOverview(
-                          orderId: widget.orderId,
-                          status: status,
-                          orderType: orderType,
-                          totalPrice: totalPrice,
-                          address: address,
-                          notes: notes,
-                          createdAt: createdAt,
+                        FutureBuilder<String?>(
+                          future: _storeAddressFuture,
+                          builder: (context, storeAddressSnapshot) {
+                            return OrderTrackingOverview(
+                              orderId: widget.orderId,
+                              status: status,
+                              orderType: orderType,
+                              totalPrice: totalPrice,
+                              address: address,
+                              storeAddress: storeAddressSnapshot.data,
+                              notes: notes,
+                              createdAt: createdAt,
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 23),
